@@ -4,6 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
+from .cli import run
+
 from .io import number, promote_headers, raw_workbooks, resolve_path
 
 
@@ -34,6 +36,4 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
 
 
 if __name__ == "__main__":
-    from .cli import run
-
     run(build)

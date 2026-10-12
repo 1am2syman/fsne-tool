@@ -4,6 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
+from .cli import run
+
 from .io import date, matching_files, number, promote_headers, raw_workbooks
 
 TEXT_COLUMNS = [
@@ -77,6 +79,4 @@ def build(
 
 
 if __name__ == "__main__":
-    from .cli import run
-
     run(build)
