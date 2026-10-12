@@ -1,0 +1,22 @@
+let
+    Source_1 = Excel.CurrentWorkbook(){[Name="Table2"]}[Content],
+    #"Removed Columns" = Table.RemoveColumns(Source_1,{"base_folder", "current_folder"})[final_path]{0},
+    Source = Folder.Files(#"Removed Columns"),
+    #"Filtered Rows3" = Table.SelectRows(Source, each Text.Contains([Name], "shelflife") or Text.Contains([Name], "Shelflife")),
+    #"Added Custom1" = Table.AddColumn(#"Filtered Rows3", "Custom", each Csv.Document([Content])),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Added Custom1",{"Custom"}),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Removed Other Columns1", "Custom", {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6", "Column7", "Column8", "Column9", "Column10", "Column11", "Column12", "Column13", "Column14", "Column15", "Column16", "Column17", "Column18", "Column19", "Column20", "Column21", "Column22", "Column23", "Column24", "Column25", "Column26", "Column27", "Column28", "Column29", "Column30", "Column31", "Column32", "Column33", "Column34"}, {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6", "Column7", "Column8", "Column9", "Column10", "Column11", "Column12", "Column13", "Column14", "Column15", "Column16", "Column17", "Column18", "Column19", "Column20", "Column21", "Column22", "Column23", "Column24", "Column25", "Column26", "Column27", "Column28", "Column29", "Column30", "Column31", "Column32", "Column33", "Column34"}),
+    #"Promoted Headers1" = Table.PromoteHeaders(#"Expanded Custom", [PromoteAllScalars=true]),
+    #"Filtered Rows1" = Table.SelectRows(#"Promoted Headers1", each ([Closing Stock] <> "0")),
+    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows1",{"Distributor code", "Distributor Name", "Brand Name", "Material Code", "Child Sku", "Pack Size", "Batch code", "Primary First Date", "Primary Latest Date", "Expiry Date", "Closing Stock", "Primary Sales", "Secondary Sales", "Expiry Slab", "Town", "KL per unit", "NOS", "CS", "Shelf Life (DAYS)", "Shelf Life (Months)", "DB Landing value", "Previous Month Closing Stock", "Previous N-1 Month Closing Stock", "Last 6 months average sales in KL"}),
+    #"Filtered Rows" = Table.SelectRows(#"Removed Other Columns", each ([Closing Stock] <> 0)),
+    #"Replaced Value" = Table.ReplaceValue(#"Filtered Rows","'","",Replacer.ReplaceText,{"Expiry Date"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Replaced Value",{{"Distributor code", Int64.Type}, {"Distributor Name", type text}, {"Brand Name", type text}, {"Material Code", Int64.Type}, {"Child Sku", type text}, {"Pack Size", Int64.Type}, {"Batch code", type text}, {"Primary First Date", type text}, {"Primary Latest Date", type text}, {"Expiry Date", type date}, {"Closing Stock", type number}, {"Primary Sales", type number}, {"Secondary Sales", type number}, {"Expiry Slab", type text}, {"Town", type text}, {"KL per unit", type number}, {"NOS", Int64.Type}, {"CS", type number}, {"Shelf Life (DAYS)", Int64.Type}, {"Shelf Life (Months)", Int64.Type}, {"DB Landing value", type number}, {"Previous Month Closing Stock", type number}, {"Previous N-1 Month Closing Stock", type number}, {"Last 6 months average sales in KL", type number}}),
+    #"Merged Queries" = Table.NestedJoin(#"Changed Type", {"Material Code"}, ph, {"material_code"}, "ph", JoinKind.LeftOuter),
+    #"Expanded ph" = Table.ExpandTableColumn(#"Merged Queries", "ph", {"material_desc", "parent_material_code"}, {"material_desc", "parent_material_code"}),
+    #"Merged Queries1" = Table.NestedJoin(#"Expanded ph", {"parent_material_code", "Town"}, run_rate_parent, {"parent_material_code", "town"}, "run_rate", JoinKind.LeftOuter),
+    #"Expanded run_rate" = Table.ExpandTableColumn(#"Merged Queries1", "run_rate", {"avg_sec"}, {"avg_sec"}),
+    #"Added Custom" = Table.AddColumn(#"Expanded run_rate", "batch_index", each Text.Lower([Town])&Number.ToText([Material Code])&[Batch code]),
+    #"Filtered Rows2" = Table.SelectRows(#"Added Custom", each true)
+in
+    #"Filtered Rows2"

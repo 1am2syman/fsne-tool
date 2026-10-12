@@ -1,0 +1,5 @@
+let
+    Source = run_rate_parent,
+    #"Grouped Rows" = Table.Group(Source, {"town"}, {{"avg_sec_town", each List.Sum([avg_sec]), type nullable number}})
+in
+    #"Grouped Rows"

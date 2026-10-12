@@ -1,0 +1,21 @@
+let
+    Source_1 = Excel.CurrentWorkbook(){[Name="Table2"]}[Content],
+    #"Removed Columns" = Table.RemoveColumns(Source_1,{"base_folder", "current_folder"})[history_path]{0},
+    Source = Folder.Files(#"Removed Columns"),
+    #"Filtered Rows3" = Table.SelectRows(Source, each Text.StartsWith([Name], "20")),
+    #"Added Custom" = Table.AddColumn(#"Filtered Rows3", "Custom", each Excel.Workbook([Content])),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Added Custom", "Custom", {"Name", "Data", "Item", "Kind", "Hidden"}, {"Name.1", "Data", "Item", "Kind", "Hidden"}),
+    #"Filtered Rows1" = Table.SelectRows(#"Expanded Custom", each ([Kind] = "Sheet")),
+    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows1",{"Data"}),
+    #"Expanded Data" = Table.ExpandTableColumn(#"Removed Other Columns", "Data", {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6", "Column7", "Column8", "Column9", "Column10", "Column11", "Column12", "Column13", "Column14", "Column15", "Column16", "Column17", "Column18", "Column19", "Column20", "Column21", "Column22", "Column23", "Column24", "Column25", "Column26", "Column27", "Column28", "Column29", "Column30", "Column31", "Column32"}, {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6", "Column7", "Column8", "Column9", "Column10", "Column11", "Column12", "Column13", "Column14", "Column15", "Column16", "Column17", "Column18", "Column19", "Column20", "Column21", "Column22", "Column23", "Column24", "Column25", "Column26", "Column27", "Column28", "Column29", "Column30", "Column31", "Column32"}),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Expanded Data", [PromoteAllScalars=true]),
+    #"Filtered Rows" = Table.SelectRows(#"Promoted Headers", each ([Town] <> "Town")),
+    #"Filtered Rows2" = Table.SelectRows(#"Filtered Rows", each ([report_date] <> null)),
+    #"Changed Type" = Table.TransformColumnTypes(#"Filtered Rows2",{{"report_date", type date}, {"batch_index", type text}, {"Town", type text}, {"Brand Name", type text}, {"parent_material_code", Int64.Type}, {"Material Code", Int64.Type}, {"material_desc", type text}, {"Batch code", type text}, {"Expiry Date", Int64.Type}, {"rsl_group", type text}, {"rsl_days", Int64.Type}, {"total_closing_stock_kl", type number}, {"total_closing_stock_bdt", type number}, {"doh", type number}, {"avg_sec_m", type number}, {"total_pri_sales", type number}, {"total_sec_sales", type number}, {"consumable_kl", type number}, {"consumable_bdt", type number}, {"consumable_kl_2x_rate", type number}, {"rotation_req_kl", type number}, {"rotation_req_bdt", type number}, {"exposure_kl", type number}, {"exposure_bdt", type number}, {"lnd_fc_kl", type number}, {"lnd_fc_bdt", type number}, {"exposure_kl_%", type number}, {"exposure_bdt_%", type number}, {"lnd_fc_kl_%", type number}, {"lnd_fc_bdt_%", type number}}),
+    #"Added Custom1" = Table.AddColumn(#"Changed Type", "batch_index_short", each [batch_index]),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Added Custom1", "batch_index_short", Splitter.SplitTextByEachDelimiter({"-"}, QuoteStyle.Csv, true), {"batch_index_short.1", "batch_index_short.2"}),
+    #"Split Column by Delimiter1" = Table.SplitColumn(#"Split Column by Delimiter", "batch_index_short.1", Splitter.SplitTextByEachDelimiter({"-"}, QuoteStyle.Csv, true), {"batch_index_short.1.1", "batch_index_short.1.2"}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Split Column by Delimiter1",{"batch_index_short.1.2", "batch_index_short.2"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Removed Columns2",{{"batch_index_short.1.1", "batch_index_short"}})
+in
+    #"Renamed Columns"

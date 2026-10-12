@@ -1,0 +1,16 @@
+let
+    Source_1 = Excel.CurrentWorkbook(){[Name="Table2"]}[Content],
+    #"Removed Columns" = Table.RemoveColumns(Source_1,{"base_folder", "current_folder"})[final_path]{0},
+    Source = Folder.Files(#"Removed Columns"),
+    #"Filtered Rows" = Table.SelectRows(Source, each Text.Contains([Name], "config") or Text.Contains([Name], "Config")),
+    #"Removed Other Columns" = Table.SelectColumns(#"Filtered Rows",{"Content"}),
+    #"Added Custom" = Table.AddColumn(#"Removed Other Columns", "Custom", each Excel.Workbook([Content])),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Added Custom", "Custom", {"Name", "Data", "Item", "Kind", "Hidden"}, {"Name", "Data", "Item", "Kind", "Hidden"}),
+    #"Filtered Rows1" = Table.SelectRows(#"Expanded Custom", each ([Item] = "config_table")),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Filtered Rows1",{"Data"}),
+    #"Expanded Data" = Table.ExpandTableColumn(#"Removed Other Columns1", "Data", {"variable", "value"}, {"variable", "value"}),
+    #"Transposed Table" = Table.Transpose(#"Expanded Data"),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Transposed Table", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"starting_date", type date}})
+in
+    #"Changed Type"

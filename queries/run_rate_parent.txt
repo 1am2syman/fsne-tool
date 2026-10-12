@@ -1,0 +1,28 @@
+let
+    Source_1 = Excel.CurrentWorkbook(){[Name="Table2"]}[Content],
+    #"Removed Columns" = Table.RemoveColumns(Source_1,{"base_folder", "current_folder"})[final_path]{0},
+    Source = Folder.Files(#"Removed Columns"),
+    #"Filtered Rows1" = Table.SelectRows(Source, each Text.Contains([Name], "sec_") or Text.Contains([Name], "Sec_")),
+    #"Added Custom1" = Table.AddColumn(#"Filtered Rows1", "Custom", each Excel.Workbook([Content])),
+    #"Expanded Custom" = Table.ExpandTableColumn(#"Added Custom1", "Custom", {"Name", "Data"}, {"Name.1", "Data"}),
+    #"Filtered Rows" = Table.SelectRows(#"Expanded Custom", each ([Name.1] = "Sheet1")),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Filtered Rows",{"Data"}),
+    #"Expanded Data" = Table.ExpandTableColumn(#"Removed Other Columns1", "Data", {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6"}, {"Column1", "Column2", "Column3", "Column4", "Column5", "Column6"}),
+    #"Filtered Rows2" = Table.SelectRows(#"Expanded Data", each ([Column3] <> null)),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Filtered Rows2", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"sec_vol_kl_mth (billwise)", type number}}),
+    #"Added Custom" = Table.AddColumn(#"Changed Type", "Custom", each if [#"sec_vol_kl_mth (billwise)"] < 0 then 0 else [#"sec_vol_kl_mth (billwise)"]),
+    #"Removed Columns1" = Table.RemoveColumns(#"Added Custom",{"sec_vol_kl_mth (billwise)"}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Removed Columns1",{{"Custom", type number}}),
+    #"Grouped Rows1" = Table.Group(#"Changed Type2", {"area_name (city)", "parent_material_code", "Month-Year"}, {{"Custom", each List.Sum([Custom]), type nullable number}}),
+    #"Pivoted Column" = Table.Pivot(#"Grouped Rows1", List.Distinct(#"Grouped Rows1"[#"Month-Year"]), "Month-Year", "Custom", List.Sum),
+    Custom1 = List.RemoveItems(Table.ColumnNames(#"Pivoted Column"),{"area_name (city)","parent_material_code"}),
+    #"Replaced Value" = Table.ReplaceValue(#"Pivoted Column",null,0,Replacer.ReplaceValue,Custom1),
+    #"Unpivoted Other Columns" = Table.UnpivotOtherColumns(#"Replaced Value", {"area_name (city)", "parent_material_code"}, "Attribute", "Value"),
+    #"Renamed Columns1" = Table.RenameColumns(#"Unpivoted Other Columns",{{"Attribute", "Month-Year"}, {"Value", "Custom"}}),
+    #"Grouped Rows" = Table.Group(#"Renamed Columns1", {"area_name (city)", "parent_material_code"}, {{"avg_sec", each List.Average([#"Custom"]), type nullable number}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Grouped Rows",{{"area_name (city)", "town"}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Renamed Columns",{{"town", type text}, {"parent_material_code", Int64.Type}, {"avg_sec", type number}}),
+    #"Removed Duplicates" = Table.Distinct(#"Changed Type1", {"town", "parent_material_code"})
+in
+    #"Removed Duplicates"
