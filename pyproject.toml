@@ -8,6 +8,7 @@ dependencies = [
     "polars>=1.38,<2",
     "fastexcel>=0.16,<1",
     "openpyxl>=3.1,<4",
+    "xlsxwriter>=3.2,<4",
 ]
 
 [project.scripts]

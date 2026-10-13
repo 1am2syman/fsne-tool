@@ -5,15 +5,15 @@ from pathlib import Path
 import polars as pl
 
 from .cli import run
-
-from .io import config_tables, date, matching_files
+from .io import config_tables, date, matching_files, promote_headers
 
 
 def transform(source: pl.DataFrame) -> pl.DataFrame:
     # Transpose is a metadata/shape boundary; no row-wise data processing.
     return (
-        source.select("value")
-        .transpose(column_names=source.get_column("variable").to_list())
+        source.select("variable", "value")
+        .transpose()
+        .pipe(promote_headers)
         .lazy()
         .with_columns(date("starting_date"))
         .collect()

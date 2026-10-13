@@ -1,0 +1,110 @@
+# Inferred final-report rules
+
+## Status and evidence
+
+The user authorized inference because the final M/DAX/calculated-column formulas were not supplied. `src/report.py` generates the report solely from `sample_input/`; only `src/compare_report.py` reads the reference workbook afterwards.
+
+Full-sample verification checks every cell in `sample_output/sample_output.xlsx`: 27,891 rows × 30 columns = 836,730 cells. Strings, integer identifiers/date serials, column order, row order and null placement match. Floating-point comparisons use `abs(actual - expected) <= 1e-8 + 1e-12 * abs(expected)`; the observed largest absolute difference is below 1e-9. This is **sample equivalence under numerical tolerance, not bitwise equality or proof of the original business rules**.
+
+Generated artifacts:
+
+- `output/inferred_report.xlsx` — generated data, `Sheet1`; not the original Excel formatting.
+- `output/inferred_report.parquet` — same data before Excel serialization.
+- `output/comparison.csv` — per-column row count, null/value mismatch counts and maximum absolute errors.
+- `output/comparison.json` — dimensions, tolerance, row-order check, Excel roundtrip comparison and SHA-256 input/reference integrity checks.
+- `output/current_measures.json` — current-period totals supported by the available input data.
+
+## Base quantities and dates
+
+For each batch identity:
+
+- `report_date` = `config_table.starting_date`, exported as an Excel integer serial.
+- `Expiry Date` = original expiry, likewise exported as an Excel integer serial.
+- `rsl_days` = expiry date − report date in calendar days.
+- `total_closing_stock_kl` = sum of CSV `Closing Stock`.
+- `total_pri_sales` / `total_sec_sales` = sums of CSV primary/secondary sales.
+- `avg_sec_m` = town/parent monthly rate from `run_rate_parent` (NOT the CSV last-six-month average).
+- `doh` = `total_closing_stock_kl / avg_sec_m * 30`.
+- `total_closing_stock_bdt` = sum of `NOS` × the **material's** DB landing rate. This is not the CSV `DB Landing value` and not `Closing Stock / KL per unit × rate`.
+
+Landing rates must retain native Excel floating-point precision. Calamine's forced string ingestion rounded rates to nine decimals and caused discrepancies; landing data is now read natively below the detected header before Polars string normalization.
+
+Remaining-shelf-life groups:
+
+| Days | Label |
+| --- | --- |
+| ≤ 90 | `< 3M` |
+| 91–180 | `3M - 6M` |
+| 181–300 | `6M - 10M` |
+| > 300 | `> 10M` |
+
+Exact boundaries are inferred: the sample contains 180 days, but not every threshold endpoint.
+
+## Batch schedule: the consequential inferred rule
+
+Process batches separately for each **town + child material code**, ordered by expiry then batch key. The parent rate is reused for each child; a shared parent queue does not reproduce the sample.
+
+For stock `S`, monthly rate `R`, reserve `b` days, multiplier `m`:
+
+```text
+horizon_i = max(rsl_days_i - b, 0)
+duration_i = min(horizon_i, (S_i / R_i * 30) / m)
+start_i = floor(report_date_serial + sum(duration_j for j before i))
+available_i = max(expiry_serial_i - b - start_i, 0)
+consumed_i = min(S_i, available_i / 30 * R_i * m)
+```
+
+**Do not replace this with ideal FIFO.** Each duration is capped independently using its horizon from the report date; it is not recalculated using the preceding batch's actual finish time. This can allocate zero consumption to a later batch even when an ideal queue would resume consumption. The sample confirms that unusual behavior.
+
+**Do not truncate individual durations.** Fractional durations are accumulated first. Truncate the resulting absolute Excel date serial to whole days. Truncating each duration or subtracting preceding stock volumes does not reproduce the sample.
+
+Three schedules run independently:
+
+| Output | Reserve | Rate multiplier |
+| --- | --- | --- |
+| `consumable_kl` | 300 days | 1 |
+| `consumable_kl_2x_rate` | 300 days | 2 |
+| quantity consumed before forecast cutoff | 90 days | 1 |
+
+For missing rate `R`, inferred consumption is the full stock if remaining shelf life exceeds the reserve; otherwise it is zero. `doh` and `avg_sec_m` remain null. In the supplied sample this applies to 1,250 rows.
+
+## Exposure, rotation and forecast
+
+```text
+exposure_kl = S - consumable_kl
+rotation_req_kl = S - consumable_kl_2x_rate
+lnd_fc_kl = S - consumed_before_90_day_cutoff
+```
+
+Each BDT quantity is its KL quantity divided by total stock KL, multiplied by total stock BDT. Missing landing rates propagate null to BDT results, including BDT ratios (1,529 supplied rows have missing rates).
+
+Percentage columns are fractions, not numbers multiplied by 100:
+
+```text
+exposure_kl_% = exposure_kl / S
+exposure_bdt_% = exposure_bdt / total_closing_stock_bdt
+lnd_fc_kl_% = lnd_fc_kl / S
+lnd_fc_bdt_% = lnd_fc_bdt / total_closing_stock_bdt
+```
+
+Final rows sort by `batch_index`; final columns match the reference order.
+
+## What remains assumed or unavailable
+
+- There is only one reference dataset. Matching all its values does not uniquely identify the original formulas. These rules need business-owner review and another independent period's golden output.
+- The sample has one row per batch key. Combining duplicate distributor rows by batch identity and ordering equal-expiry ties by batch key are documented extrapolations, not established original rules.
+- Negative/zero stock, zero/negative or nonfinite rates, pre-expired stock, malformed source dates, unusual cultures and 1904-system serials are not established by this sample. The inferred report rejects nonpositive stock and nonpositive/nonfinite non-null sales rates rather than guessing their behavior.
+- The original eight query scripts remain distinct from the inferred final report. `history` can load historical outputs but no historical workbooks were supplied.
+- `measures.png` contains historical comparison aggregates, not formulas. Last-month exposure, new-inclusion/no-new-inclusion splits, down-transition, incumbent stock and month-to-month reductions **cannot be reconstructed from the single supplied period alone**.
+- Two visible current-period measures can be checked: closing stock ≈ 1,551.28 KL, exposure ≈ 41.46 KL / 37,880,532.37 BDT. The inferred report matches these; it does not manufacture missing historical measures.
+- Excel export matches contents, not original formatting, table metadata or workbook binary bytes.
+
+## Reproduce
+
+```bash
+uv run python -m src report --data-dir sample_input --output output/inferred_report.xlsx
+uv run python -m src.compare_report
+uv run python -m unittest discover -s tests -v
+```
+
+Never use the expected output as input to report generation or overwrite the reference to make a comparison pass.

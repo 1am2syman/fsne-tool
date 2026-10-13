@@ -5,7 +5,6 @@ from pathlib import Path
 import polars as pl
 
 from .cli import run
-
 from .io import number, promote_headers, raw_workbooks, resolve_path
 
 

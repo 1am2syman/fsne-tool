@@ -4,9 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
-from .cli import run
-
 from . import run_rate_parent
+from .cli import run
 
 
 def transform(source: pl.DataFrame) -> pl.DataFrame:

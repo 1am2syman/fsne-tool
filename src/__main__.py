@@ -5,7 +5,9 @@ import argparse
 from . import (
     db_landing,
     history,
+    movement,
     ph,
+    report,
     run_rate_parent,
     run_rate_town,
     sec_history,
@@ -17,7 +19,9 @@ from .cli import arguments, execute
 QUERIES = {
     "db_landing": db_landing.build,
     "history": history.build,
+    "movement": movement.build,
     "ph": ph.build,
+    "report": report.build,
     "run_rate_parent": run_rate_parent.build,
     "run_rate_town": run_rate_town.build,
     "sec_history": sec_history.build,

@@ -4,9 +4,8 @@ from pathlib import Path
 
 import polars as pl
 
-from .cli import run
-
 from . import ph, run_rate_parent
+from .cli import run
 from .io import date, matching_files, number, promote_headers, raw_csvs
 
 TEXT_COLUMNS = [

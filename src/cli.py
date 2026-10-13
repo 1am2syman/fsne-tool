@@ -23,23 +23,35 @@ def arguments(parser: argparse.ArgumentParser) -> None:
         help="Replacement for Table2.history_path",
     )
     parser.add_argument(
-        "--output", type=Path, help="CSV or Parquet file; otherwise print the result"
+        "--output",
+        type=Path,
+        help="CSV, Parquet or XLSX file; otherwise print the result",
     )
 
 
 def execute(build: Callable[..., pl.DataFrame], args: argparse.Namespace) -> None:
+    output = resolve_path(args.output) if args.output is not None else None
+    if output is not None:
+        if output.suffix.lower() not in {".csv", ".parquet", ".xlsx"}:
+            raise ValueError("Output must end with .csv, .parquet or .xlsx")
+        if any(
+            output.resolve().is_relative_to(resolve_path(folder).resolve())
+            for folder in ["sample_input", "sample_output"]
+        ):
+            raise ValueError(
+                "Sample inputs/reference are read-only; write generated files to output/"
+            )
     frame = build(data_dir=args.data_dir, history_dir=args.history_dir)
-    if args.output is None:
+    if output is None:
         print(frame)
         return
-    output = resolve_path(args.output)
-    if output.suffix.lower() not in {".csv", ".parquet"}:
-        raise ValueError("Output must end with .csv or .parquet")
     output.parent.mkdir(parents=True, exist_ok=True)
     if output.suffix.lower() == ".csv":
         frame.write_csv(output)
-    else:
+    elif output.suffix.lower() == ".parquet":
         frame.write_parquet(output)
+    else:
+        frame.write_excel(output, worksheet="Sheet1", float_precision=15)
     print(f"Wrote {frame.height} rows to {output}")
 
 

@@ -93,6 +93,13 @@ class TransformationTests(unittest.TestCase):
         self.assertEqual(result["sec_kl"].to_list(), [6.0, 3.0, 0.0, 12.0, None])
         self.assertEqual(result.schema["Month-Year"], pl.Date)
 
+    def test_secondary_month_year_format(self):
+        source = secondary().with_columns(pl.lit("Mar-2026").alias("Month-Year"))
+        self.assertEqual(
+            sec_history.transform(source)["Month-Year"].to_list(),
+            [date(2026, 3, 1)] * 5,
+        )
+
     def test_hierarchy_fill_deduplicate_round(self):
         result = ph.transform(
             pl.DataFrame(
@@ -185,6 +192,16 @@ class TransformationTests(unittest.TestCase):
                 frame.with_columns(pl.lit("invalid").alias("value"))
             )
 
+    def test_exact_large_int64_and_rounding(self):
+        frame = pl.DataFrame({"n": ["9007199254740993", "2.5", "3.5", None, "-2.5"]})
+        self.assertEqual(
+            frame.select(number("n", pl.Int64))["n"].to_list(),
+            [9007199254740993, 2, 4, None, -2],
+        )
+        for invalid in ["invalid", "9223372036854775808"]:
+            with self.assertRaises(pl.exceptions.InvalidOperationError):
+                pl.DataFrame({"n": [invalid]}).select(number("n", pl.Int64))
+
     def test_headers_empty_and_numeric_errors(self):
         self.assertEqual(
             promote_headers(
@@ -217,13 +234,14 @@ class IntegrationTests(unittest.TestCase):
             workbook(
                 current / "config.xlsx",
                 ["variable", "value"],
-                [["starting_date", "2025-01-01"], ["other", "keep"]],
+                [["starting_date", date(2025, 1, 1)], ["other", "keep"]],
                 table="config_table",
             )
             workbook(
                 current / "landing.xlsx",
                 ["Row Labels", "Unused", "Unused2", "DB Landing rate", "Unused3"],
                 [[1, None, None, 3.5, None], ["Grand Total", None, None, 3.5, None]],
+                table="landing_table",
             )
             hist_headers = [
                 "report_date",
@@ -260,6 +278,12 @@ class IntegrationTests(unittest.TestCase):
                 writer = csv.writer(handle)
                 writer.writerow(stock_headers)
                 writer.writerow([stock_values.get(name, "") for name in stock_headers])
+            workbook(current / "sec_without_target.xlsx", sales.columns, sales.rows())
+            extra = openpyxl.load_workbook(current / "sec_without_target.xlsx")
+            assert extra.active is not None
+            extra.active.title = "IgnoreMe"
+            extra.save(current / "sec_without_target.xlsx")
+            extra.close()
             relative = current.relative_to(ROOT)
             self.assertEqual(ph.build(relative).rows(), [(1, "Product", 2, 10)])
             self.assertEqual(db_landing.build(relative).rows(), [(1, 3.5)])
@@ -285,6 +309,7 @@ class IntegrationTests(unittest.TestCase):
                     str(output),
                 ],
                 cwd=Path(temporary).parent.parent,
+                check=False,
                 capture_output=True,
                 text=True,
             )

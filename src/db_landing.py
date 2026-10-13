@@ -5,7 +5,6 @@ from pathlib import Path
 import polars as pl
 
 from .cli import run
-
 from .io import matching_files, number, promote_headers, raw_workbooks
 
 
@@ -31,6 +30,7 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
                 ),
                 5,
                 include_tables=True,
+                numeric_header_column="Column4",
             ).filter(pl.col("Column4").is_not_null())
         )
     )

@@ -3,6 +3,7 @@
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+import fastexcel
 import openpyxl
 import polars as pl
 
@@ -46,6 +47,7 @@ def raw_workbooks(
     *,
     sheet: str | None = None,
     include_tables: bool = False,
+    numeric_header_column: str | None = None,
 ) -> pl.DataFrame:
     """Read unpromoted sheets, plus named tables where M does not filter Kind.
 
@@ -55,6 +57,8 @@ def raw_workbooks(
     frames = []
     columns = [f"Column{i}" for i in range(1, width + 1)]
     for path in paths:
+        if sheet is not None and sheet not in fastexcel.read_excel(path).sheet_names:
+            continue
         sheets = pl.read_excel(
             path,
             sheet_name=sheet,
@@ -66,26 +70,57 @@ def raw_workbooks(
             drop_empty_cols=False,
             raise_if_empty=False,
         )
-        for frame in sheets.values() if isinstance(sheets, dict) else [sheets]:
-            frames.append(_raw_columns(frame, columns))
+        for sheet_name, frame in (
+            sheets.items() if isinstance(sheets, dict) else [(sheet, sheets)]
+        ):
+            if frame.is_empty():
+                continue
+            raw = _raw_columns(frame, columns)
+            if numeric_header_column is not None:
+                header_rows = raw.with_row_index("_row").filter(
+                    pl.col(numeric_header_column).is_not_null()
+                )
+                if not header_rows.is_empty():
+                    header_row = header_rows.item(0, "_row")
+                    # Calamine's forced string conversion rounds Excel numbers.
+                    # Read below the header natively, then stringify with Polars.
+                    native = pl.read_excel(
+                        path,
+                        sheet_name=sheet_name,
+                        read_options={"header_row": header_row},
+                        infer_schema_length=None,
+                        drop_empty_rows=False,
+                        drop_empty_cols=False,
+                        raise_if_empty=False,
+                    )
+                    raw = pl.concat(
+                        [raw.head(header_row + 1), _raw_columns(native, columns)],
+                        how="vertical_relaxed",
+                    )
+            frames.append(raw)
         if include_tables and path.suffix.lower() in {".xlsx", ".xlsm"}:
             workbook = openpyxl.load_workbook(path, read_only=False, data_only=True)
             try:
                 for worksheet in workbook.worksheets:
                     for name in worksheet.tables:
+                        table = pl.read_excel(
+                            path,
+                            table_name=name,
+                            infer_schema_length=None,
+                            read_options={"dtypes": "string"},
+                            drop_empty_rows=False,
+                            drop_empty_cols=False,
+                        )
+                        # Named tables already have field names in Excel.Workbook.
+                        # M expands Column1..N by name, not by field position.
                         frames.append(
-                            _raw_columns(
-                                pl.read_excel(
-                                    path,
-                                    table_name=name,
-                                    has_header=False,
-                                    infer_schema_length=None,
-                                    read_options={"dtypes": "string"},
-                                    drop_empty_rows=False,
-                                    drop_empty_cols=False,
-                                ),
-                                columns,
+                            table.with_columns(
+                                pl.lit(None, dtype=pl.String).alias(column)
+                                for column in columns
+                                if column not in table.columns
                             )
+                            .select(columns)
+                            .cast(pl.String)
                         )
             finally:
                 workbook.close()
@@ -139,8 +174,24 @@ def promote_headers(frame: pl.DataFrame) -> pl.DataFrame:
 
 def number(name: str, dtype: pl.DataType | type[pl.DataType] = pl.Float64) -> pl.Expr:
     """Strict numeric conversion; M Int64 uses banker's rounding."""
-    value = pl.col(name).cast(pl.String).str.replace_all(",", "").cast(pl.Float64)
-    return value.round(0).cast(pl.Int64) if dtype == pl.Int64 else value.cast(dtype)
+    text = pl.col(name).cast(pl.String).str.replace_all(",", "").str.strip_chars()
+    if dtype == pl.Int64:
+        # Do not round integer identifiers through Float64 (loses bits above 2**53).
+        rounded = (
+            text.cast(pl.Float64, strict=False)
+            .round(0)
+            .cast(pl.Int64, strict=False)
+            .cast(pl.String)
+            .fill_null(text)
+        )
+        return (
+            pl.when(text.str.contains(r"^[+-]?\d+$"))
+            .then(text)
+            .otherwise(rounded)
+            .cast(pl.Int64)
+            .alias(name)
+        )
+    return text.cast(dtype).alias(name)
 
 
 def date(name: str) -> pl.Expr:
@@ -155,6 +206,7 @@ def date(name: str) -> pl.Expr:
         text.str.to_date("%m/%d/%y", strict=False),
         text.str.to_date("%d-%b-%Y", strict=False),
         text.str.to_date("%d-%b-%y", strict=False),
+        pl.concat_str(pl.lit("01-"), text).str.to_date("%d-%b-%Y", strict=False),
         (
             pl.date(1899, 12, 30)
             + pl.duration(
