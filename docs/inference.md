@@ -2,6 +2,8 @@
 
 ## Status and evidence
 
+**Current policy:** production run rates now use seasonality-aware upper-tail winsorization. The sample-equivalence evidence below describes the unadjusted baseline, not the adjusted report. See [run-rates.md](run-rates.md) for the policy, limitations, DOH column and current audit artifacts. Verify baseline parity with `uv run python -m src.compare_report --legacy --output-dir output/legacy-compare`.
+
 The user authorized inference because the final M/DAX/calculated-column formulas were not supplied. `src/report.py` generates the report solely from `sample_input/`; only `src/compare_report.py` reads the reference workbook afterwards.
 
 Full-sample verification checks every cell in `sample_output/sample_output.xlsx`: 27,891 rows × 30 columns = 836,730 cells. Strings, integer identifiers/date serials, column order, row order and null placement match. Floating-point comparisons use `abs(actual - expected) <= 1e-8 + 1e-12 * abs(expected)`; the observed largest absolute difference is below 1e-9. This is **sample equivalence under numerical tolerance, not bitwise equality or proof of the original business rules**.
@@ -93,7 +95,7 @@ Final rows sort by `batch_index`; final columns match the reference order.
 
 - There is only one reference dataset. Matching all its values does not uniquely identify the original formulas. These rules need business-owner review and another independent period's golden output.
 - The sample has one row per batch key. Combining duplicate distributor rows by batch identity and ordering equal-expiry ties by batch key are documented extrapolations, not established original rules.
-- Negative/zero stock, zero/negative or nonfinite rates, pre-expired stock, malformed source dates, unusual cultures and 1904-system serials are not established by this sample. The inferred report rejects nonpositive stock and nonpositive/nonfinite non-null sales rates rather than guessing their behavior.
+- Negative/zero stock, zero/negative or nonfinite rates, pre-expired stock, malformed source dates, unusual cultures and 1904-system serials are not established by this sample. The current report rejects nonpositive stock and negative/nonfinite non-null sales rates. By the approved DOH policy, a known zero rate consumes no stock and retains null batch `doh` for portable export; the UI renders ∞ from its retained zero rate.
 - The original eight query scripts remain distinct from the inferred final report. `history` can load historical outputs but no historical workbooks were supplied.
 - `measures.png` contains historical comparison aggregates, not formulas. Last-month exposure, new-inclusion/no-new-inclusion splits, down-transition, incumbent stock and month-to-month reductions **cannot be reconstructed from the single supplied period alone**.
 - Two visible current-period measures can be checked: closing stock ≈ 1,551.28 KL, exposure ≈ 41.46 KL / 37,880,532.37 BDT. The inferred report matches these; it does not manufacture missing historical measures.
@@ -103,7 +105,7 @@ Final rows sort by `batch_index`; final columns match the reference order.
 
 ```bash
 uv run python -m src report --data-dir sample_input --output output/inferred_report.xlsx
-uv run python -m src.compare_report
+uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
 uv run python -m unittest discover -s tests -v
 ```
 

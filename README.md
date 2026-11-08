@@ -18,11 +18,11 @@ Every query in `queries/` has a matching Python module in `src/`:
 ```bash
 uv sync
 uv run python -m src report --data-dir sample_input --output output/inferred_report.xlsx
-# Generate Excel + Parquet and verify against the untouched reference:
-uv run python -m src.compare_report
+# Verify original unadjusted formulas without overwriting adjusted outputs:
+uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
 ```
 
-`src/report.py` infers the missing final calculation layer from the supplied sample. It reproduces all 27,891 rows and 30 columns within documented floating-point tolerance, without reading reference data during generation. See [docs/inference.md](docs/inference.md) for formulas, evidence and unverified generalizations. Comparison artifacts are in `output/comparison.csv` and `output/comparison.json`.
+`src/report.py` infers the missing final calculation layer from the supplied sample, without reading reference data during generation. Its unadjusted baseline reproduces all 27,891 rows and 30 columns within documented floating-point tolerance. Production rates now apply seasonality-aware upper-tail winsorization, so rate-dependent outputs intentionally differ from the original reference. See [docs/inference.md](docs/inference.md) for original formulas and [docs/run-rates.md](docs/run-rates.md) for the adjustment policy, audits and DOH column.
 
 This is sample-matched inference, not a verified translation of the missing original formulas. Historical measures shown in `measures.png` require prior-period inputs that are not supplied.
 
@@ -72,7 +72,7 @@ Each query exposes `build(...)` for file loading and dependency resolution, and 
 ## Transformation behavior
 
 - Native, chained Polars lazy expressions perform filters, casts, text operations, aggregation, deduplication and joins. No pandas, Python row loops, `map_elements`, `map_rows`, or row-wise UDFs. Python iteration is confined to filesystem/workbook metadata, column expressions and the single header row.
-- Run rates clamp negative sales **before** monthly aggregation. The sum of monthly sales divided by the **global** distinct month count reproduces pivot → zero fill → unpivot → mean, without a wide pivot or a dense Cartesian grid.
+- Run rates clamp negative sales **before** monthly aggregation, then conservatively winsorize isolated positive spikes after a leave-one-town-out product/month seasonal adjustment. Sparse histories and ambiguous peaks are preserved. The adjusted sum is divided by the **global** distinct month count; missing pair-months count as zero. Raw `sec_history` is unchanged. See [the complete policy](docs/run-rates.md).
 - Headers are promoted once after source concatenation, matching the M scripts. Only `history` explicitly removes repeated header rows. Other sources containing repeated headers can therefore raise conversion errors, just as the original queries do; they are not silently cleaned.
 - `ph` fills missing parents with material codes and keeps the first duplicate material. Files use sorted recursive paths for deterministic selection; M's unspecified folder/deduplication ordering may choose a different duplicate.
 - `soh_db` uses left joins (including null-key matching). Its batch key lowercases town names without replacing spaces. `sec_history` additionally replaces spaces with underscores. These intentionally different source rules are preserved.
@@ -100,7 +100,8 @@ uvx pyright --project pyrightconfig.json
 
 ```bash
 uv run python -m src movement --data-dir sample_input --history-dir data/history --output output/movement.parquet
-python3 ui/build.py   # embeds output/movement.parquet in the UI
+uv run python -m src movement_series --history-dir history --output output/movement_series.parquet   # last 6 months, every brand
+uv run python ui/build.py   # embeds the series in ui/index.html (brand x month heatmap)
 ```
 
 `src/movement.py` is fully columnar Polars (joins, one `group_by` per side, no row loops; ~40 ms for 27,891 batches).
