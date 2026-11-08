@@ -13,6 +13,7 @@
   --ink:#14161b; --ink2:#4b5160; --ink3:#868c9b;
   --line:#e4e6ec; --line2:#d3d6df;
   --accent:#2243d8; --accent-ink:#fff; --accent-soft:#e9edfd;
+  --pri:#0a0a0a; --pri-h:#333; --pri-ink:#fff; --seg-on:#fff;
   --ok:#17803d; --warn:#b4690e; --bad:#c62d3a;
   --ok-bg:#e6f4ea; --bad-bg:#fbe9eb;
   --bar:#14161b; --shadow:0 1px 0 rgba(20,22,27,.04);
@@ -24,6 +25,7 @@
   --ink:#eceef2; --ink2:#a6acb9; --ink3:#6f7585;
   --line:#25282f; --line2:#33373f;
   --accent:#7d93ff; --accent-ink:#0e0f12; --accent-soft:#1d2342;
+  --pri:#eceef2; --pri-h:#fff; --pri-ink:#0e0f12; --seg-on:#2a2d34;
   --ok:#4cc27a; --warn:#e3a14a; --bad:#f0707a; --ok-bg:#15291d; --bad-bg:#2c1a1d; --bar:#eceef2; --shadow:none;
 }
 *{box-sizing:border-box;margin:0}
@@ -47,9 +49,12 @@ aside{background:var(--surface);border-right:1px solid var(--line);display:flex;
 .item{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:7px;border:0;background:none;width:100%;text-align:left;color:var(--ink2);white-space:nowrap;position:relative}
 .item:hover{background:var(--sunken);color:var(--ink)}
 .item[aria-current=page]{background:var(--sunken);color:var(--ink);font-weight:500}
-.item[aria-current=page]::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;background:var(--accent);border-radius:2px}
+.item[aria-current=page]::before{content:"";position:absolute;left:-8px;top:8px;bottom:8px;width:2px;background:var(--ink);border-radius:2px}
 .item .count{margin-left:auto;font:500 11px var(--mono);color:var(--ink3)}
 .item kbd{margin-left:auto;font:500 11px var(--mono);color:var(--ink3);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.item.subitem{height:28px;margin-left:18px;width:calc(100% - 18px);padding-left:14px;font-size:12.5px;border-left:1px solid var(--line);border-radius:0 7px 7px 0}
+.item.subitem[aria-current=page]::before{display:none}
+.rail .item.subitem{display:none}
 .rail .item span,.rail .group,.rail .brand b,.rail .brand span,.rail .item kbd,.rail .count,.rail .who{display:none}
 .rail .item{justify-content:center;padding:0}
 .rail .item[aria-current=page]::before{left:-8px}
@@ -66,14 +71,25 @@ main{overflow:auto;position:relative}
 h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .lede{color:var(--ink3);margin-top:6px}
 .lede .mono{color:var(--ink2)}
-.btn{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line2);background:var(--surface);display:inline-flex;align-items:center;gap:7px;font-weight:500;box-shadow:var(--shadow);white-space:nowrap}
-.btn:hover{background:var(--hover);border-color:var(--ink3)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover{filter:brightness(1.08)}
+.btn{height:32px;padding:0 12px;border-radius:6px;border:1px solid var(--line2);background:var(--surface);display:inline-flex;align-items:center;gap:7px;font-weight:500;box-shadow:none;white-space:nowrap;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--hover);border-color:var(--ink)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--pri);border-color:var(--pri);color:var(--pri-ink)}
+.btn.primary:hover{background:var(--pri-h);border-color:var(--pri-h)}
 .btn.ghost{border-color:transparent;background:none;box-shadow:none;color:var(--ink2)}
-.btn.ghost:hover{background:var(--sunken);color:var(--ink)}
+.btn.ghost:hover{background:var(--sunken);color:var(--ink);border-color:transparent}
 .btn.sm{height:26px;padding:0 9px;font-size:12.5px;border-radius:6px}
-.btn:disabled{opacity:.45;cursor:default}
+.btn:disabled{opacity:.45;cursor:default;pointer-events:none}
+.ms{position:relative}
+.ms>summary{list-style:none;cursor:pointer;user-select:none}
+.ms>summary::-webkit-details-marker{display:none}
+.ms>summary::after{content:"▾";color:var(--ink3);font-size:11px}
+.ms[open]>summary{border-color:var(--ink)}
+.ms-pop{position:absolute;z-index:30;top:36px;left:0;min-width:190px;padding:6px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.ms-pop label{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.ms-pop label:hover{background:var(--hover)}
+.ms-pop input{accent-color:var(--accent);margin:0}
+.ms-act{display:flex;gap:4px;padding:2px 2px 6px;margin-bottom:4px;border-bottom:1px solid var(--line)}
 
 .view{display:none}.view.on{display:block}
 .tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:20px}
@@ -112,7 +128,7 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .row input:focus,.row select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .sw{width:32px;height:18px;border-radius:9px;background:var(--line2);border:0;position:relative;flex:none;transition:.15s}
 .sw::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.15s}
-.sw[aria-checked=true]{background:var(--accent)}.sw[aria-checked=true]::after{left:16px}
+.sw[aria-checked=true]{background:var(--pri)}.sw[aria-checked=true]::after{left:16px;background:var(--pri-ink)}
 
 /* summary strip */
 .strip{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:20px;box-shadow:var(--shadow)}
@@ -129,18 +145,24 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .search{display:flex;align-items:center;gap:8px;height:32px;border:1px solid var(--line2);background:var(--surface);border-radius:8px;padding:0 10px;width:280px;color:var(--ink3)}
 .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .search input{border:0;outline:0;background:none;flex:1;min-width:0;color:var(--ink)}
-.seg{display:inline-flex;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--surface)}
-.seg button{border:0;background:none;height:30px;padding:0 11px;color:var(--ink2);font-weight:500;border-right:1px solid var(--line)}
-.seg button:last-child{border:0}
-.seg button:hover{background:var(--hover)}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--surface)}
+.status-search{position:relative}
+.status-search-pop{position:absolute;top:38px;left:0;width:360px;max-width:80vw;max-height:320px;overflow:auto;padding:6px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 24px #0002;z-index:40}
+.status-search-pop button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:8px;border-radius:5px}
+.status-search-pop button:hover,.status-search-pop button[aria-selected=true]{background:var(--accent-soft)}
+.status-search-pop small{display:block;color:var(--ink3)}
+.status-chips{display:flex;gap:4px;flex-wrap:wrap;max-width:440px}
+.status-chips button{font-size:11px;height:26px}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:8px;background:var(--sunken)}
+.seg button{border:0;background:none;height:26px;padding:0 12px;border-radius:6px;color:var(--ink2);font-weight:500;transition:background .12s,color .12s}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .meta{color:var(--ink3);font-size:12.5px;margin-left:auto}
 .sheet{border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--surface)}
 .fx{display:flex;height:28px;border-bottom:1px solid var(--line2);font-size:12.5px;background:var(--surface)}
 .fx .nb{width:64px;display:grid;place-items:center;border-right:1px solid var(--line2);font:500 12px var(--mono);color:var(--ink2);background:var(--sunken)}
 .fx .fi{width:34px;display:grid;place-items:center;border-right:1px solid var(--line2);font:italic 500 13px var(--serif);color:var(--ink3)}
 .fx .fv{padding:0 10px;display:flex;align-items:center;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tw{overflow:auto;max-height:calc(100vh - 380px);min-height:220px;outline:0}
+.tw{overflow:auto;max-height:calc(100vh - 340px);min-height:220px;outline:0}
 table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:13px}
 th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 8px;white-space:nowrap}
 th{position:sticky;z-index:3;background:var(--sunken);font-weight:500;color:var(--ink3);text-align:left;user-select:none}
@@ -189,6 +211,291 @@ tfoot td.rn{z-index:4}
 .note span+span::before{content:"·";margin-right:6px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);background:var(--ink);color:var(--surface);padding:9px 14px;border-radius:9px;opacity:0;transition:.2s;pointer-events:none;font-weight:500}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* movement heatmap */
+td.hmc{padding:0}
+.hm{display:flex;align-items:center;justify-content:center;height:25px;font:500 12px var(--mono);font-variant-numeric:tabular-nums}
+td.hmc.sp{width:92px}
+#mT{min-width:0}
+#mT th .ar{width:0;margin-left:2px;overflow:visible}
+#mT th,#mT td:not(.rn){padding-left:6px;padding-right:6px}
+#mT td.hmc{padding:0}
+#mT th.ctr{padding:0 5px}
+th.ctr{text-align:center}
+th.group-h{top:0;height:24px;text-align:center;color:var(--ink2);border-bottom:1px solid var(--line2);font-size:11px}
+.grouped th.col{top:24px}
+.grouped th.hd{top:46px}
+.tg{all:unset;cursor:pointer;display:inline-block;width:18px;margin-right:4px;text-align:center;color:var(--ink3);transition:transform .12s;font-size:11px}
+.tg:hover{color:var(--ink)}.tg:focus-visible{outline:2px solid var(--accent);border-radius:3px}
+.tg[aria-expanded=true]{transform:rotate(90deg);color:var(--accent)}.tg:disabled{opacity:.25;cursor:default}
+tr.par td{background:color-mix(in srgb,var(--accent-soft) 32%,var(--surface))}
+/* expanded block: same accent boundary as the latest-month breakdown */
+:is(#mT,#sT) tr.par td:not(.rn){border-bottom-color:var(--line)}
+:is(#mT,#sT) tr.par td.name{border-left:2px solid var(--accent)}
+:is(#mT,#sT) tr.par td:last-child{border-right:2px solid var(--accent)}
+:is(#mT,#sT) tr.par-first td:not(.rn){border-top:2px solid var(--accent)}
+:is(#mT,#sT) tr.par-last td:not(.rn){border-bottom:2px solid var(--accent)}
+/* super subtle row banding, layered over any cell background */
+:is(#mT,#sT) tbody tr.alt td:not(.rn){background-image:linear-gradient(rgba(127,127,127,.06),rgba(127,127,127,.06))}
+tr.par td.name{font-weight:400}
+.pn{display:inline-flex;align-items:baseline;gap:8px;padding-left:26px;max-width:380px;overflow:hidden;text-overflow:ellipsis}
+.pn small{color:var(--ink3);font:11px var(--mono)}
+#mT .bk{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
+#mT .bk.bk-l{border-left:2px solid var(--accent)}
+#mT .bk.bk-r{border-right:2px solid var(--accent)}
+#mT th.group-h.bk{background:var(--accent-soft);color:var(--accent);font-weight:600;border-top:2px solid var(--accent);border-bottom:1px solid var(--accent)}
+#mT tfoot .bk{border-bottom:2px solid var(--accent)}
+tbody td.hmc:hover .hm{filter:brightness(.95)}
+.mv-grid{display:grid;grid-template-columns:minmax(0,1fr) 264px;gap:16px;align-items:start}
+.detail{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px;position:sticky;top:12px}
+.detail h3{font:400 19px/1.1 var(--serif);letter-spacing:-.01em}
+.detail .sub{color:var(--ink3);font-size:12.5px;margin:2px 0 8px}
+.detail dl{display:grid;grid-template-columns:1fr auto;margin:0;border-top:1px solid var(--line)}
+.detail dt,.detail dd{margin:0;padding:3px 0;font-size:12.5px;border-bottom:1px solid var(--line)}
+.detail dt{color:var(--ink2)}
+.detail dd{text-align:right;font:500 12.5px var(--mono);font-variant-numeric:tabular-nums}
+.detail dt.tot,.detail dd.tot{font-weight:600;border-bottom:1px solid var(--line2)}
+.detail h4{font-size:12px;font-weight:500;color:var(--ink3);margin:10px 0 4px}
+.detail ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:2px}
+.detail li{padding-left:12px;position:relative;color:var(--ink2);font-size:12.5px}
+.detail li::before{content:"";position:absolute;left:0;top:.6em;width:5px;height:5px;border-radius:50%;background:var(--line2)}
+.scale{display:inline-flex;align-items:center;gap:6px;color:var(--ink3);font-size:12px}
+.scale i{display:block;width:90px;height:8px;border-radius:2px;border:1px solid var(--line2)}
+@media (max-width:1100px){.mv-grid{grid-template-columns:1fr}.detail{position:static}}
+
+/* table-first reports layout */
+.page:has(#v-reports.on){max-width:none;padding:12px 20px 16px}
+#v-reports>.head{align-items:center;margin-bottom:8px}
+#v-reports>.head>div{display:flex;align-items:baseline;gap:14px}
+#v-reports h1{font-size:23px}
+#v-reports>.head .lede{margin:0;font-size:12px}
+#repTabs{margin-bottom:8px}
+#mTools{margin:0 0 0 auto;gap:6px;flex-wrap:nowrap}#v-reports>.head>#mTools[hidden]{display:none}
+#v-reports>.head>div:first-child{flex:none}
+#mTools .search{width:180px}
+#mTools .scale{font-size:11px}
+#mTools .scale span{display:none}
+.movement-notes{font-size:11.5px;color:var(--ink3);margin-bottom:6px}
+.movement-notes summary{cursor:pointer;width:max-content}
+.movement-notes .note{margin:6px 0}
+#r-move .tw{max-height:none;height:calc(100dvh - 190px);min-height:220px}
+#r-move:has(.movement-notes[open]) .tw{height:calc(100dvh - 250px)}
+#v-reports>.head:has(#mTools:not([hidden])){flex-wrap:wrap}#mTools{flex-wrap:wrap;flex:1 0 100%;order:3;justify-content:flex-start;margin:6px 0 0}#v-reports>.head:has(#mTools:not([hidden])) #exportBtn{margin-left:auto}
+@media(max-width:700px){#v-reports>.head>div{display:block}#v-reports>.head .lede{font-size:11px}#r-move .tw{height:calc(100dvh - 250px)}}
+
+#unitTools{flex:1 0 100%;order:2;margin:6px 0 0}
+.expand-tools{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.expand-tools>#unitTools{flex:0 0 auto;order:0;margin:0;flex-wrap:nowrap}
+/* Shared report switches: square, inset segments matching the reference. */
+:is(#reportUnit,#overviewMode){gap:0;padding:2px;border:1px solid #aeb4bf;border-radius:0;background:#d3d6dc}
+:is(#reportUnit,#overviewMode) button{min-width:60px;height:30px;padding:0 14px;border-radius:0;color:#303744;font-weight:500;box-shadow:none}
+:is(#reportUnit,#overviewMode) button:hover{color:#14161b;background:#c3c8d1}
+:is(#reportUnit,#overviewMode) button[aria-pressed=true]{background:#4b5362;color:#fff;box-shadow:none}
+:is(#reportUnit,#overviewMode) button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#r-move .tw,#r-status .tw{height:calc(100dvh - 230px)}
+#r-move:has(.movement-notes[open]) .tw,#r-status:has(.movement-notes[open]) .tw{height:calc(100dvh - 290px)}
+@media(max-width:700px){#r-move .tw,#r-status .tw{height:calc(100dvh - 290px)}}
+#v-reports>.head{flex-wrap:wrap}
+
+/* brand-status uses the movement sheet's existing tokens and expansion treatment */
+#sTools{flex:1 0 100%;order:3;gap:6px;margin:6px 0 0;justify-content:flex-start}
+#v-reports>.head>#sTools[hidden]{display:none}#sOrder[hidden]{display:none}#sTools .search{width:220px}
+#v-reports>.head:has(#sTools:not([hidden])){flex-wrap:wrap}
+#v-reports>.head:has(#sTools:not([hidden])) #exportBtn{margin-left:auto}
+#r-status .tw{max-height:none;height:calc(100dvh - 190px);min-height:220px}
+#r-status:has(.movement-notes[open]) .tw{height:calc(100dvh - 250px)}
+#sT{min-width:100%}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+#sT th .ar{width:0;margin-left:2px;overflow:visible}
+#sT td.rsl-cell{padding:0}
+#sT .status-value{min-width:104px;display:flex;align-items:center;justify-content:flex-end;height:25px;padding:0 8px}
+#sT .long-value{min-width:140px;height:25px;display:flex;align-items:center;gap:6px;padding:0 8px 0 0}
+#sT .status-value,#sT .long-value{position:relative;isolation:isolate}
+#sT .rsl-red{--fill-light:#fce1e4;--fill-deep:#c62d3a}
+#sT .rsl-amber{--fill-light:#fff0cf;--fill-deep:#d99519}
+#sT .rsl-green{--fill-light:#dcf3e4;--fill-deep:#17803d}
+[data-theme=dark] #sT .rsl-red{--fill-light:#382027;--fill-deep:#a74350}
+[data-theme=dark] #sT .rsl-amber{--fill-light:#34291a;--fill-deep:#986a21}
+[data-theme=dark] #sT .rsl-green{--fill-light:#1a3024;--fill-deep:#296f45}
+#sT :is(.rsl-red,.rsl-amber,.rsl-green)::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));z-index:-1;pointer-events:none}
+#sT .status-main{position:relative;text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}
+/* >10M: the bar lives in its own track so the number never sits on it; the tail is Exposure, its tip LND, both as a share of the bar. */
+#sT .long-value::before{content:none}
+#sT .long-track{position:relative;align-self:stretch;flex:1;min-width:48px}
+#sT .long-track::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));pointer-events:none}
+#sT .risk{position:absolute;top:0;bottom:0;right:calc(100% - var(--fill,0%));width:min(var(--fill,0%),var(--w));pointer-events:none}
+#sT .risk.exp{--w:max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px));background:#ee8b96}
+#sT .risk.lnd{--w:max(2px,calc(var(--fill,0%) * var(--lnd,0)));background:#b01f2c}
+[data-theme=dark] #sT .risk.exp{background:#8a3a46}
+[data-theme=dark] #sT .risk.lnd{background:#e2505e}
+#sT td.bk,#sT th.bk{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
+#sT .bk-l{border-left:2px solid var(--accent)}#sT .bk-r{border-right:2px solid var(--accent)}
+#sT th.group-h.bk{background:var(--accent-soft);color:var(--accent);font-weight:600;border-top:2px solid var(--accent);border-bottom:1px solid var(--accent)}
+#sT tfoot .bk{border-bottom:2px solid var(--accent)}
+#sT td.hmc.sp{width:92px}#sT tbody td:not(.name):not(.rn){cursor:pointer}
+@media(max-width:700px){#r-status .tw{height:calc(100dvh - 250px)}#sT td.name{min-width:190px}}
+
+/* overview: one viewport, two equally sized charts, one shared month axis. */
+main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
+.page:has(#v-reports.on #r-overview:not([hidden])){height:100%;padding:12px 20px}
+#v-reports.on:has(#r-overview:not([hidden])){height:100%;display:flex;flex-direction:column;min-height:0}
+#v-reports:has(#r-overview:not([hidden]))>.head{flex:none;gap:10px;margin-bottom:8px}
+#v-reports:has(#r-overview:not([hidden])) #unitTools{flex:0 0 auto;order:0;margin:0 0 0 auto}
+#v-reports:has(#r-overview:not([hidden])) #exportBtn{display:none}
+#overviewMode{display:none}
+#v-reports:has(#r-overview:not([hidden])) #overviewMode{display:inline-flex}
+#r-overview:not([hidden]){flex:1;min-height:0;display:flex}
+.overview-panel{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.overview-panel .panel-h{position:relative;flex:none;align-items:center;padding:10px 16px;gap:12px}
+.overview-panel .panel-h h2{font:400 20px var(--serif)}
+.overview-total{font:500 18px var(--mono);text-align:right;white-space:nowrap}
+.overview-total small{display:block;color:var(--ink3);font:450 11px var(--font);margin-top:2px}
+.overview-heading{display:flex;align-items:center;gap:8px}
+.overview-info{position:static}
+.overview-info>summary{list-style:none;display:grid;place-items:center;width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;color:var(--ink2);cursor:pointer;font:500 12px var(--mono)}
+.overview-info>summary::-webkit-details-marker{display:none}
+.overview-panel .panel-h .overview-info p{position:absolute;z-index:12;top:calc(100% - 2px);left:10px;width:min(440px,calc(100% - 20px));padding:12px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:0 4px 20px #0002;font:450 12px/1.5 var(--font);color:var(--ink2)}
+.overview-plots{flex:1;min-height:0;display:grid;grid-template-rows:1fr 1fr;padding:6px 16px 0;gap:8px}
+.overview-plot{min-height:0;display:flex;flex-direction:column}
+.overview-plot h3{flex:none;font:500 12px/18px var(--font);display:flex;justify-content:space-between;gap:8px;color:var(--ink2)}
+.overview-plot h3 small{font:450 11px/18px var(--font);color:var(--ink3)}
+.overview-plot svg{display:block;flex:1;width:100%;height:0;min-height:0;stroke:none;overflow:visible}
+.overview-plot svg text{fill:var(--ink3);font:10px var(--mono)}
+.overview-labels{pointer-events:none}
+.overview-plot svg text.overview-label{font:600 10.5px var(--mono);fill:#fff}
+.overview-readout [data-overview-value=total] dt{font-weight:600}
+.overview-readout [data-overview-value=total] dd{font-weight:600}
+.overview-months{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;height:30px;margin:0 16px;position:relative}
+.overview-months button{position:absolute;top:2px;transform:translateX(-50%);border:0;border-radius:4px;background:transparent;color:var(--ink2);font:500 11px var(--font);padding:3px 5px;white-space:nowrap}
+.overview-months button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
+.overview-readout{flex:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:10px 16px;border-top:1px solid var(--line);background:var(--hover)}
+.overview-readout dt{display:flex;align-items:center;gap:5px;color:var(--ink2);font-size:11px;white-space:nowrap}
+.overview-readout i{width:8px;height:8px;display:inline-block;flex:none;border-radius:1px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.45)}
+.overview-readout dd{font:500 14px var(--mono);margin:4px 0 0}
+.overview-readout .overview-share{display:block;margin-top:3px;color:var(--ink2);font:450 11px var(--font);white-space:nowrap}
+.overview-readout .overview-share.secondary{color:var(--ink3)}
+.overview-nav{display:none}
+@media(max-width:1100px){.overview-readout{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px 12px}.overview-readout dd{font-size:12px}.overview-readout [data-overview-value=total]{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;padding-bottom:5px;border-bottom:1px solid var(--line)}.overview-readout [data-overview-value=total] dd{margin:0}}
+@media(max-width:700px){
+  .app:has(#v-reports.on #r-overview:not([hidden])){height:100dvh;display:flex;flex-direction:column}
+  .app:has(#v-reports.on #r-overview:not([hidden])) aside{flex:none;flex-direction:row;align-items:center;gap:8px;overflow:hidden;border-right:0;border-bottom:1px solid var(--line);padding:5px 10px}
+  .app:has(#v-reports.on #r-overview:not([hidden])) aside :is(.brand,.group,.grow,.who,.item){display:none}
+  .app:has(#v-reports.on #r-overview:not([hidden])) aside .foot{display:contents}
+  .app:has(#v-reports.on #r-overview:not([hidden])) #theme{display:flex;width:32px;flex:none;padding:0;justify-content:center}
+  .app:has(#v-reports.on #r-overview:not([hidden])) #theme span{display:none}
+  .app:has(#v-reports.on #r-overview:not([hidden])) .overview-nav{display:block;flex:1;min-width:0;height:28px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);font-size:12px}
+  .app:has(#v-reports.on #r-overview:not([hidden])) main{flex:1;min-height:0}
+  .page:has(#v-reports.on #r-overview:not([hidden])){padding:6px 8px}
+  #v-reports:has(#r-overview:not([hidden]))>.head{gap:4px;margin-bottom:5px}
+  #v-reports:has(#r-overview:not([hidden]))>.head .lede,#v-reports:has(#r-overview:not([hidden])) #unitTools>.l{display:none}
+  #v-reports:has(#r-overview:not([hidden])) h1{font-size:20px}
+  #v-reports:has(#r-overview:not([hidden])) :is(#reportUnit,#overviewMode) button{padding:0 7px;font-size:11px;height:24px}
+  .overview-panel .panel-h{padding:7px 10px;gap:6px;flex-wrap:wrap}
+  .overview-panel .panel-h h2{font-size:17px}.overview-panel .panel-h p{font-size:10px}
+  .overview-total{font-size:14px;margin-left:auto}.overview-total small{font-size:10px}
+  .overview-heading{gap:5px}
+  .overview-plots{padding:5px 10px 0;gap:5px}.overview-plot h3{font-size:11px}.overview-plot h3 small{font-size:10px}
+  .overview-months{margin:0 10px;height:27px}.overview-months button{font-size:10px;padding:3px}
+  .overview-readout{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;padding:7px 10px}
+  .overview-readout dt{font-size:10px}.overview-readout dd{font-size:12px;margin-top:2px}
+  .overview-readout .overview-share{font-size:10px;margin-top:2px}
+}
+
+/* metric help */
+#r-transfer .tools>.help{display:grid;place-items:center;width:22px;height:22px;padding:0;border:1px solid var(--line2);border-radius:50%;background:var(--surface);color:var(--ink2);font:600 12px var(--font);cursor:pointer}
+#r-transfer .tools>.help:hover{color:var(--accent);border-color:var(--accent)}
+#r-transfer .tools>.help:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#helpTabs[hidden]{display:none}
+.transfer-comparison{margin:8px 0 12px;font-size:12px;color:var(--ink2)}
+.transfer-comparison:empty{display:none}
+.transfer-comparison .compare-values{display:flex;align-items:center;gap:24px;padding:12px 16px;border:1px solid var(--line);background:var(--surface);border-radius:8px;margin:6px 0}
+.compare-values strong{display:block;font:600 22px var(--mono);color:var(--ink)}
+.compare-values .compare-after strong{color:var(--accent)}
+.compare-values .compare-result{margin-left:auto;max-width:36ch}
+@media(max-width:600px){.transfer-comparison .compare-values{flex-wrap:wrap;gap:12px}.compare-values .compare-result{margin-left:0;flex-basis:100%}}
+#help[data-topic=transfer] .sheetm{width:min(880px,100%)}
+#help[data-topic=transfer] .lead{max-width:68ch}
+.transfer-story{font-size:14px;line-height:1.55}
+.transfer-example{color:var(--ink3);font-size:12px;margin:0 0 18px}
+.transfer-step{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;padding:18px 0;border-top:1px solid var(--line)}
+.transfer-step-no{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--sunken);color:var(--ink2);font:500 12px var(--mono)}
+#help .transfer-story h3{font:600 15px/1.4 var(--font);color:var(--ink);margin:0 0 7px}
+.transfer-story p{color:var(--ink2);margin:0 0 10px}
+.transfer-timeline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:var(--sunken);border-radius:6px;font-size:12px}
+.transfer-timeline b{display:block;color:var(--ink);font-size:14px}
+.transfer-time-arrow{flex:1;text-align:center;color:var(--accent)}
+.transfer-capacity{display:flex;min-height:70px;border-radius:6px;overflow:hidden;margin-top:14px}
+.transfer-capacity>div{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:10px;text-align:center}
+.transfer-capacity b{font:600 22px var(--mono)}
+.transfer-capacity span{font-size:12px}
+.transfer-existing{flex:1;background:var(--sunken);color:var(--ink2);border:1px solid var(--line)}
+.transfer-extra{flex:2;background:var(--accent);color:#fff}
+.transfer-story .transfer-caption{font-size:12px;margin:7px 0 0}
+.transfer-decision{border-bottom:1px solid var(--line)}
+.transfer-route{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:14px 0;padding:16px;background:var(--accent-soft);border-radius:6px}
+.transfer-route>div{display:flex;flex-direction:column;gap:3px}
+.transfer-route b{font-size:15px}.transfer-route span,.transfer-route small{font-size:12px}
+.transfer-route-arrow{color:var(--accent);text-align:center}
+.transfer-followup{padding:18px 0 8px}
+.transfer-reference{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:12px 0}
+.transfer-reference summary{cursor:pointer;color:var(--ink);font-weight:500}
+.transfer-reference dl{display:grid;grid-template-columns:160px minmax(0,1fr);gap:12px 16px;margin:16px 0 4px;font-size:13px}
+.transfer-reference dt{font-weight:600}.transfer-reference dd{margin:0;color:var(--ink2)}
+.transfer-story .transfer-caution{font-size:12px;margin:16px 0 0}
+@media(max-width:600px){#help[data-topic=transfer]{padding:10px}#help[data-topic=transfer] .sheetm{padding:18px;max-height:calc(100dvh - 20px)}.transfer-step{gap:8px;grid-template-columns:22px minmax(0,1fr)}.transfer-step-no{width:22px;height:22px}.transfer-timeline{padding:10px;gap:6px}.transfer-route{padding:10px;gap:6px}.transfer-route b{font-size:13px}.transfer-reference dl{grid-template-columns:1fr;gap:4px}.transfer-reference dd{margin-bottom:10px}}
+.seg .mb{position:relative;display:flex}
+.seg .mb>button[data-m]{border:0;padding:0 24px 0 12px}
+th.hd .help{position:absolute;top:2px;right:3px;width:15px;height:15px;min-width:0;padding:0;border:1px solid currentColor;border-radius:50%;background:none;color:var(--ink3);font:600 9.5px/1 var(--font);display:grid;place-items:center;cursor:pointer}
+ th.hd:has(.help){padding-right:22px}
+ th.hd .help:hover{background:rgba(128,128,128,.25);color:var(--ink)}
+ .seg button.help{position:absolute;top:5px;right:5px;width:15px;height:15px;min-width:0;padding:0;border:1px solid currentColor;border-radius:50%;background:none;color:var(--ink3);font:600 9.5px/1 var(--font);display:grid;place-items:center}
+.seg button.help:hover{background:rgba(128,128,128,.25);color:var(--ink)}
+.seg .mb:has(button[aria-pressed=true]) .help{color:var(--ink2)}
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px}
+.modal[hidden]{display:none}
+.sheetm.mvsheet{width:85vw;height:85vh;max-height:none;display:flex;flex-direction:column}.sheetm.mvsheet .lead{max-width:none}#mvBody{flex:1;min-height:0}#mvFoot{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:10px}
+.scrim{position:absolute;inset:0;background:rgba(15,17,22,.5);animation:fade .15s ease}
+.sheetm{position:relative;width:min(760px,100%);max-height:calc(100vh - 48px);overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.28);padding:22px 26px 24px;animation:rise .18s ease}
+@keyframes fade{from{opacity:0}}@keyframes rise{from{opacity:0;transform:translateY(8px)}}
+.sheetm header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
+.sheetm h2{font:400 26px/1.1 var(--serif);letter-spacing:-.01em}
+.sheetm .lead{color:var(--ink2);margin-top:6px;max-width:56ch}
+.sheetm .tabs.sub{margin-bottom:14px}
+.formula{font:500 13px/1.5 var(--mono);background:var(--sunken);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 10px}
+.formula b{font-weight:600}
+.terms{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:4px;color:var(--ink2);font-size:13px}
+.terms li{padding-left:14px;position:relative}
+.terms li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--line2)}
+.terms b{color:var(--ink);font-weight:500}
+.wf{border:1px solid var(--line);border-radius:10px;padding:10px 6px 4px;margin:0 0 4px;background:var(--surface)}
+.wf svg{width:100%;height:auto;stroke:none;display:block}
+.cap{color:var(--ink3);font-size:12px;margin:0 0 14px}
+/* DOH audit: one trace, its decisions, then the arithmetic they produce. */
+button.doh-value{border:0;background:none;color:inherit;font:inherit;padding:0;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:4px}
+button.doh-value:hover{color:var(--accent)}
+button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.sheetm.doh-sheet{width:min(1140px,96vw);height:min(90vh,980px);display:flex;flex-direction:column;overflow:hidden;padding:22px 26px}
+.doh-sheet header{flex:none;margin-bottom:12px}.doh-sheet .lead{max-width:none}
+.doh-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:0 0 12px}
+.doh-toolbar select{max-width:100%;min-width:260px}.doh-toolbar span{color:var(--ink3);font-size:12px}
+#dohBody{overflow:auto;min-height:0;padding-top:12px}
+.doh-equation{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:0;background:var(--sunken);border:1px solid var(--line);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.doh-equation>div{padding:14px 16px;border-right:1px solid var(--line)}.doh-equation>div:last-child{border-right:0}.doh-equation>.result{background:var(--surface);box-shadow:inset 3px 0 0 var(--accent)}
+.doh-equation small{display:block;color:var(--ink2)}.doh-equation strong{display:block;font:500 22px/1.4 var(--mono);margin:3px 0}.doh-equation .result strong{font-size:28px;color:var(--accent)}.doh-equation p{font-size:12px;color:var(--ink3)}
+.doh-callout{border:1px solid var(--line);border-left:3px solid var(--warn);background:var(--sunken);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--ink2);margin:0 0 12px}.doh-callout details{margin-top:4px}.doh-callout summary{cursor:pointer;color:var(--ink)}
+#dohBody h3{font-size:13px;font-weight:600;margin:16px 0 8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}#dohBody h3 small{font-weight:400;color:var(--ink3)}
+.doh-chart{border:1px solid var(--line);border-radius:10px;padding:10px 12px}.doh-chart-scroll{position:relative;overflow-x:auto}.doh-chart svg{width:100%;min-width:680px;height:auto;display:block;stroke:none;touch-action:pan-x pan-y}
+.doh-legend{display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink2);margin:0 0 6px}.doh-legend i{display:inline-block;width:18px;border-top:2px solid var(--ink3);margin:0 5px 3px 0}.doh-legend .adjusted{border-color:var(--accent);border-top-width:3px}.doh-legend .expected{border-color:var(--ok);border-top-style:dashed}.doh-legend .cap{border-color:var(--warn);border-top-style:dotted}
+.doh-tip{position:absolute;top:6px;z-index:2;pointer-events:none;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);padding:8px 10px;font-size:12px;min-width:170px;max-width:260px}.doh-tip[hidden]{display:none}.doh-tip div{display:flex;justify-content:space-between;gap:14px}.doh-tip span{font-family:var(--mono)}.doh-tip .cut{color:var(--bad)}.doh-tip .tags{display:block;margin-top:5px}.doh-tip .tags .doh-tag{margin:0 4px 3px 0}
+.doh-chart-note{margin:8px 0;color:var(--ink2);font-size:12px}.doh-chart-note .doh-tag{margin-right:8px}
+.doh-months-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.doh-switch{font-size:12px;color:var(--ink2);display:flex;gap:6px;align-items:center;cursor:pointer}
+.doh-months,.doh-drivers .doh-months{overflow:auto;border:1px solid var(--line);border-radius:10px;margin:8px 0 12px}.doh-months table{width:100%;font-size:12px}.doh-months th,.doh-months td{position:static!important;padding:7px 10px!important;white-space:normal;border-bottom:1px solid var(--line)}.doh-months td.num{font-family:var(--mono);white-space:nowrap;text-align:right}.doh-months th{background:var(--sunken);text-align:left}.doh-months td:last-child{min-width:200px}
+.doh-months.events-only tr[data-doh-month]:not([data-doh-event]){display:none}.doh-months tr.hl td{background:var(--sunken)}
+.doh-drivers{margin:0 0 4px}.doh-drivers>summary{cursor:pointer;font-size:13px;font-weight:600;margin:4px 0}.doh-drivers .muted{color:var(--ink3);font-weight:400}.doh-drivers .doh-months{max-height:300px}.doh-drivers th{position:sticky!important;top:0}.doh-drivers tr[data-doh-pick]{cursor:pointer}.doh-drivers tr[data-doh-pick]:hover td,.doh-drivers tr[data-doh-pick]:focus-visible td{background:var(--sunken)}.doh-drivers tr.on td{background:var(--sunken);box-shadow:inset 3px 0 0 var(--accent)}
+.doh-tag{display:inline-block;font-size:11px;border-radius:4px;padding:2px 6px;background:var(--sunken);color:var(--ink2);margin-right:5px}.doh-tag.season{background:var(--ok-bg);color:var(--ok)}.doh-tag.clipped{background:var(--bad-bg);color:var(--bad)}.doh-tag.review{background:var(--sunken);color:var(--warn)}
+.doh-policy{font-size:12px;color:var(--ink2);line-height:1.6}.doh-policy summary{cursor:pointer;color:var(--ink)}
+@media(max-width:700px){#doh.modal{padding:8px}.sheetm.doh-sheet{width:100%;height:96vh;padding:16px}.doh-equation{grid-template-columns:1fr}.doh-equation>div{border-right:0;border-bottom:1px solid var(--line)}.doh-equation strong{font-size:20px}.doh-toolbar select{width:100%;min-width:0}}
+.sheetm h3{font-size:12px;font-weight:500;color:var(--ink3);margin:16px 0 6px}
+.worked{font:500 13px var(--mono);margin:0 0 4px}
 @media (max-width:1000px){.cols{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}.page{padding:20px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -196,12 +503,20 @@ tfoot td.rn{z-index:4}
 <body>
 <div class="app" id="app">
 <aside>
+  <select class="overview-nav" aria-label="Navigate reports"><option value="overview">Overview</option><option value="batch">total-batch-wise</option><option value="move">total-stock-movement</option><option value="town">town-status</option><option value="status">brand-status</option><option value="transfer">transfer-candidates</option><option value="salespush">sales-push</option><option value="onboarding">Onboarding</option></select>
   <div class="brand"><div class="glyph">F</div><b>FSNE</b><span>Marico BD</span></div>
   <div class="group">Workspace</div>
   <button class="item" data-view="onboarding" aria-current="page" title="Onboarding">
     <svg viewBox="0 0 24 24"><path d="M12 15V4m0 0L8 8m4-4l4 4M5 15v4h14v-4"/></svg><span>Onboarding</span><b class="count" id="runCount"></b></button>
   <button class="item" data-view="reports" title="Reports">
     <svg viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4m4 4V8m4 8v-6"/></svg><span>Reports</span></button>
+  <button class="item subitem" data-view="reports" data-r="overview">Overview</button>
+  <button class="item subitem" data-view="reports" data-r="batch">total-batch-wise</button>
+  <button class="item subitem" data-view="reports" data-r="move">total-stock-movement</button>
+  <button class="item subitem" data-view="reports" data-r="town">town-status</button>
+  <button class="item subitem" data-view="reports" data-r="status">brand-status</button>
+  <button class="item subitem" data-view="reports" data-r="transfer">transfer-candidates</button>
+  <button class="item subitem" data-view="reports" data-r="salespush">sales-push</button>
   <div class="grow"></div>
   <div class="foot">
     <button class="item" id="theme" title="Toggle theme"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6L7 7m10 10l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg><span>Theme</span></button>
@@ -235,7 +550,7 @@ tfoot td.rn{z-index:4}
       <div class="form">
         <div class="row"><label for="sDate">Report date</label><input type="date" id="sDate"></div>
         <div class="row"><label for="sLabel">Label</label><input id="sLabel" placeholder="Oct-2026 close"></div>
-        <div class="row"><label>Run-rate window<small>Months of sales history</small></label><input type="number" value="6" min="1"></div>
+        <div class="row"><label for="rateWindow">Run-rate window<small>All supplied sales months · read only</small></label><input id="rateWindow" type="number" value="12" readonly></div>
         <div class="row"><label>Rotation multiplier<small>Applied to average run rate</small></label><input type="number" value="2" step=".5"></div>
         <div class="row"><div class="l">Keep batch-key whitespace<small>Matches legacy soh_db and sec_history</small></div><button class="sw" role="switch" aria-checked="true" aria-label="Keep batch-key whitespace"></button></div>
         <div class="row"><div class="l">Archive previous run<small>When this run completes</small></div><button class="sw" role="switch" aria-checked="false" aria-label="Archive previous run"></button></div>
@@ -250,14 +565,45 @@ tfoot td.rn{z-index:4}
 <!-- REPORTS -->
 <section class="view" id="v-reports">
   <div class="head">
-    <div><h1>Reports</h1><p class="lede">Lenses on <span class="mono" id="repRun">RUN-0042</span> · report date 30 Sep 2026</p></div>
+    <div><h1 id="repName">total-batch-wise</h1><p class="lede"><span id="repRun">Sep-2026 close</span><span id="repSep"> · </span><span id="repDate">30 Sep 2026</span></p></div>
+    <div class="tools" id="mTools" hidden>
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand" aria-label="Search brands"></label>
+      <div class="seg" id="mMetric" aria-label="Metric">
+        <div class="mb"><button aria-pressed="true" data-m="red">Reduction %</button><button class="help" data-help="red" aria-label="How Reduction % is calculated" title="How Reduction % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
+      </div>
+      <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
+      <details class="ms" id="mRsl"><summary class="btn" id="mRslLbl" aria-label="Filter by remaining shelf life">RSL: All</summary><div class="ms-pop" id="mRslPop"></div></details>
+      <select id="mSort" aria-label="Sort brands" class="btn" style="padding:0 8px">
+        <option value="now:-1">Stock now · high to low</option><option value="avg:1">Avg reduction · low to high</option><option value="avg:-1">Avg reduction · high to low</option>
+        <option value="grow:-1">Stock growth · most first</option><option value="brand:1">Brand A–Z</option></select>
+      <div class="expand-tools"><button class="btn" id="mExp" type="button">Expand all</button></div>
+      <span class="meta scale" id="mScale"></span>
+    </div>
+    <div class="tools" id="sTools" hidden>
+      <div class="status-search" id="sSearchBox"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="sSearch" placeholder="Town, brand or parent" aria-label="Search towns, brands and parents" role="combobox" aria-autocomplete="list" aria-controls="sSearchPop" aria-expanded="false" autocomplete="off"></label><div class="status-search-pop" id="sSearchPop" role="listbox" aria-label="Search results" aria-multiselectable="true" hidden></div></div>
+      <div class="status-chips" id="sSearchChips" aria-label="Selected search filters"></div>
+      <select id="sOrder" class="btn" aria-label="Brand drill-down order" hidden><option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option></select>
+      <select id="sMetric" class="btn" aria-label="Status metric"><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option><option value="0">stock-bdt</option></select>
+      <select id="sSort" class="btn" aria-label="Sort towns"><option value="total:-1">Selected metric · high to low</option><option value="total:1">Selected metric · low to high</option><option value="name:1">Town A–Z</option></select>
+      <div class="expand-tools"><button class="btn" id="sExp" type="button">Expand all</button></div>
+      <span class="meta" id="sCount"></span>
+    </div>
+    <div class="tools" id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div><div class="seg" id="overviewMode" role="group" aria-label="Overview chart display"><button type="button" data-overview-mode="qty" aria-pressed="true">Qty</button><button type="button" data-overview-mode="percent" aria-pressed="false">%</button></div></div>
     <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
   </div>
-  <div class="tabs sub" role="tablist" id="repTabs">
-    <button class="tab" role="tab" aria-selected="true" data-r="batch">total-batch-wise</button>
-    <button class="tab" role="tab" aria-selected="false" data-r="move">total-stock-movement</button>
-  </div>
 
+  <div id="r-overview" hidden>
+    <div class="panel overview-panel">
+      <div class="panel-h"><div><div class="overview-heading"><h2>Stock by remaining shelf life</h2><details class="overview-info"><summary aria-label="About the overview charts">i</summary><p>Latest saved snapshot each month; gaps mean missing snapshots. The two charts share the available height equally and use separate, fixed scales: shorter RSL is stacked; risk overlaps from zero, never stacks. Qty shows amounts in the selected unit. % shows shorter-RSL stock divided by total stock and Exposure/LND divided by &gt;10M stock, using that month's selected-unit values. A zero or missing denominator leaves a gap. All four RSL percentages in the summary sum to 100% of total stock. Exposure/LND belong to &gt;10M and show both % of total and % of &gt;10M; do not add them to the RSL shares. Value tags inside each chart follow the inspected month; full category names and total stock are in the summary below. Hover or select a month to inspect it.</p></details></div><p id="overviewRange"></p></div><div class="overview-total" id="overviewTotal" aria-live="polite"></div></div>
+      <div class="overview-plots">
+        <section class="overview-plot"><h3>Shorter-RSL stock <small id="overviewShortBasis">Magnified · separate scale</small></h3><svg id="overviewShortChart" role="img" aria-label="Magnified stacked stock for less than 3 months, 3 to 6 months and 6 to 10 months"></svg></section>
+        <section class="overview-plot"><h3>Risk within &gt;10M <small id="overviewRiskBasis">Separate scale · not stacked</small></h3><svg id="overviewRiskChart" role="img" aria-label="Greater than 10 month Exposure and LND overlapping from a common zero baseline"></svg></section>
+      </div>
+      <div class="overview-months" id="overviewMonths" role="group" aria-label="Inspect a month"></div>
+      <dl class="overview-readout" id="overviewReadout" aria-live="polite"></dl>
+    </div>
+  </div>
   <div id="r-batch">
     <div class="strip">
       <div class="stat"><small>Closing stock</small><div class="v">1,551.3<i>KL</i></div><div class="d">৳123.46 cr</div></div>
@@ -275,31 +621,88 @@ tfoot td.rn{z-index:4}
     <p class="lede" style="margin-top:10px;font-size:12.5px">Preview shows the 400 batches with the highest closing stock value out of 27,891.</p>
   </div>
 
-  <div id="r-move" hidden>
-    <div class="strip">
-      <div class="stat"><small>LM stock</small><div class="v">43.22<i>M BDT</i></div><div class="d">Last month</div></div>
-      <div class="stat"><small>CM closing, no new inclusions</small><div class="v">33.68<i>M BDT</i></div><div class="d">Current month</div></div>
-      <div class="stat"><small>Reduced from LM</small><div class="v good">9.54<i>M BDT</i></div><div class="d">22% of LM stock</div></div>
-      <div class="stat"><small>CM new inclusions</small><div class="v">12.59<i>M BDT</i></div><div class="d">Added this month</div></div>
-    </div>
-    <div class="note"><span>rsl_group <b>All</b></span><span>mitigation_status_category <b>Multiple items</b></span><span>LM = last month, CM = current month</span></div>
+
+
+  <div id="r-transfer" hidden>
     <div class="tools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand or remark" aria-label="Search brands"></label>
-      <div class="seg" id="mSeg"><button aria-pressed="true" data-f="all">All</button><button aria-pressed="false" data-f="red">Reduced</button><button aria-pressed="false" data-f="inc">Increased</button><button aria-pressed="false" data-f="none">No remark</button></div>
-      <div class="legend meta"><span><i style="background:var(--bar)"></i>CM stock</span><span><i style="background:repeating-linear-gradient(135deg,var(--ok) 0 2px,transparent 2px 4px);outline:1px solid var(--ok);outline-offset:-1px"></i>Reduced</span><span><i style="background:var(--bad)"></i>Increased</span></div>
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="tfSearch" placeholder="Town, brand, material or batch" aria-label="Search transfer candidates"></label>
+      <div class="seg" id="tfFilter" role="group" aria-label="Candidate filter"><button type="button" aria-pressed="true" data-f="all">All sources</button><button type="button" aria-pressed="false" data-f="opt">With a suggestion</button><button type="button" aria-pressed="false" data-f="none">No suggestion</button></div>
+      <button type="button" class="help" data-help="transfer" aria-label="How transfer suggestions are calculated" title="How transfer suggestions are calculated">?</button>
+      <select id="tfAssessment" class="btn" aria-label="Transfer assessment"><option value="">Both assessments</option><option value="before_300_days">Before 300-day checkpoint</option><option value="before_expiry">Already below 300 days</option></select>
+      <span class="meta" id="tfCount"></span>
+      <span class="pager"><button class="btn sm" id="tfPrev" aria-label="Previous page">←</button><button class="btn sm" id="tfNext" aria-label="Next page">→</button></span>
     </div>
+    <div data-sheet="tfT"></div>
+    <h3 id="tfHead" style="margin:14px 0 6px;font-size:14px">Select a source batch to see its suggested destinations</h3>
+    <div id="tfCompare" class="transfer-comparison" aria-live="polite"></div>
+    <div data-sheet="tfD"></div>
+    <p class="lede" id="tfFoot" style="margin-top:10px;font-size:12.5px"></p>
+  </div>
+
+  <div id="r-salespush" hidden>
+    <div class="tools">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="spSearch" placeholder="Town, brand or material" aria-label="Search sales-push pools"></label>
+      <label class="meta">Scenario <select id="spScen" aria-label="Scenario"></select></label>
+      <label class="meta">Review state <select id="spState" aria-label="Review state"><option value="">All</option><option value="supported_assumptions">Supported assumptions</option><option value="stretch_scenario">Stretch scenario</option><option value="incomplete_evidence">Incomplete evidence</option><option value="infeasible_under_stated_constraints">Infeasible under constraints</option></select></label>
+      <button type="button" class="help" data-help="salespush" aria-label="How sales-push feasibility is calculated" title="How sales-push feasibility is calculated">?</button>
+      <span class="meta" id="spCount"></span>
+      <span class="pager"><button class="btn sm" id="spPrev" aria-label="Previous page">←</button><button class="btn sm" id="spNext" aria-label="Next page">→</button></span>
+    </div>
+    <div data-sheet="spT"></div>
+    <h3 id="spHead" style="margin:14px 0 6px;font-size:14px">Select a pool to see how its numbers are built</h3>
+    <div class="note" id="spExplain" aria-live="polite"></div>
+    <p class="lede" id="spFoot" style="margin-top:10px;font-size:12.5px"></p>
+  </div>
+
+  <div id="r-move" hidden>
+    <details class="movement-notes"><summary>Notes · amounts in M BDT</summary><div class="note" id="mNote"></div></details>
     <div data-sheet="mT"></div>
   </div>
-</section>
+  <div id="r-status" hidden>
+    <details class="movement-notes"><summary>Notes · amounts in M BDT</summary><div class="note"><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>RSL bar width and solid colour depth = cell value ÷ row Total for the selected metric; 3–6M red, 6–10M amber, &gt;10M green</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+    <div data-sheet="sT"></div>
+  </div>
+  </section>
 </div>
 </main>
+</div>
+<div class="modal" id="mv" hidden>
+  <div class="scrim" data-mvclose></div>
+  <div class="sheetm mvsheet" role="dialog" aria-modal="true" aria-labelledby="mvTitle">
+    <header><div><h2 id="mvTitle"></h2><p class="lead" id="mvSub"></p></div><button class="btn sm ghost" data-mvclose aria-label="Close" id="mvClose">✕</button></header>
+    <div id="mvBody"></div><div id="mvFoot"></div>
+  </div>
+</div>
+<div class="modal" id="help" hidden>
+  <div class="scrim" data-close></div>
+  <div class="sheetm" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <header><div><h2 id="helpTitle"></h2><p class="lead" id="helpLead"></p></div><button class="btn sm ghost" data-close aria-label="Close" id="helpClose">✕</button></header>
+    <div class="tabs sub" role="tablist" id="helpTabs">
+      <button class="tab" role="tab" data-h="red" aria-selected="true">Reduction %</button>
+      <button class="tab" role="tab" data-h="net" aria-selected="false">Net change %</button>
+      <button class="tab" role="tab" data-h="trend" aria-selected="false">Stock trend</button>
+      <button class="tab" role="tab" data-h="doh" aria-selected="false">DOH</button>
+    </div>
+    <div id="helpBody"></div>
+  </div>
+</div>
+<div class="modal" id="doh" hidden>
+  <div class="scrim" data-doh-close></div>
+  <section class="sheetm doh-sheet" role="dialog" aria-modal="true" aria-labelledby="dohTitle" aria-describedby="dohSub">
+    <header><div><h2 id="dohTitle">How DOH is calculated</h2><p class="lead" id="dohSub"></p></div><button class="btn sm ghost" id="dohClose" data-doh-close aria-label="Close DOH explanation">✕</button></header>
+    <div class="doh-toolbar"><label for="dohTrace">Inspect sales</label><select class="btn" id="dohTrace"></select><span id="dohScope"></span></div>
+    <div id="dohBody"></div>
+  </section>
 </div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
 const BATCH = /*BATCH*/[];
-const MOVE_RAW = `/*MOVE*/`;
-const GRAND = /*GRAND*/{};
+const SERIES = /*SERIES*/{};
+const STATUS = /*STATUS*/{};
+const MEASURES = /*MEASURES*/{};
+const TRANSFER = /*TRANSFER*/{};
+const SALESPUSH = /*SALESPUSH*/{};
 
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 
@@ -309,6 +712,9 @@ Object.defineProperty(Element.prototype,'html',{set(h){const r=document.createRa
   fr.querySelectorAll('*').forEach(n=>[...n.attributes].forEach(a=>/^on/i.test(a.name)&&n.removeAttribute(a.name)));this.replaceChildren(fr)}});
 $$('[data-sheet]').forEach(el=>{el.className='sheet';el.html=`<div class="fx"><span class="nb">A1</span><span class="fi">ƒx</span><span class="fv"></span></div><div class="tw" tabindex="0"><table id="${el.dataset.sheet}"><thead></thead><tbody></tbody><tfoot></tfoot></table></div>`});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+let reportUnit='bdt';
+const unitLabel=()=>reportUnit==='bdt'?'M BDT':'KL', unitDivisor=()=>reportUnit==='bdt'?1e6:1;
+const amount=(v,d=2)=>v==null?f(null):f(v/unitDivisor(),d);
 const f=(n,d=0)=>n==null?'<span style="color:var(--line2)">–</span>':Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 let tt;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2200)};
 
@@ -321,40 +727,50 @@ addEventListener('keydown',e=>{if(e.key==='['&&!/INPUT|SELECT/.test(e.target.tag
 const setTheme=t=>{document.documentElement.dataset.theme=t;localStorage.theme=t};
 setTheme(localStorage.theme||'light');
 $('#theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push'}[k];['overview','batch','move','status','transfer','salespush'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':k));$('#mTools').hidden=k!=='move';$('#unitTools').hidden=k==='salespush';$('#sTools').hidden=!isStatus;if(isStatus||k==='move')$(isStatus?'#sExp':'#mExp').after($('#unitTools'));else $('#exportBtn').before($('#unitTools'));$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':'Recalculated snapshot';$('#repDate').textContent=new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});$('#repDate').hidden=historical;$('#repSep').hidden=historical;if(isStatus)setStatusView(k);if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
+let curRep='batch';
 $$('.item[data-view]').forEach(b=>b.onclick=()=>{
-  $$('.item[data-view]').forEach(x=>x.toggleAttribute('aria-current',x===b)); if(b.hasAttribute('aria-current'))b.setAttribute('aria-current','page');
+  if(b.dataset.view==='reports'){curRep=b.dataset.r||curRep;showRep(curRep)}
+  const cur=x=>x.dataset.view==='reports'?(b.dataset.view==='reports'&&(b.dataset.r?x===b:x.dataset.r===curRep)):x===b;
+  $$('.item[data-view]').forEach(x=>{x.toggleAttribute('aria-current',cur(x)&&!(x.dataset.view==='reports'&&!x.dataset.r))}); $$('.item[aria-current]').forEach(x=>x.setAttribute('aria-current','page'));
   $$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.view));
 });
+$('.overview-nav').onchange=e=>{const k=e.target.value;const target=k==='onboarding'?'[data-view="onboarding"]':`.item[data-r="${k}"]`;$(target).click();e.target.value='overview'};
 function tabs(sel,key,fn){$$(sel+' .tab').forEach(t=>t.onclick=()=>{$$(sel+' .tab').forEach(x=>x.setAttribute('aria-selected',x===t));fn(t.dataset[key])})}
 tabs('#obTabs','t',k=>['setup','runs','archive'].forEach(n=>{$('#ob-'+n).hidden=n!==k}));
-tabs('#repTabs','r',k=>{$('#r-batch').hidden=k!=='batch';$('#r-move').hidden=k!=='move'});
 $$('.sw').forEach(s=>s.onclick=()=>s.setAttribute('aria-checked',s.getAttribute('aria-checked')!=='true'));
-$('#sDate').valueAsDate=new Date();
+$('#sDate').value=SERIES.doh.date;
+$('#rateWindow').value=SERIES.doh.source_months;
 
 /* spreadsheet table: column letters, row numbers (header is row 1), frozen header + first column, cell selection, formula bar */
 const L=i=>String.fromCharCode(65+i), SHEETS={};
-function table({t,cols,rows,sort,onSort,foot,emptyMsg}){
+function table({t,cols,rows,sort,onSort,foot,emptyMsg,onSelect,groups}){
   const T=$(t),th=T.tHead,tb=T.tBodies[0],tf=T.tFoot,wrap=T.closest('.tw'),fx=T.closest('.sheet').querySelector('.fx');
-  th.html=`<tr><th class="rn col"></th>${cols.map((c,i)=>`<th class="col">${L(i)}</th>`).join('')}</tr><tr><th class="rn hd">1</th>${cols.map(c=>{const s=onSort&&!c.nosort,on=s&&sort.k===c.k;return `<th class="hd${c.num?' num':''}${s?' s':''}" ${on?`aria-sort="${sort.d>0?'ascending':'descending'}"`:''} data-k="${c.k}">${c.h}${s?`<span class="ar">${on&&sort.d>0?'↑':'↓'}</span>`:''}</th>`}).join('')}</tr>`;
+  th.html=`<tr><th class="rn col"></th>${cols.map((c,i)=>`<th class="col">${L(i)}</th>`).join('')}</tr><tr><th class="rn hd">1</th>${cols.map(c=>{const s=onSort&&!c.nosort,on=s&&sort.k===c.k;return `<th class="hd${c.num?' num':''}${c.ctr?' ctr':''}${s?' s':''}" ${on?`aria-sort="${sort.d>0?'ascending':'descending'}"`:''} data-k="${c.k}">${c.h}${s?`<span class="ar">${on&&sort.d>0?'↑':'↓'}</span>`:''}${c.help?`<button class="help" data-help="${c.help}" aria-label="How ${esc(c.h)} is calculated" title="How ${esc(c.h)} is calculated">?</button>`:''}</th>`}).join('')}</tr>`;
+  T.classList.toggle('grouped',!!groups);
+  if(groups){
+    const tr=document.createElement('tr'),corner=document.createElement('th');corner.className='rn group-h';tr.append(corner);
+    groups.forEach(g=>{const h=document.createElement('th');h.className='group-h';h.colSpan=g.span;h.textContent=g.label;tr.append(h)});th.prepend(tr);
+  }
   $$('th.s',th).forEach(h=>h.onclick=()=>onSort(h.dataset.k));
-  tb.html=rows.map((r,i)=>`<tr><td class="rn">${i+2}</td>${cols.map(c=>`<td class="${(c.num?'num ':'')+(c.cls||'')}">${c.r(r)}</td>`).join('')}</tr>`).join('')||`<tr><td class="rn"></td><td class="empty" colspan="${cols.length}">${emptyMsg||'No rows match these filters.'}</td></tr>`;
-  tf.html=foot?`<tr><td class="rn">Σ</td>${foot.map((h,i)=>`<td class="${cols[i].num?'num':''}">${h}</td>`).join('')}</tr>`:'';
+  tb.html=rows.map((r,i)=>`<tr${r.trc?` class="${r.trc}"`:''}><td class="rn">${i+2}</td>${cols.map(c=>`<td class="${(c.num?'num ':'')+(c.cls||'')}">${c.r(r)}</td>`).join('')}</tr>`).join('')||`<tr><td class="rn"></td><td class="empty" colspan="${cols.length}">${emptyMsg||'No rows match these filters.'}</td></tr>`;
+  tf.html=foot?`<tr><td class="rn">Σ</td>${foot.map((h,i)=>`<td class="${cols[i].num?'num ':''}${cols[i].cls||''}">${h}</td>`).join('')}</tr>`:'';
   const st=SHEETS[t]||(SHEETS[t]={r:0,c:0,on:false});
-  st.nr=rows.length;st.nc=cols.length;
+  st.nr=rows.length;st.nc=cols.length;st.rows=rows;st.onSelect=onSelect;
   st.paint=scroll=>{
     $$('.sel,.hl',T).forEach(x=>x.classList.remove('sel','hl'));
     const row=st.on&&tb.rows[st.r],td=row&&row.cells[st.c+1];
     if(!td||td.classList.contains('empty')){return}
-    td.classList.add('sel');row.cells[0].classList.add('hl');th.rows[0].cells[st.c+1].classList.add('hl');
+    td.classList.add('sel');row.cells[0].classList.add('hl');th.rows[groups?1:0].cells[st.c+1].classList.add('hl');
     fx.querySelector('.nb').textContent=L(st.c)+(st.r+2);fx.querySelector('.fv').textContent=td.textContent.trim();
     if(scroll)td.scrollIntoView({block:'nearest',inline:'nearest'});
   };
   if(!st.bound){st.bound=1;
     tb.addEventListener('click',e=>{const td=e.target.closest('td');if(!td||td.classList.contains('rn')||td.classList.contains('empty'))return;
-      st.r=td.parentNode.sectionRowIndex;st.c=td.cellIndex-1;st.on=true;st.paint();wrap.focus({preventScroll:true})});
+      st.r=td.parentNode.sectionRowIndex;st.c=td.cellIndex-1;st.on=true;st.paint();wrap.focus({preventScroll:true});st.onSelect&&st.onSelect(st.rows[st.r],st.c)});
     wrap.addEventListener('keydown',e=>{
       const d={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,-1],ArrowRight:[0,1]}[e.key];if(!d)return;
-      e.preventDefault();st.on=true;st.r=Math.max(0,Math.min(st.nr-1,st.r+d[0]));st.c=Math.max(0,Math.min(st.nc-1,st.c+d[1]));st.paint(true)});
+      e.preventDefault();st.on=true;st.r=Math.max(0,Math.min(st.nr-1,st.r+d[0]));st.c=Math.max(0,Math.min(st.nc-1,st.c+d[1]));st.paint(true);st.onSelect&&st.rows[st.r]&&st.onSelect(st.rows[st.r],st.c)});
   }
   st.r=Math.min(st.r,Math.max(0,rows.length-1));st.paint();
 }
@@ -415,49 +831,855 @@ const bcols=[
  {k:'Batch code',h:'Batch',r:r=>esc(r['Batch code']),cls:'mono'},
  {k:'exp',h:'Expiry',r:r=>serial(r.exp),cls:'dim'},
  {k:'rsl_days',h:'RSL',r:r=>pips(r.rsl_group)},
- {k:'total_closing_stock_kl',h:'Stock (KL)',num:1,r:r=>f(r.total_closing_stock_kl,3)},
- {k:'total_closing_stock_bdt',h:'Stock (BDT)',num:1,r:r=>f(r.total_closing_stock_bdt)},
- {k:'doh',h:'DOH',num:1,r:r=>f(r.doh,1)},
- {k:'exposure_kl',h:'Exposure (KL)',num:1,r:r=>r.exposure_kl?`<span class="badc">${f(r.exposure_kl,3)}</span>`:f(0,3).replace(/.*/,'<span style="color:var(--ink3)">0.000</span>')},
- {k:'lnd_fc_bdt',h:'Liq. forecast (BDT)',num:1,r:r=>f(r.lnd_fc_bdt)}];
-let rsl='All',bq='',pg=0,bs={k:'total_closing_stock_bdt',d:-1};const PS=30;
+ {k:'stock',h:'Stock',num:1,r:r=>amount(r['total_closing_stock_'+reportUnit],3)},
+ {k:'doh',h:'DOH (days)',num:1,r:r=>`<button class="doh-value" type="button" data-doh-batch="${esc(r.batch_index)}" aria-label="Explain DOH for ${esc(r.material_desc)} in ${esc(r.Town)}">${r.avg_sec_m===0?'∞':r.doh==null?'—':f(r.doh,1)}</button>`},
+ {k:'exposure',h:'Exposure',num:1,r:r=>`<span class="${r['exposure_'+reportUnit]?'badc':'dim'}">${amount(r['exposure_'+reportUnit],3)}</span>`},
+ {k:'lnd',h:'Liq. forecast',num:1,r:r=>amount(r['lnd_fc_'+reportUnit],3)}];
+let rsl='All',bq='',pg=0,bs={k:'stock',d:-1};const PS=30;
 $('#rslSeg').html=['All','< 3M','3M - 6M','6M - 10M','> 10M'].map((x,i)=>`<button aria-pressed="${!i}">${x}</button>`).join('');
 $$('#rslSeg button').forEach(c=>c.onclick=()=>{rsl=c.textContent;pg=0;$$('#rslSeg button').forEach(x=>x.setAttribute('aria-pressed',x===c));drawB()});
 $('#bSearch').oninput=e=>{bq=e.target.value.toLowerCase();pg=0;drawB()};
 function drawB(){
-  const rows=BR.filter(r=>(rsl==='All'||r.rsl_group===rsl)&&(!bq||[r.Town,r['Brand Name'],r.material_desc,r['Batch code']].join(' ').toLowerCase().includes(bq))).sort(cmp(bs.k,bs.d));
-  table({t:'#bT',cols:bcols,rows:rows.slice(pg*PS,pg*PS+PS),sort:bs,onSort:k=>{bs=bs.k===k?{k,d:-bs.d}:{k,d:-1};drawB()}});
+  bcols.filter(c=>['stock','exposure','lnd'].includes(c.k)).forEach(c=>c.h=({stock:'Stock',exposure:'Exposure',lnd:'Liq. forecast'}[c.k])+' ('+unitLabel()+')');
+  $$('#r-batch .stat').forEach((el,i)=>{const stem=['total_closing_stock','exposure','rotation_req','lnd_fc'][i],other=reportUnit==='bdt'?'kl':'bdt';el.querySelector('.v').html=amount(MEASURES[stem+'_'+reportUnit],1)+'<i>'+unitLabel()+'</i>';el.querySelector('.d').textContent=f(MEASURES[stem+'_'+other]/(other==='bdt'?1e6:1),1)+' '+(other==='bdt'?'M BDT':'KL')});
+  const rows=BR.map(r=>({...r,stock:r['total_closing_stock_'+reportUnit],exposure:r['exposure_'+reportUnit],lnd:r['lnd_fc_'+reportUnit]})).filter(r=>(rsl==='All'||r.rsl_group===rsl)&&(!bq||[r.Town,r['Brand Name'],r.material_desc,r['Batch code']].join(' ').toLowerCase().includes(bq))).sort(cmp(bs.k,bs.d));
+  table({t:'#bT',cols:bcols,rows:rows.slice(pg*PS,pg*PS+PS),sort:bs,onSort:k=>{bs=bs.k===k?{k,d:-bs.d}:{k,d:-1};drawB()},onSelect:(r,c)=>{if(bcols[c].k==='doh')openBatchDoh(r,$('#bT').closest('.tw'))}});
   $('#bCount').textContent=rows.length?`${pg*PS+1}–${Math.min(rows.length,pg*PS+PS)} of ${rows.length}`:'0 results';
   $('#bPrev').disabled=!pg;$('#bNext').disabled=(pg+1)*PS>=rows.length;
 }
 $('#bPrev').onclick=()=>{pg--;drawB()};$('#bNext').onclick=()=>{pg++;drawB()};drawB();
 
-/* stock movement */
-const MV=MOVE_RAW.trim().split('\n').map(l=>{const p=l.split('|'),n=x=>x===''?null:parseFloat(x);return{brand:p[0],lm:n(p[1]),cmo:n(p[2]),cmn:n(p[3]),red:n(p[4]),pct:n(p[5]),rem:p[6]||''}});
-const MAXV=Math.max(...MV.map(r=>Math.max(r.lm||0,r.cmo||0))),W=150;
-const bridge=r=>{
-  if(r.lm==null&&r.cmo==null)return '';
-  const lm=r.lm||0,cm=r.cmo||0,w=v=>Math.max(v/MAXV*W,v>0?1.5:0);
-  return `<div class="mv" title="LM ${f(lm)} → CM ${f(cm)}"><i class="k" style="width:${w(Math.min(lm,cm))}px"></i>${lm>cm?`<i class="r" style="width:${w(lm-cm)}px"></i>`:cm>lm?`<i class="g" style="width:${w(cm-lm)}px"></i>`:''}</div>`};
-const mcols=[
- {k:'brand',h:'Brand',r:r=>esc(r.brand),cls:'name'},
- {k:'lm',h:'LM stock',num:1,r:r=>f(r.lm,2)},
- {k:'cmo',h:'CM, no new incl.',num:1,r:r=>f(r.cmo,2)},
- {k:'cmn',h:'CM, new incl.',num:1,r:r=>f(r.cmn,2)},
- {k:'red',h:'Reduced from LM',num:1,r:r=>r.red==null?f(null):`<span class="${r.red<0?'badc':r.red>0?'good':''}">${r.red<0?'−':''}${f(Math.abs(r.red),2)}</span>`},
- {k:'pct',h:'%',num:1,r:r=>r.pct==null?f(null):`<span class="${r.pct<0?'badc':''}">${r.pct<0?'−':''}${Math.abs(r.pct)}%</span>`},
- {k:'cmo',h:'Movement',r:bridge,nosort:1},
- {k:'rem',h:'Latest month remarks',r:r=>r.rem?esc(r.rem):'<span style="color:var(--line2)">–</span>',cls:'rem'}];
-let mf='all',mq='',ms={k:'red',d:-1};
-$$('#mSeg button').forEach(c=>c.onclick=()=>{mf=c.dataset.f;$$('#mSeg button').forEach(x=>x.setAttribute('aria-pressed',x===c));drawM()});
-$('#mSearch').oninput=e=>{mq=e.target.value.toLowerCase();drawM()};
-function drawM(){
-  const rows=MV.filter(r=>(!mq||(r.brand+' '+r.rem).toLowerCase().includes(mq))&&(mf==='all'||(mf==='red'&&r.red>0)||(mf==='inc'&&r.red<0)||(mf==='none'&&!r.rem))).sort(cmp(ms.k,ms.d));
-  const foot=mf==='all'&&!mq?['Grand total',f(GRAND.lm,2),f(GRAND.cmo,2),f(GRAND.cmn,2),`<span class="good">${f(GRAND.red,2)}</span>`,GRAND.pct+'%','',`<span style="font-weight:450">${esc(GRAND.rem)}</span>`]:null;
-  table({t:'#mT',cols:mcols,rows,sort:ms,onSort:k=>{ms=ms.k===k?{k,d:-ms.d}:{k,d:-1};drawM()},foot});
+
+
+/* transfer suggestions: precomputed by src/transfer_opportunities.py; no allocation logic here */
+const TS=TRANSFER.src.map((a,i)=>({i,...Object.fromEntries(TRANSFER.scols.map((c,j)=>[c,a[j]]))}));
+const tfDest=s=>s.sug.map(d=>Object.fromEntries(TRANSFER.dcols.map((c,j)=>[c,d[j]])));
+TS.forEach(s=>{s.ok=s.sug.length;s.sent=s.sug.reduce((t,d)=>t+d[1],0);s.dn=s.checked});
+let tfQ='',tfF='all',tfA='',tfPg=0,tfSel=null;const TFPS=30;
+const tfRejText=s=>Object.entries(s.rej).map(([k,n])=>f(n)+' × '+(TRANSFER.reasons[k]||k)).join('; ');
+$$('#tfFilter button').forEach(b=>b.onclick=()=>{tfF=b.dataset.f;tfPg=0;$$('#tfFilter button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawTransfer()});
+$('#tfSearch').oninput=e=>{tfQ=e.target.value.toLowerCase();tfPg=0;drawTransfer()};
+$('#tfAssessment').onchange=e=>{tfA=e.target.value;tfPg=0;tfSel=null;drawTransfer()};
+const tfRows=()=>TS.filter(s=>(!tfA||s.assessment===tfA)&&(tfF==='all'||(tfF==='opt')===(s.ok>0))&&(!tfQ||[s.town,s.brand,s.material,s.batch].join(' ').toLowerCase().includes(tfQ)));
+function tfN(v){if(v==null)return '—';if(Math.abs(v)<=1e-9)return '0.000';if(v>0&&v<.001)return '&lt;0.001';return f(v,3)}
+const tfWhen=s=>s.assessment==='before_300_days'?`300-day checkpoint · in ${f(s.days)} days`:`Expiry · in ${f(s.days)} days`;
+const tfStatus=s=>s.before==null?'Needs sales evidence':s.before<=1e-9?'Can sell locally':s.after<=1e-9?'No stock left at assessment':s.ok?'Partial improvement · needs another action':(TRANSFER.reasons[Object.keys(s.rej)[0]]||'No beneficial transfer found');
+const tfSrcCols=[
+ {k:'town',h:'Source town',r:s=>esc(s.town),cls:'name'},
+ {k:'brand',h:'Brand',r:s=>esc(s.brand)},
+ {k:'material',h:'Material',r:s=>esc(s.material),cls:'dim'},
+ {k:'batch',h:'Batch',r:s=>esc(s.batch),cls:'mono'},
+ {k:'rsl',h:'RSL days',num:1,r:s=>f(s.rsl)},
+ {k:'kl',h:'Stock (KL)',num:1,r:s=>f(s.kl,3)},
+ {k:'exp',h:'Exposure',num:1,r:s=>amount(s[reportUnit==='bdt'?'exp_bdt':'exp_kl'],3)},
+ {k:'opts',h:'Destinations',num:1,r:s=>`<span title="${esc(tfRejText(s))}">${f(s.ok)} of ${f(s.dn)} checked</span>`},
+ {k:'qty',h:'Suggested qty (KL)',num:1,r:s=>tfN(s.sent)},
+ {k:'assessment',h:'Assess at',r:s=>esc(tfWhen(s))},
+ {k:'before',h:'Batch left if kept (KL)',num:1,r:s=>tfN(s.before)},
+ {k:'after',h:'Batch left with plan (KL)',num:1,r:s=>tfN(s.after)},
+ {k:'status',h:'Result / next action',r:s=>`<span class="${s.after>1e-9?'badc':'dim'}" title="${esc(tfRejText(s))}">${esc(tfStatus(s))}</span>`}];
+const tfDstCols=[
+ {k:'town',h:'Destination town',r:d=>esc(d.town),cls:'name'},
+ {k:'qty',h:'Suggested qty (KL)',num:1,r:d=>tfN(d.qty)},
+ {k:'before',h:'Two towns left · keep (KL)',num:1,r:d=>tfN(d.before)},
+ {k:'after',h:'Two towns left · move (KL)',num:1,r:d=>tfN(d.after)},
+ {k:'benefit',h:'Less stock left (KL)',num:1,r:d=>tfN(d.benefit)},
+ {k:'room',h:'Spare sales at assessment (KL)',num:1,r:d=>tfN(d.room)},
+ {k:'queue',h:'Existing stock allowed for (KL)',num:1,r:d=>tfN(d.queue)},
+ {k:'rate',h:'Exact-material rate (KL/mo)',num:1,r:d=>tfN(d.rate)},
+ {k:'kl',h:'Dest. stock (KL)',num:1,r:d=>f(d.kl,3)},
+ {k:'older',h:'Older stock ahead',r:d=>d.older?'<span class="badc">yes</span>':'no'}];
+function drawTransferDest(){
+  const s=tfSel,d=s?tfDest(s):[];
+  $('#tfHead').textContent=s?`Transfer plan for ${s.town} · ${s.material} · batch ${s.batch}`:'Select a source batch to compare leaving it with moving it';
+  $('#tfCompare').html=s?`<p><b>${esc(tfWhen(s))}</b> · ${s.assessment==='before_expiry'?'Already below 300 days: better sell-through, not a reversal of the risk breach.':'The 300-day risk trigger is unchanged.'}</p><div class="compare-values"><div>If kept in ${esc(s.town)}<strong>${tfN(s.before)} KL</strong>of this batch left</div><span aria-hidden="true">→</span><div class="compare-after">With the transfer plan<strong>${tfN(s.after)} KL</strong>left across all receiving towns and the source</div><div class="compare-result">${s.before==null?'Sales evidence is missing.':`<b>${tfN(Math.max(0,s.before-s.after))} KL less left.</b> ${s.after>1e-9?'The remaining '+tfN(s.after)+' KL still needs another action.':'No stock of this batch left at this assessment date.'}`}</div></div><p>Below: all stock of this material in the two affected towns, before and after each step. Earlier transfers are included. These comparisons overlap—do not add them.</p>`:'';
+  table({t:'#tfD',cols:tfDstCols,rows:d,emptyMsg:s?tfRejText(s):'No source batch selected.'});
 }
-drawM();
-$('#exportBtn').onclick=()=>toast('Export is not connected yet');
+function drawTransfer(){
+  const rows=tfRows();
+  tfSrcCols[6].h='Reported exposure ('+unitLabel()+')';
+  if(tfSel&&!rows.includes(tfSel))tfSel=null;
+  const page=rows.slice(tfPg*TFPS,tfPg*TFPS+TFPS);
+  table({t:'#tfT',cols:tfSrcCols,rows:page,onSelect:s=>{if(s){tfSel=s;drawTransferDest()}}});
+  $('#tfCount').textContent=rows.length?`${tfPg*TFPS+1}–${Math.min(rows.length,tfPg*TFPS+TFPS)} of ${f(rows.length)}`:'0 results';
+  $('#tfPrev').disabled=!tfPg;$('#tfNext').disabled=(tfPg+1)*TFPS>=rows.length;
+  $('#tfFoot').textContent=`Snapshot ${TRANSFER.snapshot} · all ${f(TS.length)} exposed batches included · same-material towns with stock or sales history, including zero-stock towns · shared demand reserved once · policy ${TRANSFER.policy}. Modeled sales, not guaranteed; immediate transfer, no transit/cost/acceptance checks. Assessment dates differ: do not sum remaining-stock comparisons. CSV includes each filtered source, including rejected candidates.`;
+  drawTransferDest();
+}
+$('#tfPrev').onclick=()=>{tfPg--;drawTransfer()};$('#tfNext').onclick=()=>{tfPg++;drawTransfer()};
+function exportTransfer(){
+  const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
+  const head=['snapshot_id','source_town','material_code','material','brand','source_batch','source_rsl_days','source_stock_kl','source_exposure_kl','source_exposure_bdt','assessment_kind','assessment_days','batch_remaining_keep_kl','batch_remaining_plan_kl','dest_town','proposed_kl','two_town_remaining_keep_kl','two_town_remaining_move_kl','net_improvement_kl','spare_sales_kl','existing_stock_kl','child_rate_kl_month','result','rejection_counts','policy_version'];
+  const lines=tfRows().flatMap(s=>(s.ok?tfDest(s):[null]).map(d=>[TRANSFER.snapshot,s.town,s.code,s.material,s.brand,s.batch,s.rsl,s.kl,s.exp_kl,s.exp_bdt,s.assessment,s.days,s.before,s.after,d?.town,d?.qty,d?.before,d?.after,d?.benefit,d?.room,d?.queue,d?.rate,tfStatus(s),JSON.stringify(s.rej),TRANSFER.policy].map(q).join(',')));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[head.join(','),...lines].join('\n')+'\n'],{type:'text/csv'}));
+  a.download=`transfer-candidates-${TRANSFER.snapshot}.csv`;a.click();URL.revokeObjectURL(a.href);toast(`Exported ${lines.length} rows`);
+}
+
+/* sales-push feasibility (Phase A): precomputed by src/sales_push_feasibility.py; no formulas here */
+const SPR=SALESPUSH.rows.map((a,i)=>({i,...Object.fromEntries(SALESPUSH.cols.map((c,j)=>[c,a[j]]))}));
+let spQ='',spPg=0,spSel=null,spS=0,spSt='';const SPPS=30;
+const spStateLabel={supported_assumptions:'Supported assumptions',stretch_scenario:'Stretch scenario',incomplete_evidence:'Incomplete evidence',infeasible_under_stated_constraints:'Infeasible under constraints'};
+const spScLabel=c=>c.id.replace(/_/g,' ')+(c.mult!==1?` (${c.mult}× from day ${c.delay}${c.duration?' for '+c.duration+' d':' to deadline'})`:'');
+$('#spScen').html=SALESPUSH.scenarios.map((c,i)=>`<option value="${i}">${esc(spScLabel(c))}</option>`).join('');
+$('#spScen').onchange=e=>{spS=+e.target.value;spPg=0;drawSP()};
+$('#spState').onchange=e=>{spSt=e.target.value;spPg=0;drawSP()};
+$('#spSearch').oninput=e=>{spQ=e.target.value.toLowerCase();spPg=0;drawSP()};
+const spRows=()=>SPR.filter(r=>(!spSt||r.review===spSt)&&(!spQ||[r.town,r.brand,r.material].join(' ').toLowerCase().includes(spQ)));
+const spNA='<span class="dim" title="Unavailable: see review state">n/a</span>';
+const spN=(v,d=3)=>v==null?spNA:f(v,d);
+const spCols=[
+ {k:'town',h:'Town / channel',r:r=>esc(r.town),cls:'name'},
+ {k:'brand',h:'Brand',r:r=>esc(r.brand)},
+ {k:'material',h:'Material',r:r=>esc(r.material),cls:'dim'},
+ {k:'kl',h:'Stock (KL)',num:1,r:r=>f(r.kl,3)},
+ {k:'week',h:'Baseline (KL/wk)',num:1,r:r=>spN(r.week)},
+ {k:'total',h:'Required total (KL/wk)',num:1,r:r=>spN(r.total)},
+ {k:'incr',h:'Required incremental (KL/wk)',num:1,r:r=>spN(r.incr)},
+ {k:'uplift',h:'Required uplift',num:1,r:r=>r.uplift==null?spNA:f(r.uplift,2)+'×'},
+ {k:'resid',h:'Residual, selected scenario (KL)',num:1,r:r=>spN(r.resid[spS])},
+ {k:'hcmp',h:'Required vs observed peak',r:r=>({above_observed_peak:'<span class="badc">above peak (review)</span>',within_observed_range:'within observed range',no_history:spNA,not_applicable:spNA})[r.hcmp]},
+ {k:'review',h:'Review state',r:r=>r.review==='supported_assumptions'?esc(spStateLabel[r.review]):'<span class="badc">'+esc(spStateLabel[r.review])+'</span>'}];
+function spExplain(){
+  const r=spSel,el=$('#spExplain');
+  $('#spHead').textContent=r?`${r.town} · ${r.material} (${f(r.batches)} batches, ${f(r.kl,3)} KL)`:'Select a pool to see how its numbers are built';
+  if(!r){el.html='';return}
+  const c=SALESPUSH.scenarios[spS],weeks=SALESPUSH.deadline_days/7,L=[];
+  L.push(`Deadline: <b>${esc(SALESPUSH.deadline_kind.replace('_',' '))}</b>, ${f(SALESPUSH.deadline_days)} days after the snapshot (${esc(SALESPUSH.deadline_date)}) = ${f(weeks,2)} weeks. Sales run on days 0 to ${SALESPUSH.deadline_days-1}; each batch also stops on its own expiry.`);
+  L.push(`Baseline: ${spN(r.week)} KL/week (${esc(SALESPUSH.rate_basis)}).`);
+  L.push(r.simple==null?'Simple pace unavailable.':`Simple pace (stock ÷ weeks, valid only for an isolated pool): ${f(r.simple,3)} KL/week.`);
+  L.push(r.uplift==null?`No uplift solved (${esc(r.solver.replace(/_/g,' '))}).`:`Minimal uplift ≈ ${f(r.uplift,2)}× (bisection over 1–${SALESPUSH.max_uplift}×, tolerance ${SALESPUSH.tolerance}, approximate). It is an assumption, not a prediction.`);
+  L.push(`Scenario “${esc(c.id.replace(/_/g,' '))}”: sells ${spN(r.sales[spS])} KL, leaves ${spN(r.resid[spS])} KL by the deadline.`);
+  L.push(r.hcmp==='no_history'?'History: no observed sales for this town and parent.':`History (${f(r.win)}-month window, ${f(r.obs)} observed${r.gap?`, ${f(r.gap)} calendar month(s) missing from the source`:''}): observed peak ${spN(r.peak,4)} KL/week${r.pkm?' in '+esc(r.pkm):''}, last 3 months ${spN(r.recent,4)} KL/week (${f(r.rmo)} of 3 observed; missing months count as zero). ${f(r.adj)} month(s) winsorized and ${f(r.amb)} ambiguous peak(s) kept in the rate audit. Scaled to this child by its window share of parent sales.`);
+  L.push(r.hcmp==='above_observed_peak'?'The required pace is above the observed peak: a warning to review, not proof it is impossible. Being below a peak does not prove it is achievable.':'Comparison with history is context only; it does not establish seasonality, achievable uplift or causal effect.');
+  if(r.reasons)L.push('Reason codes: '+esc(r.reasons.split(';').join(', ')));
+  el.html=L.map(x=>`<span>${x}</span>`).join('');
+}
+function drawSP(){
+  const rows=spRows(),cnt=k=>SPR.filter(r=>r.review===k).length;
+  const page=rows.slice(spPg*SPPS,spPg*SPPS+SPPS);
+  table({t:'#spT',cols:spCols,rows:page,onSelect:r=>{if(r){spSel=r;spExplain()}}});
+  $('#spCount').textContent=rows.length?`${spPg*SPPS+1}–${Math.min(rows.length,spPg*SPPS+SPPS)} of ${f(rows.length)}`:'0 results';
+  $('#spPrev').disabled=!spPg;$('#spNext').disabled=(spPg+1)*SPPS>=rows.length;
+  $('#spFoot').textContent=`Snapshot ${SALESPUSH.snapshot} · all ${f(SPR.length)} pools are included (paging does not limit the population) · policy ${SALESPUSH.policy} · modeled quantities only: not cash, savings or contribution. Export CSV downloads every filtered pool with all declared scenarios.`;
+  spExplain();
+}
+$('#spPrev').onclick=()=>{spPg--;drawSP()};$('#spNext').onclick=()=>{spPg++;drawSP()};
+function exportSP(){
+  const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v,S=SALESPUSH.scenarios;
+  const head=['snapshot','town','material_code','material','brand','batches','stock_kl','baseline_kl_week','simple_required_kl_week','required_total_kl_week','required_incremental_kl_week','required_uplift','solver_status','review_state','reason_codes','required_vs_observed_peak','observed_peak_kl_week','observed_peak_month','recent_3m_kl_week','recent_months_observed','history_window_months','history_observed_months','calendar_gap_months','winsorized_months','ambiguous_peak_months',...S.flatMap(c=>[c.id+'_sales_kl',c.id+'_residual_kl']),'deadline_kind','deadline_days','deadline_date','rate_basis','max_uplift_searched','uplift_tolerance','history_caveats','assumption_note','policy_version'];
+  const lines=spRows().map(r=>[SALESPUSH.snapshot,r.town,r.code,r.material,r.brand,r.batches,r.kl,r.week,r.simple,r.total,r.incr,r.uplift,r.solver,r.review,r.reasons,r.hcmp,r.peak,r.pkm,r.recent,r.rmo,r.win,r.obs,r.gap,r.adj,r.amb,...S.flatMap((c,i)=>[r.sales[i],r.resid[i]]),SALESPUSH.deadline_kind,SALESPUSH.deadline_days,SALESPUSH.deadline_date,SALESPUSH.rate_basis,SALESPUSH.max_uplift,SALESPUSH.tolerance,SALESPUSH.hist_caveats,'uplift multipliers are assumptions; modeled quantities, not financial outcomes',SALESPUSH.policy].map(q).join(','));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[head.join(','),...lines].join('\n')+'\n'],{type:'text/csv'}));
+  a.download=`sales-push-${SALESPUSH.snapshot}.csv`;a.click();URL.revokeObjectURL(a.href);toast(`Exported ${lines.length} rows`);
+}
+drawTransfer();
+
+/* stock movement: brand x month heatmap, computed by src/movement.py (series) */
+const NM=SERIES.labels.length, num=v=>v==null?0:v, sum=a=>a.reduce((x,y)=>x+num(y),0);
+const GROUPS=SERIES.groups; let gsel=new Set(GROUPS.map((_,i)=>i));
+/* Merge selected RSL groups in the selected source unit. */
+const agg=cs=>{
+  const c=cs.filter((x,i)=>x&&gsel.has(i)).map(x=>reportUnit==='bdt'?x:{...x.kl,rem:x.rem});if(!c.length)return null;
+  const add=k=>c.some(x=>x[k]!=null)?c.reduce((s,x)=>s+num(x[k]),0):null;
+  const lm=add('lm'),o=add('o'),n=add('n'),r=add('r');
+  const rem=[...new Map(c.flatMap(x=>x.rem?x.rem.split(', '):[]).map(p=>[p.toLowerCase(),p])).values()].join(', ');
+  return {lm,o,n,r,p:lm>0?r/lm:null,rem:rem||null};
+};
+const aggs=m=>m.map(x=>x?agg(x):null);
+const mk=m=>{
+  const last=m[NM-1], pts=[...m.map(x=>x?num(x.lm):0), last?num(last.o)+num(last.n):0];
+  let sl=0,sr=0;m.forEach(x=>{if(x&&x.lm>0){sl+=x.lm;sr+=num(x.r)}});
+  return {m,pts,now:pts[NM],grow:pts[NM]-pts[0],avg:sl>0?sr/sl:null};
+};
+/* Each rate is counted once per town-parent AFTER selecting the RSL stock cohort. */
+function dohSummary(pairs,selected){
+  let stock=0,coveredStock=0,rate=0,missing=0,missingStock=0;const seen=new Set();
+  for(const p of pairs){
+    const volume=Object.entries(p.stock).reduce((s,[g,v])=>s+(selected.has(g)?v:0),0);
+    if(!(volume>0))continue;stock+=volume;
+    const key=JSON.stringify([p.t,p.p]);if(seen.has(key))throw Error('Duplicate DOH town-parent');seen.add(key);
+    if(p.rate==null){missing++;missingStock+=volume}else{rate+=p.rate;coveredStock+=volume}
+  }
+  return {value:!coveredStock?null:rate>0?coveredStock/rate*30:Infinity,stock,coveredStock,rate,missing,missingStock,pairs:seen.size};
+}
+let B,TOT,TPTS;
+function buildData(){
+  B=SERIES.brands.map(b=>({brand:b.b,...mk(aggs(b.m)),kids:(b.p||[]).map(p=>({brand:b.b,parent:1,code:p.c,desc:p.d,...mk(aggs(p.m))}))}))
+    .filter(b=>b.m.some(Boolean));
+  B.forEach(b=>b.kids=b.kids.filter(k=>k.m.some(Boolean)));
+  TOT=aggs(SERIES.total).map(x=>x||{lm:null,o:null,n:null,r:null,p:null});
+  TPTS=[...TOT.map(x=>num(x.lm)),num(TOT[NM-1].o)+num(TOT[NM-1].n)];
+}
+const open=new Set();
+let metric='red',minStock=0,mq='',ms={k:'now',d:-1},sel=null;
+buildData();
+const mix=(c,t)=>`color-mix(in srgb, var(--${c}) ${Math.round(8+80*t)}%, var(--surface))`;
+const mval=x=>!x?null:!(x.lm>0)?null:metric==='red'?x.p:(num(x.o)+num(x.n)-x.lm)/x.lm;
+function cell(x){
+  if(!x)return {t:'·',s:'color:var(--line2)'};
+  if(!(x.lm>0))return {t:'new',s:'color:var(--bad);font-style:italic'};
+  const v=mval(x),r=Math.round(v*100),pc=Math.abs(r)+'%';
+  if(metric==='red'){const t=Math.min(Math.abs(v)/(v<0?.3:.6),1);
+    return {t:(r<0?'−':'')+pc,bg:mix(v<0?'bad':'accent',t),fg:t>.55?'var(--accent-ink)':'var(--ink)'}}
+  const t=Math.min(Math.abs(v)/.5,1);
+  return {t:(r>0?'+':r<0?'−':'')+pc,bg:r===0?'none':mix(v>0?'bad':'ok',t),fg:t>.55?'var(--accent-ink)':'var(--ink)'};
+}
+const hm=c=>`<div class="hm" style="${c.bg?`background:${c.bg};`:''}${c.fg?`color:${c.fg};`:''}${c.s||''}">${c.t}</div>`;
+function spark(p){
+  const w=84,h=20,lo=Math.min(...p),hi=Math.max(...p),rg=hi-lo||1;
+  const xy=p.map((v,i)=>[+(2+i*(w-4)/(p.length-1)).toFixed(1),+(h-2-(v-lo)/rg*(h-4)).toFixed(1)]);
+  const c=p.at(-1)>p[0]*1.05?'var(--bad)':p.at(-1)<p[0]*.95?'var(--ok)':'var(--ink3)';
+  return `<svg style="width:${w}px;height:${h}px;stroke:none;display:block;margin:2px auto;overflow:visible"><polyline points="${xy.map(q=>q.join(',')).join(' ')}" style="fill:none;stroke:var(--ink3)" stroke-width="1.3"/><circle cx="${xy.at(-1)[0]}" cy="${xy.at(-1)[1]}" r="2.6" style="fill:${c};stroke:none"/></svg>`;
+}
+function statusDohCell(r){
+  const c=r.cover,base=`${SERIES.doh.date} · Selected all-stock cohort: ${f(c.stock,3)} KL · Relevant run rate: ${f(c.rate,3)} KL/month · ${SERIES.doh.source_months} source months · seasonality-aware winsorization`;
+  const note=c.missing?`${c.missing} town-parent rate(s) missing; ${f(c.missingStock,3)} KL excluded. DOH uses ${f(c.coveredStock,3)} KL with known demand${c.value==null?'; no covered stock, DOH unavailable':''}`:!c.stock?'No latest stock in selected RSL groups':!c.rate?'No observed demand; unbounded cover':'Stock KL ÷ distinct monthly rates × 30';
+  return `<button class="doh-value" type="button" data-doh-status="${esc(r.id)}" title="${esc(base+' · '+note)}" aria-label="Explain DOH for ${esc(r.name)}">${c.value==null?'—':Number.isFinite(c.value)?f(c.value,1):'∞'}${c.missing?' ⚠':''}</button>`;
+}
+const avgCell=a=>a==null?f(null):`<span class="${a<.1?'badc':''}">${Math.round(a*100)}%</span>`;
+const avgOf=ts=>{let l=0,r=0;ts.forEach(x=>{if(x&&x.lm>0){l+=x.lm;r+=num(x.r)}});return l?r/l:null};
+const latestMonth=SERIES.labels.at(-1), previousMonth=NM>1?SERIES.labels[NM-2]:SERIES.start;
+const components=[
+ {k:'opening',h:previousMonth+' stock',value:x=>x.lm},
+ {k:'cleared',h:'Cleared',value:x=>x.lm==null?null:x.lm-num(x.o),cls:'good'},
+ {k:'carried',h:'Carried over',value:x=>x.o},
+ {k:'added',h:'New inclusions',value:x=>x.n,cls:'badc'},
+ {k:'closing',h:latestMonth+' stock',value:x=>num(x.o)+num(x.n)}];
+const componentCell=(x,c)=>!x||c.value(x)==null?'–':amount(c.value(x));
+const mcols=[
+ {k:'brand',h:'Brand',r:r=>r.parent?`<span class="pn" title="${esc(r.desc)} · parent ${esc(r.code)}">${esc(r.desc)}<small>${esc(r.code)}</small></span>`:`<button class="tg" data-tg="${esc(r.brand)}" aria-expanded="${!!r.isOpen}" aria-label="${r.isOpen?'Collapse':'Expand'} ${esc(r.brand)} parents" title="${r.kids.length} parent${r.kids.length===1?'':'s'}" ${r.kids.length?'':'disabled'}>▸</button>${esc(r.brand)}`,cls:'name'},
+ ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>hm(cell(r.m[i]))})),
+ ...components.map(c=>({k:c.k,h:c.h,num:1,cls:c.cls||'',r:r=>componentCell(r.m[NM-1],c)})),
+ {k:'m'+(NM-1),h:'Cleared % / Net %',ctr:1,cls:'hmc',r:r=>hm(cell(r.m[NM-1]))},
+ {k:'spark',h:'Stock trend',help:'trend',ctr:1,nosort:1,cls:'hmc sp',r:r=>spark(r.pts)},
+ {k:'now',h:SERIES.start+'→'+latestMonth+' ('+unitLabel()+')',num:1,r:r=>`${amount(r.pts[0],1)} → <b style="font-weight:600">${amount(r.now,1)}</b>`},
+ {k:'avg',h:'Avg',num:1,r:r=>avgCell(r.avg)}];
+const full=i=>SERIES.labels[i]+' '+SERIES.year;
+function drawNote(){
+  $('#mNote').html=`<span>Actionable stock only · Breakdown amounts in ${unitLabel()}</span><span>Each month compares with the previous saved report</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Cleared = last month's stock no longer in this month · New = batches not in last month</span><span>Latest rate-dependent measures refreshed; earlier saved snapshots remain unchanged</span>`;
+}
+function drawScale(){
+  $('#mScale').html=metric==='red'
+   ? `<span>Share of last month's stock cleared</span>0%<i style="background:linear-gradient(90deg,var(--surface),var(--accent))"></i>60%+`
+   : `<span>Stock change vs last month</span>−50%<i style="background:linear-gradient(90deg,var(--ok),var(--surface),var(--bad))"></i>+50%`;
+}
+function drawDetail(){
+  const b0=B.find(x=>x.brand===sel.brand);if(!b0)return;const b=sel.code?b0.kids.find(k=>k.code===sel.code):b0;if(!b)return;
+  const CW=176,BW=26,BG=9,L=64,T=40,PB=72,H=470,W=L+NM*CW+10,ph=H-T-PB;
+  const tops=b.m.map(y=>y?Math.max(num(y.lm),num(y.o)+num(y.n)):0),mxv=Math.max(1,...tops);
+  const step=(()=>{const r=mxv/5,p=10**Math.floor(Math.log10(r)),m=r/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p})(),top=Math.ceil(mxv/step)*step;
+  const Y=v=>T+(1-v/top)*ph, fm=v=>(v/unitDivisor()).toFixed(2);
+  let g='';
+  for(let v=0;v<=top+1;v+=step)g+=`<line x1="${L}" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:${v?'var(--line)':'var(--line2)'}" stroke-width="1" ${v?'stroke-dasharray="3 4"':''}/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);stroke:none;font:11px var(--mono)">${+(v/unitDivisor()).toFixed(1)}</text>`;
+  g+=`<text x="0" y="14" style="fill:var(--ink3);stroke:none;font:500 11px var(--font)">Stock (${unitLabel()})</text>`;
+  b.m.forEach((y,i)=>{
+    const X0=L+i*CW,cx=X0+CW/2,bx=k=>cx-(4*BW+3*BG)/2+k*(BW+BG),on=i===sel.mi;
+    g+=`<g data-mi="${i}" style="cursor:pointer">${on?`<rect x="${X0+4}" y="${T-26}" width="${CW-8}" height="${ph+PB-4}" rx="10" style="fill:var(--accent-soft);stroke:none"/>`:`<rect x="${X0+4}" y="${T-26}" width="${CW-8}" height="${ph+PB-4}" rx="6" style="fill:transparent;stroke:none"/>`}`;
+    if(!y){g+=`<text x="${cx}" y="${Y(0)-8}" text-anchor="middle" style="fill:var(--ink3);stroke:none;font:11px var(--font)">no stock</text>`}
+    else{
+      const lm=num(y.lm),o=num(y.o),n=num(y.n),cl=Math.max(0,lm-o),cm=o+n;
+      const bars=[[0,lm,'var(--ink)',fm(lm),'Opening'],[o,lm,'var(--ok)','−'+fm(cl),'Cleared'],[o,cm,'var(--bad)','+'+fm(n),'New'],[0,cm,'var(--ink)',fm(cm),'Closing']];
+      bars.forEach(([a,c,col,t,nm],k)=>{const h=Math.max(Y(a)-Y(c),c>a?1:0);
+        g+=`<rect x="${bx(k)}" y="${Y(c)}" width="${BW}" height="${h}" rx="3" style="fill:${col};stroke:none"><title>${SERIES.labels[i]} · ${nm}: ${amount(Math.abs(k==1?cl:k==2?n:k==0?lm:cm))} ${unitLabel()}</title></rect><text x="${bx(k)+BW/2}" y="${Y(c)-5}" text-anchor="middle" style="fill:var(--ink2);stroke:var(--surface);stroke-width:3px;paint-order:stroke;font:500 10.5px var(--mono)">${t}</text>`});
+      [[0,lm],[1,o],[2,cm]].forEach(([k,v])=>g+=`<line x1="${bx(k)+BW}" x2="${bx(k+1)}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line2)" stroke-width="1" stroke-dasharray="2 2"/>`);
+      const pc=lm>0?Math.round((cm-lm)/lm*100):null;
+      g+=`<text x="${cx}" y="${T+ph+38}" text-anchor="middle" style="fill:${pc==null?'var(--bad)':pc>0?'var(--bad)':'var(--ok)'};stroke:none;font:600 11px var(--mono)">${pc==null?'new':(pc>0?'+':pc<0?'−':'')+Math.abs(pc)+'% net'}</text>`;
+      if(y.p!=null)g+=`<text x="${cx}" y="${T+ph+54}" text-anchor="middle" style="fill:var(--ink3);stroke:none;font:11px var(--mono)">${Math.round(y.p*100)}% cleared</text>`;
+    }
+    g+=`<text x="${cx}" y="${T+ph+20}" text-anchor="middle" style="fill:var(--ink);stroke:none;font:${on?600:500} 13.5px var(--font)">${SERIES.labels[i]}</text></g>`;
+  });
+  const x=b.m[sel.mi],rem=x&&x.rem?x.rem.split(', ').filter(Boolean):[];
+  $('#mvTitle').textContent=b.parent?`${b.brand} · ${b.desc}`:b.brand;
+  $('#mvSub').textContent=`${SERIES.start} → ${SERIES.labels.at(-1)} ${SERIES.year} · each month: opening stock, cleared, new inclusions, closing stock`;
+  $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly stock waterfalls for ${esc(b.brand)}">${g}</svg>`;
+  $('#mvFoot').html=`<div class="legend"><span><i style="background:var(--ink)"></i>Opening / closing</span><span><i style="background:var(--ok)"></i>Cleared</span><span><i style="background:var(--bad)"></i>New inclusions</span></div>`+(rem.length?`<p class="sub" style="margin:0"><b>${SERIES.labels[sel.mi]} remarks:</b> ${rem.map(esc).join(' · ')}</p>`:'');
+  $$('#mvBody [data-mi]').forEach(e=>e.onclick=()=>{sel.mi=+e.dataset.mi;drawDetail()});
+  $('#mv').hidden=false;
+}
+function drawM(){
+  mcols.find(c=>c.k==='now').h=SERIES.start+'→'+latestMonth+' ('+unitLabel()+')';
+  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
+  const cmpK=ms.k==='brand'?(a,b)=>a.desc.localeCompare(b.desc):cmp(ms.k,ms.d);
+  const rows=[];
+  B.filter(r=>r.now>=minStock).forEach(r=>{
+    const byName=!mq||r.brand.toLowerCase().includes(mq),byKid=!!mq&&r.kids.some(k=>(k.desc+' '+k.code).toLowerCase().includes(mq));
+    if(byName||byKid)rows.push({...dec(r),isOpen:open.has(r.brand)||(byKid&&!byName)});
+  });
+  rows.sort(cmp(ms.k,ms.d));
+  const flat=[];
+  rows.forEach(r=>{flat.push(r);if(r.isOpen){const ks=r.kids.map(dec).sort(cmpK);ks.forEach((k,i)=>flat.push({...k,trc:'par'+(i===0?' par-first':'')+(i===ks.length-1?' par-last':'')}))}});
+  flat.forEach((r,i)=>{if(i%2)r.trc=(r.trc?r.trc+' ':'')+'alt'});
+  rows.length=0;rows.push(...flat);
+  const nb=B.filter(r=>r.now>=minStock&&r.kids.length),allOpen=nb.length>0&&nb.every(r=>open.has(r.brand));
+  $('#mExp').textContent=allOpen?'Collapse all':'Expand all';$('#mExp').dataset.all=allOpen?1:'';
+  const foot=['All actionable',...TOT.slice(0,-1).map(x=>hm(cell(x))),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
+  mcols[NM+5].h=metric==='red'?'Cleared %':'Net change %';
+  table({t:'#mT',cols:mcols,rows,groups:[{span:NM,label:'Earlier months'},{span:6,label:latestMonth+' breakdown · '+unitLabel()},{span:3,label:'Stock overview'}],sort:ms,onSort:k=>{if(k==='spark')return;ms=ms.k===k?{k,d:-ms.d}:{k,d:k==='brand'?1:-1};$('#mSort').value='';drawM()},foot,
+    onSelect:(r,c)=>{sel={brand:r.brand,code:r.parent?r.code:null,mi:c>=1&&c<NM?c-1:NM-1};drawDetail()},emptyMsg:'No brands match these filters.'});
+  $$('#mT tr').forEach(tr=>{if(tr.cells.length<NM+7)return;for(let k=1;k<=6;k++){const c=tr.cells[NM+k];c.classList.add('bk');if(k===1)c.classList.add('bk-l');if(k===6)c.classList.add('bk-r')}});
+  const gh=$$('#mT th.group-h')[2];if(gh){gh.classList.add('bk','bk-l','bk-r')}
+}
+$$('#mMetric [data-m]').forEach(c=>c.onclick=()=>{metric=c.dataset.m;$$('#mMetric [data-m]').forEach(x=>x.setAttribute('aria-pressed',x===c));drawScale();drawM()});
+function drawRsl(){
+  const all=gsel.size===GROUPS.length;
+  $('#mRslLbl').textContent='RSL: '+(all?'All':gsel.size?GROUPS.filter((_,i)=>gsel.has(i)).join(', '):'None');
+  $('#mRslPop').html=`<div class="ms-act"><button class="btn ghost sm" type="button" data-a="all">Select all</button><button class="btn ghost sm" type="button" data-a="none">Clear</button></div>`+GROUPS.map((g,i)=>`<label><input type="checkbox" data-g="${i}" ${gsel.has(i)?'checked':''}>${esc(g)}</label>`).join('');
+}
+function applyRsl(){if(!$('#doh').hidden)closeDohExplanation();buildData();drawRsl();drawM();if(sel){B.some(x=>x.brand===sel.brand)?drawDetail():$('#mv').hidden=true}}
+$('#mRslPop').addEventListener('change',e=>{const i=+e.target.dataset.g;e.target.checked?gsel.add(i):gsel.delete(i);applyRsl();$('#mRslPop [data-g="'+i+'"]').focus()});
+$('#mRslPop').addEventListener('click',e=>{const a=e.target.dataset.a;if(!a)return;gsel=new Set(a==='all'?GROUPS.map((_,i)=>i):[]);applyRsl()});
+document.addEventListener('click',e=>{const d=$('#mRsl');if(d.open&&!d.contains(e.target))d.open=false});
+$$('#mSize button').forEach(c=>c.onclick=()=>{minStock=+c.dataset.s;$$('#mSize button').forEach(x=>x.setAttribute('aria-pressed',x===c));drawM()});
+$('#mSort').onchange=e=>{const [k,d]=e.target.value.split(':');ms={k,d:+d};drawM()};
+$('#mSearch').oninput=e=>{mq=e.target.value.trim().toLowerCase();drawM()};
+const togBrand=b=>{open.has(b)?open.delete(b):open.add(b);drawM();const e=$(`#mT [data-tg="${CSS.escape(b)}"]`);e&&e.focus({preventScroll:true})};
+$('#mT').closest('.tw').addEventListener('click',e=>{const g=e.target.closest('.tg');if(!g)return;e.stopPropagation();togBrand(g.dataset.tg)},true);
+$('#mExp').onclick=e=>{const all=e.currentTarget.dataset.all;B.forEach(r=>{if(r.now>=minStock&&r.kids.length)all?open.delete(r.brand):open.add(r.brand)});drawM()};
+drawNote();drawScale();drawRsl();drawM();
+
+/* overview report: source facts and geometry are independent of other report filters. */
+const OVERVIEW_COLORS={'< 3M':'#303030','3M - 6M':'#686868','6M - 10M':'#a0a0a0','> 10M':'#d8d8d8',exposure:'#d99519',lnd:'#c62d3a'};
+function overviewData(source,groups){
+  // Keep >10M at the top even if the source contains an unknown RSL bucket.
+  const order=['< 3M','3M - 6M','6M - 10M'];
+  const indices=groups.map((_,i)=>i).sort((a,b)=>{
+    const rank=g=>{if(g==='> 10M')return Infinity;const i=order.indexOf(g);return i<0?order.length:i};
+    return rank(groups[a])-rank(groups[b]);
+  });
+  const long=groups.indexOf('> 10M');
+  return source.map(cs=>{
+    if(cs==null)return null;
+    let total=0;
+    const bands=indices.map(i=>{const lower=total;total+=cs[i][0];return {group:groups[i],lower,upper:total,value:cs[i][0]}});
+    const c=cs[long]||[0,0,0];
+    return {total,bands,exposure:{lower:total-c[1],upper:total,value:c[1]},lnd:{lower:total-c[2],upper:total,value:c[2]}};
+  });
+}
+// Shape-preserving cubic Hermite interpolation. Shared boundaries use the same
+// tangents in either direction, so adjacent areas meet exactly at every curve.
+function monotoneLine(points){
+  if(!points.length)return '';
+  const slopes=points.slice(1).map((p,i)=>(p[1]-points[i][1])/(p[0]-points[i][0]));
+  const tangents=points.map((_,i)=>{
+    if(!i)return slopes[0]||0;
+    if(i===points.length-1)return slopes[i-1]||0;
+    const a=slopes[i-1],b=slopes[i];return a*b<=0?0:2*a*b/(a+b);
+  });
+  const segments=points.slice(1).map((p,i)=>{
+    const q=points[i],dx=(p[0]-q[0])/3;
+    return [q,[q[0]+dx,q[1]+dx*tangents[i]],[p[0]-dx,p[1]-dx*tangents[i+1]],p];
+  });
+  return 'M'+points[0].join(',')+segments.map(s=>' C'+s.slice(1).map(p=>p.join(',')).join(' ')).join('');
+}
+function overviewArea(run,bounds,X,Y){
+  if(run.length===1){const i=run[0],[lo,hi]=bounds(i),x=X(i);return `M${x-3},${Y(hi)} H${x+3} V${Y(lo)} H${x-3} Z`}
+  const upper=run.map(i=>[X(i),Y(bounds(i)[1])]),lower=run.map(i=>[X(i),Y(bounds(i)[0])]);
+  return monotoneLine(upper)+' '+monotoneLine(lower.toReversed()).replace(/^M/,'L')+' Z';
+}
+let overviewMonth=STATUS.labels.length-1,overviewMode='qty';
+// Ratios are formed per month before interpolation; undefined bases remain gaps.
+function overviewPlotData(data,base,mode){
+  if(mode==='qty')return data;
+  return data.map(d=>{
+    if(!d)return null;
+    const denominator=base==='total'?d.total:d.bands.find(b=>b.group==='> 10M')?.value;
+    if(!(denominator>0))return null;
+    const factor=100/denominator;
+    const scaled=band=>({...band,lower:band.lower*factor,upper:band.upper*factor,value:band.value*factor});
+    return {...d,total:d.total*factor,bands:d.bands.map(scaled),exposure:scaled(d.exposure),lnd:scaled(d.lnd)};
+  });
+}
+const overviewShare=(value,total)=>{
+  if(!(total>0))return '—';
+  const percent=value/total*100;
+  return percent>0&&percent<0.01?'&lt;0.01%':f(percent,2)+'%';
+};
+function overviewReadout(d){
+  if(!d)return '<div>No saved snapshot for this month.</div>';
+  const long=d.bands.find(b=>b.group==='> 10M')?.value||0;
+  const values=[{key:'total',label:'Total stock',value:d.total},...d.bands.map(b=>({key:b.group,label:b.group,value:b.value})),
+    {key:'exposure',label:'Exposure · >10M',value:d.exposure.value,risk:true},
+    {key:'lnd',label:'LND · >10M',value:d.lnd.value,risk:true}];
+  return values.map(v=>'<div data-overview-value="'+esc(v.key)+'"><dt>'+(v.key==='total'?'':'<i style="background:'+(OVERVIEW_COLORS[v.key]||'#bababa')+'"></i>')+esc(v.label)+'</dt><dd>'+amount(v.value)+(v.key==='total'?'<span class="overview-share">'+unitLabel()+'</span>':'<span class="overview-share" data-share="total">'+overviewShare(v.value,d.total)+' of total</span>')+(v.risk?'<span class="overview-share secondary" data-share="long">'+overviewShare(v.value,long)+' of &gt;10M</span>':'')+'</dd></div>').join('');
+}
+// A fixed scale per panel, calculated from the entire period, never the hovered month.
+function overviewScale(values){
+  const max=Math.max(1,...values),raw=max/3,power=10**Math.floor(Math.log10(raw));
+  const step=[1,2,5,10].find(n=>raw/power<=n)*power;
+  return Math.ceil(max/step)*step;
+}
+// Only a small breathing space remains at the right; values live on the areas.
+const overviewGutter=()=>18;
+function overviewPanel(el,data,series,X,basis){
+  const runs=[];let run=[];
+  data.forEach((d,i)=>{if(d)run.push(i);else if(run.length){runs.push(run);run=[]}});if(run.length)runs.push(run);
+  const top=overviewScale(data.filter(Boolean).flatMap(d=>series.map(s=>s.bounds(d)[1])));
+  const W=el.clientWidth||700,H=el.clientHeight||100,L=52,R=overviewGutter(W),T=8,B=7;
+  const Y=v=>T+(H-T-B)*(1-v/top);
+  el.setAttribute('viewBox','0 0 '+W+' '+H);el.dataset.scale=top;
+  let svg='';
+  for(const value of [0,top/2,top]){
+    svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(value)+'" y2="'+Y(value)+'" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4"/><text x="'+(L-7)+'" y="'+(Y(value)+3)+'" text-anchor="end">'+(overviewMode==='percent'?f(value,2)+'%':amount(value,1))+'</text>';
+  }
+  series.forEach(s=>runs.forEach(run=>{
+    svg+='<path '+s.attribute+'="'+esc(s.key)+'" d="'+overviewArea(run,i=>s.bounds(data[i]),X,Y)+'" fill="'+s.color+'"/>';
+  }));
+  // Numeric tags follow the inspected month. Horizontal staggering keeps thin
+  // bands legible without pushing their values into a separate legend.
+  const fmt=v=>overviewMode==='percent'?f(v,2)+'%':amount(v,1);
+  el._paintLabels=i=>{
+    const g=el.querySelector('.overview-labels');if(!g)return;
+    const d=data[i];
+    if(!d){g.html='';return}
+    const rows=series.map(s=>{const[lo,hi]=s.bounds(d);return {s,v:hi-lo,y:Y(s.labelY(lo,hi,d))}});
+    const direction=X(i)>(L+W-R)/2?-1:1;
+    g.html=rows.map((r,j)=>{
+      if(!(r.v>0))return '';
+      const label=fmt(r.v),width=Math.max(34,label.length*6.5+14);
+      const x=Math.min(W-R-width/2,Math.max(L+width/2,X(i)+direction*(width/2+8+j*70)));
+      const y=Math.min(H-B-9,Math.max(T+9,r.y));
+      const tip=esc(STATUS.labels[i]+' · '+r.s.name)+' · '+(overviewMode==='percent'?label+' '+basis:amount(r.v)+' '+unitLabel());
+      return '<rect x="'+(x-width/2)+'" y="'+(y-9)+'" width="'+width+'" height="18" rx="4" fill="'+r.s.color+'" stroke="rgba(255,255,255,.65)" stroke-width="1"/>'
+        +'<text class="overview-label" x="'+x+'" y="'+(y+3.5)+'" text-anchor="middle"'+(r.s.key==='6M - 10M'||r.s.key==='exposure'?' style="fill:#14161b"':'')+'>'+label+'<title>'+tip+'</title></text>';
+    }).join('');
+  };
+  svg+='<g class="overview-labels"></g>';
+  if(!runs.length)svg+='<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle">'+(overviewMode==='percent'?'No stock base for %':'No saved stock')+'</text>';
+  svg+='<line class="overview-cursor" y1="'+T+'" y2="'+Y(0)+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 4" pointer-events="none"/>';
+  data.forEach((d,i)=>{
+    const left=i?(X(i-1)+X(i))/2:L,right=i<data.length-1?(X(i)+X(i+1))/2:W-R;
+    svg+='<rect data-overview-month="'+i+'" x="'+left+'" y="0" width="'+(right-left)+'" height="'+H+'" fill="transparent"/>';
+  });
+  el.html=svg;
+}
+function drawOverview(){
+  const data=overviewData((reportUnit==='bdt'?STATUS.total:STATUS.total_kl).m,STATUS.groups);
+  const W=$('#overviewShortChart').clientWidth||700,N=data.length;
+  const R=overviewGutter(W),X=i=>N>1?52+i*(W-52-R)/(N-1):(52+W-R)/2;
+  const bands=data.find(Boolean)?.bands||[];
+  const stock=bands.map((b,j)=>({key:b.group,color:OVERVIEW_COLORS[b.group]||'#bababa',attribute:'data-overview-area',bounds:d=>[d.bands[j].lower,d.bands[j].upper]}));
+  const short=stock.filter(s=>['< 3M','3M - 6M','6M - 10M'].includes(s.key)).map(s=>({...s,attribute:'data-overview-short',labelY:(lo,hi)=>(lo+hi)/2,name:s.key}));
+  const risk=['exposure','lnd'].map(key=>({key,color:OVERVIEW_COLORS[key],attribute:'data-overview-risk',bounds:d=>[0,d[key].value],labelY:(lo,hi,d)=>key==='lnd'?hi/2:(Math.min(d.lnd.value,hi)+hi)/2,name:key==='lnd'?'LND':'Exposure'}));
+  overviewPanel($('#overviewShortChart'),overviewPlotData(data,'total',overviewMode),short,X,'of total stock');
+  overviewPanel($('#overviewRiskChart'),overviewPlotData(data,'long',overviewMode),risk,X,'of &gt;10M stock');
+  $('#overviewShortBasis').textContent=overviewMode==='percent'?'% of total stock':'Magnified · separate scale';
+  $('#overviewRiskBasis').textContent=overviewMode==='percent'?'% of >10M · not stacked':'Separate scale · not stacked';
+  $('#overviewShortChart').setAttribute('aria-label','Shorter-RSL stock stacked in '+(overviewMode==='percent'?'percent of total stock':unitLabel())+', labels show the inspected month');
+  $('#overviewRiskChart').setAttribute('aria-label','Exposure and LND overlapping in '+(overviewMode==='percent'?'percent of greater-than-10-month stock':unitLabel())+', labels show the inspected month');
+  $('#overviewRange').textContent=STATUS.labels[0]+' → '+STATUS.labels.at(-1)+' · all amounts in '+unitLabel();
+  // Preserve focused month buttons when a ResizeObserver refreshes the SVGs.
+  const months=$('#overviewMonths');
+  if(months.dataset.labels!==JSON.stringify(STATUS.labels)){
+    months.html=STATUS.labels.map((label,i)=>'<button type="button" data-overview-select="'+i+'" aria-label="'+esc(label)+'" aria-pressed="false">'+esc(label.split(' ')[0])+'</button>').join('');
+    months.dataset.labels=JSON.stringify(STATUS.labels);
+  }
+  function inspect(i){
+    overviewMonth=i;const d=data[i];
+    $('#overviewTotal').html=(d?amount(d.total)+' '+unitLabel():'No saved snapshot')+'<small>'+esc(STATUS.labels[i])+' · total stock</small>';
+    $('#overviewReadout').html=overviewReadout(d);
+    $$('#overviewMonths button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.overviewSelect===i));
+    $$('.overview-cursor').forEach(cursor=>{cursor.setAttribute('x1',X(i));cursor.setAttribute('x2',X(i))});
+    ['#overviewShortChart','#overviewRiskChart'].forEach(id=>$(id)._paintLabels(i));
+  }
+  $$('.overview-plots [data-overview-month]').forEach(el=>{el.onmouseenter=()=>inspect(+el.dataset.overviewMonth);el.onclick=()=>inspect(+el.dataset.overviewMonth)});
+  $$('#overviewMonths button').forEach(el=>{
+    el.style.left=X(+el.dataset.overviewSelect)+'px';
+    el.onclick=()=>inspect(+el.dataset.overviewSelect);el.onfocus=()=>inspect(+el.dataset.overviewSelect);
+    el.onkeydown=e=>{const delta={ArrowLeft:-1,ArrowRight:1}[e.key];if(!delta)return;e.preventDefault();const next=Math.max(0,Math.min(N-1,+el.dataset.overviewSelect+delta));$('#overviewMonths [data-overview-select="'+next+'"]').focus()};
+  });
+  inspect(Math.max(0,Math.min(overviewMonth,N-1)));
+}
+$$('#overviewMode button').forEach(button=>button.onclick=()=>{
+  overviewMode=button.dataset.overviewMode;
+  $$('#overviewMode button').forEach(b=>b.setAttribute('aria-pressed',b===button));
+  drawOverview();
+});
+new ResizeObserver(()=>{if(curRep==='overview'&&$('#overviewShortChart').clientHeight>0)drawOverview()}).observe($('.overview-plots'));
+document.addEventListener('click',e=>{const info=$('.overview-info');if(!info.contains(e.target))info.open=false});
+$('.overview-info').addEventListener('keydown',e=>{if(e.key==='Escape'){$('.overview-info').open=false;$('.overview-info summary').focus()}});
+
+/* town / brand status: one spreadsheet renderer with projections of the same facts */
+let statusMetricNames=['stock-bdt','exposure-bdt','lnd-bdt'];
+let statusOpen=new Set(),statusNodes=new Map(),statusRoot=STATUS.total,statusView='town';
+function indexStatus(n){statusNodes.set(n.id,n);n.kids.forEach(indexStatus)}
+indexStatus(statusRoot);
+let statusMetric=1,statusQuery='',statusSelected=new Set(),statusSort={k:'total',d:-1},statusFocus=null;
+const normalizeSearch=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function statusSearchType(n){
+  if(n.code)return 'parent';
+  const townLevel={town:0,'brand-town':1,'brand-parent':2}[statusView];
+  return n.level===townLevel?'town':'brand';
+}
+const statusSearchKey=n=>JSON.stringify([statusSearchType(n),n.code||n.name]);
+let statusSearchOptions=[];
+function indexStatusSearch(){
+  const unique=new Map();
+  statusNodes.forEach(n=>{if(n.id==='total')return;const key=statusSearchKey(n);if(!unique.has(key))unique.set(key,{key,name:n.name,code:n.code,type:statusSearchType(n),text:normalizeSearch(n.name+' '+(n.code||''))})});
+  statusSearchOptions=[...unique.values()];
+}
+// One edit (including a transposition) or an ordered abbreviation matches a token.
+function fuzzyToken(query,word){
+  if(word.includes(query))return 0;
+  if(query.length<3)return Infinity;
+  let j=0;for(const c of word)if(c===query[j])j++;
+  if(j===query.length)return 2+(word.length-query.length)/100;
+  if(Math.abs(query.length-word.length)>1)return Infinity;
+  let i=0,k=0,edits=0;
+  while(i<query.length&&k<word.length){if(query[i]===word[k]){i++;k++;continue}if(++edits>1)return Infinity;
+    if(query[i]===word[k+1]&&query[i+1]===word[k]){i+=2;k+=2}
+    else if(query.length>word.length)i++;else if(word.length>query.length)k++;else{i++;k++}}
+  return edits+(query.length-i)+(word.length-k)<=1?1:Infinity;
+}
+function statusSearchScore(option,query){
+  if(option.text.includes(query))return option.text===query?0:1;
+  const words=option.text.split(' ');let score=2;
+  for(const token of query.split(' ')){const best=Math.min(...words.map(word=>fuzzyToken(token,word)));if(!Number.isFinite(best))return Infinity;score+=best}
+  return score;
+}
+function drawStatusSuggestions(){
+  const query=normalizeSearch(statusQuery),pop=$('#sSearchPop');
+  const options=statusSearchOptions.map(o=>({o,score:query?statusSearchScore(o,query):0})).filter(x=>Number.isFinite(x.score)).sort((a,b)=>a.score-b.score||a.o.name.localeCompare(b.o.name)).slice(0,40);
+  pop.html=options.map(({o},i)=>`<button type="button" id="sOption${i}" role="option" aria-selected="${statusSelected.has(o.key)}" data-search-key="${esc(o.key)}">${statusSelected.has(o.key)?'✓ ':''}${esc(o.name)}<small>${esc(o.type)}${o.code?' · '+esc(o.code):''}</small></button>`).join('')||'<p class="sub">No matches. Try a name or parent code.</p>';
+  pop.hidden=false;$('#sSearch').setAttribute('aria-expanded','true');$('#sSearch').removeAttribute('aria-activedescendant');
+}
+function closeStatusSuggestions(){$('#sSearchPop').hidden=true;$('#sSearch').setAttribute('aria-expanded','false');$('#sSearch').removeAttribute('aria-activedescendant')}
+function drawStatusChips(){
+  $('#sSearchChips').html=[...statusSelected].map(key=>{const o=statusSearchOptions.find(o=>o.key===key);return `<button class="btn" type="button" data-remove-key="${esc(key)}" aria-label="Remove ${esc(o?.name||key)}">${esc(o?.name||key)} ×</button>`}).join('')+(statusSelected.size?'<button class="btn ghost" type="button" data-search-clear>Clear all</button>':'');
+}
+function toggleStatusSelection(key){statusSelected.has(key)?statusSelected.delete(key):statusSelected.add(key);drawStatusChips();drawStatus();drawStatusSuggestions();$('#sSearch').focus({preventScroll:true})}
+const statusTrees=new Map([['town',STATUS.total]]),statusStates=new Map();
+function brandStatusTree(order){
+  const key='brand-'+order;if(statusTrees.has(key))return statusTrees.get(key);
+  const root={name:'All brands',id:'total',m:(reportUnit==='bdt'?STATUS.total:STATUS.total_kl).m,kids:[]},nodes=new Map();
+  const node=(id,name,level,path,code)=>({id,name,level,path,code,m:STATUS.labels.map(()=>null),kids:[]});
+  const add=(n,m)=>m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>c.forEach((v,j)=>n.m[i][g][j]+=v))});
+  (reportUnit==='bdt'?STATUS.total:STATUS.total_kl).kids.forEach(t=>t.kids.forEach(b=>b.kids.forEach(p=>{
+    const specs=order==='town'?[[b.name,b.name],[t.name,t.name],[p.code,p.name,p.code]]:[[b.name,b.name],[p.code,p.name,p.code],[t.name,t.name]];
+    let parent=root;const ids=[],path=[];
+    specs.forEach(([identity,name,code],level)=>{ids.push(identity);path.push(name);const id=JSON.stringify(ids);let n=nodes.get(id);
+      if(!n){n=node('v'+nodes.size,name,level,[...path],code);if(order==='parent'&&level===2)n.parentCode=p.code;nodes.set(id,n);parent.kids.push(n)}
+      add(n,p.m);parent=n;
+    });
+  })));
+  statusTrees.set(key,root);return root;
+}
+function setStatusView(view){
+  statusStates.set(statusView,{metric:statusMetric,query:statusQuery,selected:new Set(statusSelected),sort:statusSort,open:statusOpen});
+  const key=view==='town'?'town':'brand-'+$('#sOrder').value;
+  const previous=statusStates.get(key),brandFromTown=view!=='town'&&statusView==='town';
+  const state=previous||{metric:statusMetric,query:brandFromTown?'':statusQuery,selected:new Set(),sort:{k:'total',d:-1},open:new Set()};
+  statusView=key;statusRoot=key==='town'?(reportUnit==='bdt'?STATUS.total:STATUS.total_kl):brandStatusTree($('#sOrder').value);
+  statusMetric=state.metric;statusQuery=state.query;statusSelected=state.selected;statusSort=state.sort;statusOpen=state.open;
+  statusNodes=new Map();indexStatus(statusRoot);indexStatusSearch();drawStatusChips();closeStatusSuggestions();
+  $('#sOrder').hidden=key==='town';$('#sMetric').value=String(statusMetric);$('#sSearch').value=statusQuery;
+  $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
+  $('#sSort option[value="name:1"]').textContent=key==='town'?'Town A–Z':'Brand A–Z';
+  if(SHEETS['#sT'])SHEETS['#sT'].on=false;
+  const fx=$('#sT').closest('.sheet').querySelector('.fx');fx.querySelector('.nb').textContent='A1';fx.querySelector('.fv').textContent='';
+  drawStatus();
+}
+function statusDohPairs(n,view,pairs){
+  if(n.id==='total')return pairs;
+  let town,brand,parent;
+  if(view==='town'){town=n.level===0?n.name:n.town;brand=n.level===1?n.name:n.brand;parent=n.code}
+  else{brand=n.path[0];if(view==='brand-town'){town=n.path[1];parent=n.code}else{parent=n.level>=1?n.code:undefined;town=n.level===2?n.path[2]:undefined;if(n.level===2)parent=n.parentCode}}
+  return pairs.filter(p=>(town==null||p.t===town)&&(brand==null||p.b===brand)&&(parent==null||p.p===String(parent)));
+}
+const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
+const statusPts=n=>n.m.map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
+const statusLatest=n=>n.m.at(-1);
+const statusAmount=n=>statusLatest(n)==null?null:sum(statusLatest(n).map(c=>c[statusMetric]));
+function statusSpark(n){
+  const p=statusPts(n);if(p.every(v=>v==null))return '—';
+  if(p.every(v=>v!=null))return spark(p);
+  const vals=p.filter(v=>v!=null),lo=Math.min(...vals),rg=Math.max(...vals)-lo||1;
+  let path='';p.forEach((v,i)=>{if(v!=null)path+=`${i&&p[i-1]!=null?'L':'M'}${2+i*80/(p.length-1)},${18-(v-lo)/rg*16} `});
+  return `<svg style="width:84px;height:20px;stroke:none;display:block;margin:2px auto"><path d="${path}" style="fill:none;stroke:var(--ink3)" stroke-width="1.3"/></svg>`;
+}
+function statusCell(n,i){
+  const c=statusLatest(n)?.[i],v=c?.[statusMetric];
+  const group=STATUS.groups[i].replace(/\s/g,''),total=statusAmount(n);
+  const share=v>0&&total>0?Math.min(100,Math.max(0,v/total*100)):0;
+  const color={'3M-6M':'rsl-red','6M-10M':'rsl-amber','>10M':'rsl-green'}[group]||'';
+  const fill=`class="${group==='>10M'?'long-value':'status-value'} ${color}" style="--fill:${share}%"`;
+  const main=`<span class="status-main" title="${esc(statusMetricNames[statusMetric])}: ${v==null?'No saved stock':amount(v)+' '+unitLabel()+' · '+f(share,1)+'% of row total'}">${v==null?'—':amount(v)}</span>`;
+  if(group!=='>10M')return `<div ${fill}>${main}</div>`;
+  // Exposure and LND as fractions of this cell's >10M stock; LND is always part of Exposure.
+  const ratio=j=>{if(!c||!(c[0]>0)||!(c[j]>0))return 0;const r=c[j]/c[0];return Number((r*100).toFixed(1))===0?0:Math.min(1,r)};
+  const exp=ratio(1),lnd=Math.min(ratio(2),exp);
+  const tip=exp?`Exposure ${f(exp*100,1)}% · LND ${f(lnd*100,1)}% of >10M stock`:'';
+  const tail=(exp&&share?'<i class="risk exp"></i>':'')+(lnd&&share?'<i class="risk lnd"></i>':'');
+  return `<div class="long-value ${color}" style="--fill:${share}%"${tip?` title="${tip}"`:''}><span class="long-track" style="--exp:${exp};--lnd:${lnd}">${tail}</span>${main.replace(/" title="([^"]*)"/,(m,t)=>`" title="${t}${tip?' · '+tip:''}"`)}</div>`;
+}
+const statusMatches=n=>statusSelected.has(statusSearchKey(n));
+function statusName(n){
+  const label=n.code?`<span title="${esc(n.name)}">${esc(n.name)}</span><small>${esc(n.code)}</small>`:esc(n.name);
+  return `<span class="pn" style="padding-left:${n.level*22}px">${n.kids.length?`<button class="tg" data-stg="${n.id}" aria-expanded="${n.isOpen}" aria-label="${n.isOpen?'Collapse':'Expand'} ${esc(n.name)}">▸</button>`:''}${label}</span>`;
+}
+function drawStatus(){
+  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,SERIES.doh.pairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
+  const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
+  const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
+  const matches=new Map(),hasMatch=new Map();
+  function mark(n){const match=statusMatches(n);matches.set(n.id,match);let descendant=false;n.kids.forEach(k=>{if(mark(k))descendant=true});hasMatch.set(n.id,match||descendant);return match||descendant}
+  if(statusSelected.size)mark(statusRoot);
+  function visit(n,ancestorMatches=false){
+    const match=matches.get(n.id),showAll=!statusSelected.size||ancestorMatches||match;
+    if(!showAll&&!hasMatch.get(n.id))return;
+    const isOpen=statusOpen.has(n.id)||!!statusSelected.size&&!showAll;
+    const entry={...row(n),isOpen,trc:n.level?'par':''};flat.push(entry);
+    if(isOpen){const start=flat.length;n.kids.slice().sort(compare).forEach(k=>visit(k,showAll));
+      if(flat.length>start){flat[start].trc+=' par-first';flat.at(-1).trc+=' par-last'}}
+  }
+  statusRoot.kids.slice().sort(compare).forEach(n=>visit(n));
+  flat.forEach((n,i)=>{if(i%2)n.trc+=' alt'});
+  const cols=[{k:'name',h:statusHierarchy().replaceAll(' → ',' / '),cls:'name',r:statusName},
+    ...STATUS.groups.map((g,i)=>({k:'g'+i,h:esc(g),num:1,cls:'rsl-cell'+(g.replace(/\s/g,'')==='>10M'?' long-rsl':''),r:n=>statusCell(n,i)})),
+    {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
+    {k:'spark',h:'Stock trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
+    {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
+    {k:'now',h:STATUS.labels[0].split(' ')[0]+'→'+STATUS.labels.at(-1).split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
+  const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
+    onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
+    onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No towns, brands or parents match this search.'});
+  $$('#sT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=STATUS.groups.length+2;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===STATUS.groups.length+2)tr.cells[i].classList.add('bk-r')}});
+  const gh=$$('#sT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
+  const expandable=[...statusNodes.values()].filter(n=>n.id!=='total'&&n.kids.length),allOpen=expandable.every(n=>statusOpen.has(n.id));
+  $('#sExp').textContent=allOpen?'Collapse all':'Expand all';$('#sExp').dataset.all=allOpen?'1':'';
+  $('#sCount').textContent=`${flat.filter(n=>!n.level).length} ${statusView==='town'?'towns':'brands'} · ${flat.length} rows`;
+  $('#sHierarchyNote').textContent='▸ '+statusHierarchy();
+}
+$('#sT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[data-stg]');if(!b)return;e.stopPropagation();const id=b.dataset.stg;statusOpen.has(id)?statusOpen.delete(id):statusOpen.add(id);drawStatus();$(`#sT [data-stg="${id}"]`)?.focus({preventScroll:true})},true);
+$('#sSearch').oninput=e=>{statusQuery=e.target.value;drawStatusSuggestions()};
+$('#sSearch').onfocus=()=>drawStatusSuggestions();
+$('#sSearchPop').onmousedown=e=>e.preventDefault();
+$('#sSearchPop').onclick=e=>{const option=e.target.closest('[data-search-key]');if(option)toggleStatusSelection(option.dataset.searchKey)};
+$('#sSearchChips').onclick=e=>{const remove=e.target.closest('[data-remove-key]');if(remove)statusSelected.delete(remove.dataset.removeKey);else if(e.target.closest('[data-search-clear]'))statusSelected.clear();else return;drawStatusChips();drawStatus();closeStatusSuggestions()};
+$('#sSearch').onkeydown=e=>{
+  if(e.key==='Escape'){closeStatusSuggestions();return}
+  if(e.key==='Tab'){closeStatusSuggestions();return}
+  if(!['ArrowDown','ArrowUp','Enter'].includes(e.key))return;
+  e.preventDefault();if($('#sSearchPop').hidden)drawStatusSuggestions();
+  const options=$$('#sSearchPop [data-search-key]');if(!options.length)return;
+  const current=options.findIndex(o=>o.id===e.target.getAttribute('aria-activedescendant'));
+  if(e.key==='Enter'){toggleStatusSelection(options[Math.max(0,current)].dataset.searchKey);return}
+  const next=options[(current+(e.key==='ArrowDown'?1:-1)+options.length)%options.length];e.target.setAttribute('aria-activedescendant',next.id);next.scrollIntoView({block:'nearest'});
+};
+document.addEventListener('click',e=>{if(!$('#sSearchBox').contains(e.target))closeStatusSuggestions()});
+$('#sMetric').onchange=e=>{statusMetric=+e.target.value;drawStatus()};
+$('#sOrder').onchange=()=>setStatusView('status');
+$('#sSort').onchange=e=>{const [k,d]=e.target.value.split(':');statusSort={k,d:+d};drawStatus()};
+$('#sExp').onclick=e=>{const all=!!e.currentTarget.dataset.all;statusNodes.forEach(n=>{if(n.id!=='total'&&n.kids.length)all?statusOpen.delete(n.id):statusOpen.add(n.id)});drawStatus()};
+const statusColors=['var(--bad)','var(--warn)','var(--ink3)','var(--accent)'];
+function openStatusChart(n){
+  statusFocus=$('#sT').closest('.tw');
+  const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=STATUS.labels.length;
+  const cs=n.m,totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
+  const raw=mx/5,power=10**Math.floor(Math.log10(raw)),fraction=raw/power,step=(fraction<=1?1:fraction<=2?2:fraction<=5?5:10)*power,top=Math.ceil(mx/step)*step;
+  const X=i=>L+i*(W-L-R)/(N-1),Y=v=>T+ph*(1-v/top);
+  let g='';
+  for(let j=0;j<=Math.round(top/step);j++){const v=j*step;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)" stroke-dasharray="3 4"/><text x="${L-10}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);font:11px var(--mono)">${amount(v)}</text>`}
+  g+=`<text x="${L}" y="14" style="fill:var(--ink3);font:500 11px var(--font)">${statusMetricNames[statusMetric]} (${unitLabel()})</text>`;
+  STATUS.groups.forEach((group,j)=>{
+    const lower=i=>sum(cs[i].slice(0,j).map(v=>v[statusMetric])),upper=i=>lower(i)+cs[i][j][statusMetric];
+    let run=[];const flush=()=>{if(!run.length)return;const color=statusColors[j%statusColors.length];
+      if(run.length===1){const i=run[0];g+=`<rect x="${X(i)-3}" y="${Y(upper(i))}" width="6" height="${Math.max(0,Y(lower(i))-Y(upper(i)))}" style="fill:${color};fill-opacity:.7"/>`}
+      else g+=`<path data-area="${esc(group)}" d="${overviewArea(run,i=>[lower(i),upper(i)],X,Y)}" style="fill:${color};fill-opacity:.65;stroke:${color};stroke-width:1"><title>${esc(group)}</title></path>`;
+      run=[]};
+    cs.forEach((c,i)=>{if(c==null)flush();else run.push(i)});flush();
+  });
+  cs.forEach((c,i)=>{const x=X(i),title=c?`${STATUS.labels[i]} · Total ${amount(totals[i])} ${unitLabel()}\n`+STATUS.groups.map((group,j)=>`${group}: ${amount(c[j][statusMetric])} ${unitLabel()}`).join('\n'):`${STATUS.labels[i]} · No saved stock for this row`;
+    g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-(W-L-R)/(N-1)/2)}" y="${T}" width="${(W-L-R)/(N-1)/2+(i&&i<N-1?(W-L-R)/(N-1)/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
+  });
+  $('#mvTitle').textContent=(n.path||[n.town,n.brand,n.name].filter(Boolean)).join(' · ');
+  $('#mvSub').textContent=`${STATUS.labels[0]} → ${STATUS.labels.at(-1)} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
+  $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly ${statusMetricNames[statusMetric]} stacked by RSL group">${g}</svg>`;
+  function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${STATUS.groups.map((group,j)=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(group)}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
+  monthInfo(N-1);
+  $$('#mvBody [data-status-month]').forEach(el=>{el.onmouseenter=()=>monthInfo(+el.dataset.statusMonth);el.onclick=()=>monthInfo(+el.dataset.statusMonth);el.onfocus=()=>monthInfo(+el.dataset.statusMonth)});
+  $('#mv').hidden=false;$('#mvClose').focus();
+}
+drawStatus();
+
+$$('#reportUnit button').forEach(button=>button.onclick=()=>{
+  if(!$('#doh').hidden)closeDohExplanation();
+  reportUnit=button.dataset.unit;
+  $$('#reportUnit button').forEach(b=>b.setAttribute('aria-pressed',b===button));
+  $('#mv').hidden=true;sel=null;
+  $$('#r-move .movement-notes summary,#r-status .movement-notes summary').forEach(el=>el.textContent='Notes · amounts in '+unitLabel());
+  statusMetricNames=['stock','exposure','lnd'].map(name=>name+'-'+reportUnit);
+  $$('#sMetric option').forEach(o=>o.textContent=statusMetricNames[+o.value]);
+  const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
+  if(minStock)minStock=+size.dataset.s;
+  buildData();drawB();drawNote();drawM();drawTransfer();
+  statusTrees.clear();statusTrees.set('town',reportUnit==='bdt'?STATUS.total:STATUS.total_kl);
+  setStatusView(curRep==='status'?'status':'town');
+  if(curRep==='overview')drawOverview();
+});
+
+/* metric help overlay: definitions + waterfall with dummy data */
+const DUMMY={lm:100,cleared:30,carried:70,added:25,now:95};
+function waterfall(m){
+  const W=620,H=262,top=34,bot=34,left=22,bw=80,gap=44,ph=H-top-bot,mx=110,y=v=>top+(1-v/mx)*ph,x=i=>left+i*(bw+gap);
+  const d=DUMMY,bars=[
+   {l:'Last month',a:0,b:d.lm,v:String(d.lm),c:'var(--ink)'},
+   {l:'Cleared',a:d.carried,b:d.lm,v:'−'+d.cleared,c:'var(--ok)'},
+   {l:'Carried over',a:0,b:d.carried,v:String(d.carried),c:'var(--ink3)'},
+   {l:'New inclusions',a:d.carried,b:d.now,v:'+'+d.added,c:'var(--bad)'},
+   {l:'This month',a:0,b:d.now,v:String(d.now),c:'var(--ink)'}];
+  const live=m==='red'?[0,1]:[0,1,2,3,4], dim=i=>live.includes(i)?1:.22;
+  const links=[[0,d.lm],[1,d.carried],[2,d.carried],[3,d.now]];
+  const g=[];
+  links.forEach(([i,lv])=>g.push(`<line x1="${x(i)+bw}" x2="${x(i+1)}" y1="${y(lv)}" y2="${y(lv)}" style="stroke:var(--line2)" stroke-width="1" stroke-dasharray="3 3"/>`));
+  bars.forEach((o,i)=>{
+    g.push(`<g style="opacity:${dim(i)}"><rect x="${x(i)}" y="${y(o.b)}" width="${bw}" height="${y(o.a)-y(o.b)}" rx="2" style="fill:${o.c}"/>
+     <text x="${x(i)+bw/2}" y="${y(o.b)-7}" text-anchor="middle" style="fill:var(--ink);font:600 13px var(--mono);stroke:var(--surface);stroke-width:4px;paint-order:stroke">${o.v}</text>
+     <text x="${x(i)+bw/2}" y="${H-12}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${o.l}</text></g>`);
+  });
+  g.push(`<line x1="${left-6}" x2="${W-left+6}" y1="${y(0)}" y2="${y(0)}" style="stroke:var(--line2)" stroke-width="1"/>`);
+  const cx=i=>x(i)+bw/2;
+  const br=(i,j,t)=>`<path d="M${cx(i)} 25 V15 H${cx(j)} V25" style="fill:none;stroke:var(--accent)" stroke-width="1.5"/><text x="${(cx(i)+cx(j))/2}" y="10" text-anchor="middle" style="fill:var(--accent);font:600 12.5px var(--mono)">${t}</text>`;
+  if(m==='red')g.push(br(0,1,`${d.cleared} ÷ ${d.lm} = ${d.cleared}%`));
+  else{g.push(br(0,4,`(${d.now} − ${d.lm}) ÷ ${d.lm} = ${d.now-d.lm}%`.replace('= -','= −')));
+    g.push(`<line x1="${x(0)+bw}" x2="${x(4)+bw}" y1="${y(d.lm)}" y2="${y(d.lm)}" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3"/>`)}
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Waterfall from last month's stock to this month's stock">${g.join('')}</svg>`;
+}
+/* stock trend help: three dummy brands, one per dot colour */
+const TREND=[
+ {n:'Stock grew',p:[40,42,41,50,58,62],c:'var(--bad)',d:'Red dot'},
+ {n:'Stock fell',p:[60,55,48,44,40,36],c:'var(--ok)',d:'Green dot'},
+ {n:'Roughly flat',p:[50,58,64,55,48,51],c:'var(--ink3)',d:'Gray dot'}];
+function trendViz(){
+  const pw=196,gap=12,W=3*pw+2*gap,H=214,cl=18,cr=pw-18,ct=48,cb=124,n1=v=>String(+v.toFixed(1)),mono='font:600 11.5px var(--mono)';
+  const g=TREND.map((t,i)=>{
+    const p=t.p,lo=Math.min(...p),hi=Math.max(...p),rg=hi-lo||1,ox=i*(pw+gap),first=p[0],last=p.at(-1),up=first*1.05,dn=first*.95;
+    const X=k=>+(ox+cl+k*(cr-cl)/(p.length-1)).toFixed(1),Y=v=>+(cb-(v-lo)/rg*(cb-ct)).toFixed(1),cy=v=>Math.min(cb,Math.max(ct,Y(v)));
+    const rule=last>up?`${last} > ${first} × 1.05 = ${n1(up)}`:last<dn?`${last} < ${first} × 0.95 = ${n1(dn)}`:`${n1(dn)} ≤ ${last} ≤ ${n1(up)}`;
+    const pct=Math.round((last/first-1)*100),mid=(lo+hi)/2;
+    return `<rect x="${ox+.5}" y="0.5" width="${pw-1}" height="${H-1}" rx="6" style="fill:none;stroke:var(--line2)"/>
+     <text x="${ox+pw/2}" y="20" text-anchor="middle" style="fill:var(--ink);font:600 13px var(--font)">${t.n}</text>
+     <rect x="${ox+cl-6}" y="${cy(up)}" width="${cr-cl+12}" height="${Math.max(0,cy(dn)-cy(up))}" style="fill:var(--line2);opacity:.4"/>
+     <line x1="${ox+cl-6}" x2="${ox+cr+6}" y1="${Y(first)}" y2="${Y(first)}" style="stroke:var(--accent)" stroke-width="1" stroke-dasharray="4 3"/>
+     <polyline points="${p.map((v,k)=>X(k)+','+Y(v)).join(' ')}" style="fill:none;stroke:var(--ink3)" stroke-width="1.6"/>
+     ${p.slice(1,-1).map((v,k)=>`<circle cx="${X(k+1)}" cy="${Y(v)}" r="2" style="fill:var(--ink3)"/>`).join('')}
+     <circle cx="${X(0)}" cy="${Y(first)}" r="3" style="fill:var(--accent)"/>
+     <circle cx="${X(p.length-1)}" cy="${Y(last)}" r="4.6" style="fill:${t.c}"/>
+     <text x="${X(0)}" y="${Y(first)+(first>=mid?-9:17)}" style="fill:var(--accent);${mono}">${first}</text>
+     <text x="${X(p.length-1)}" y="${Y(last)+(last>=mid?-10:18)}" text-anchor="end" style="fill:var(--ink);${mono}">${last}</text>
+     <text x="${ox+pw/2}" y="152" text-anchor="middle" style="fill:var(--ink3);font:500 11px var(--font)">first → last: ${first} → ${last} (${pct>0?'+':pct<0?'−':''}${Math.abs(pct)}%)</text>
+     <text x="${ox+pw/2}" y="174" text-anchor="middle" style="fill:var(--ink);${mono}">${rule}</text>
+     <circle cx="${ox+pw/2-34}" cy="195" r="4.6" style="fill:${t.c}"/>
+     <text x="${ox+pw/2-24}" y="199" style="fill:var(--ink);font:600 12px var(--font)">${t.d}</text>`}).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Three example stock trend lines: one grew, one fell, one flat">${g}</svg>`;
+}
+function transferViz(){
+  return `<div class="transfer-story">
+    <p class="transfer-example">Made-up example · same product and pack size in both towns · 1 KL = 1,000 litres</p>
+    <section class="transfer-step"><span class="transfer-step-no" aria-hidden="true">1</span><div>
+      <h3>Feni has 4 KL at risk, with 120 days before expiry</h3>
+      <p>The batch is already below the <b>300-day risk threshold</b>. That does not rule out a useful transfer. In this example, Feni has no recorded sales for this product: if it stays, <b>all 4 KL would remain unsold at expiry</b>.</p>
+      <div class="transfer-timeline" role="img" aria-label="Today: 120 days until expiry, already below the 300-day risk threshold. Compare leaving versus transferring over those same 120 days."><span>Today<b>120 days left</b></span><span class="transfer-time-arrow">Compare the next 120 days →</span><span>Assessment<b>Expiry date</b></span></div>
+    </div></section>
+    <section class="transfer-step"><span class="transfer-step-no" aria-hidden="true">2</span><div>
+      <h3>Dhaka could sell 2 KL more before this batch expires</h3>
+      <p>Dhaka’s sales pace is <b>0.75 KL per month</b>: 3 KL over these 120 days. It already has <b>1 KL</b> of stock to sell. We allow for that stock first, leaving sales for <b>2 KL more</b>. We do not count extra sales just by taking them away from another batch.</p>
+      <div class="transfer-capacity" role="img" aria-label="Dhaka could sell 3 KL: 1 KL is covered by stock already there, leaving 2 KL for a transfer."><div class="transfer-existing"><b>1 KL</b><span>Already in Dhaka</span></div><div class="transfer-extra"><b>2 KL</b><span>Could come from Feni</span></div></div>
+      <p class="transfer-caption">3 KL it could sell − 1 KL already there = 2 KL more it could take</p>
+    </div></section>
+    <section class="transfer-step transfer-decision"><span class="transfer-step-no" aria-hidden="true">3</span><div>
+      <h3>Moving 2 KL improves the result—even though risk remains</h3>
+      <div class="transfer-route"><div><span>Feni</span><b>4 KL at risk</b></div><div class="transfer-route-arrow"><b>Move 2 KL →</b><small>2,000 litres</small></div><div><span>Dhaka</span><b>Can take 2 KL</b></div></div>
+      <p><b>Leave it: 4 KL unsold. Move it: 2 KL unsold.</b> Across both towns, 2 KL more gets sold. The other 2 KL still needs another action. The transfer improves sell-through; it does not undo the fact that the batch crossed the 300-day threshold.</p>
+    </div></section>
+    <div class="transfer-followup"><h3>What if the batch has more than 300 days left?</h3><p>We compare both choices at the 300-day checkpoint instead. For example, a batch with 330 days left is assessed over the next 30 days. We suggest moving it only if less stock is left across the two towns at that checkpoint.</p><h3>What if another town also wants to send stock to Dhaka?</h3><p>These suggestions have already used Dhaka’s 2 KL. We do not offer that same 2 KL again to another town. If an earlier suggestion used only 1.5 KL, the next town could send at most 0.5 KL.</p></div>
+    <details class="transfer-reference"><summary>What do the report’s columns mean?</summary><dl>
+      <dt>Reported exposure</dt><dd>The existing report measure is unchanged. It flags batches for review and caps how much we consider moving. It is not the same as the new projected stock-left comparison.</dd>
+      <dt>Batch left if kept / with plan</dt><dd>How much of this batch remains at the stated assessment date: first if left where it is, then across all towns after the complete transfer plan. These are modeled quantities, not savings.</dd>
+      <dt>Two towns left · keep / move</dt><dd>All stock of this exact material in the source and receiving town at the same date, immediately before and after that transfer step. Existing stock and earlier suggested transfers are included. Comparisons overlap; do not add them.</dd>
+      <dt>RSL days</dt><dd>Days left before the batch expires. The 300-day (10-month) warning is not its expiry date and does not mean selling must stop.</dd>
+      <dt>Spare sales / Existing stock allowed for</dt><dd>To avoid pushing the problem onto another batch, we first allow for all stock of this material already in the receiving town, including earlier planned transfers. We also reduce or reject a transfer if it leaves another batch with more stock at its own risk checkpoint. Only the extra sales left over can support a new suggestion. This is conservative: it may miss other workable transfers.</dd>
+      <dt>Exact-material rate</dt><dd>The product family’s monthly sales rate is divided among its pack sizes using their shares of past sales. We count that family’s demand only once. A transfer still needs the exact material code—the same product and pack size. Towns with sales history can qualify even if they currently have no stock.</dd>
+      <dt>Result / next action</dt><dd>Partial improvement means less stock is left, but some still needs action. No beneficial transfer found means we could not prove an improvement under these assumptions—not that selling elsewhere is impossible. Missing sales evidence is not treated as zero demand.</dd>
+    </dl></details>
+    <p class="transfer-caution"><b>Check before arranging a transfer.</b> These comparisons assume stock can move immediately and past sales continue. Delivery time, transport cost and the receiving customer’s rules are not checked here. Moving stock does not by itself reduce total stock or save money.</p>
+  </div>`;
+}
+function salesPushViz(){
+  const W=620,H=250,top=40,bot=44,left=40,bw=96,gap=52,ph=H-top-bot,mx=1.2,y=v=>top+(1-v/mx)*ph,x=i=>left+i*(bw+gap);
+  const bars=[{l:'Baseline pace',v:.6,c:'var(--ink3)'},{l:'Required pace',v:1,c:'var(--accent)'},{l:'Observed peak',v:.9,c:'var(--ok)'}];
+  const g=bars.map((b,i)=>`<rect x="${x(i)}" y="${y(b.v)}" width="${bw}" height="${y(0)-y(b.v)}" rx="2" style="fill:${b.c}"/>
+   <text x="${x(i)+bw/2}" y="${y(b.v)-7}" text-anchor="middle" style="fill:var(--ink);font:600 13px var(--mono)">${b.v.toFixed(1)}</text>
+   <text x="${x(i)+bw/2}" y="${H-24}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${b.l}</text>`);
+  g.push(`<line x1="${left-8}" x2="${W-20}" y1="${y(0)}" y2="${y(0)}" style="stroke:var(--line2)"/>`);
+  g.push(`<line x1="${x(1)+bw}" x2="${x(2)+bw}" y1="${y(1)}" y2="${y(1)}" style="stroke:var(--accent)" stroke-dasharray="4 3"/>`);
+  g.push(`<path d="M${x(0)+bw/2} ${y(.6)-26} V${y(1)-26} H${x(1)+bw/2} V${y(1)-24}" style="fill:none;stroke:var(--accent)" stroke-width="1.5"/><text x="${(x(0)+x(1))/2+bw/2}" y="${y(1)-32}" text-anchor="middle" style="fill:var(--accent);font:600 12.5px var(--mono)">1.0 ÷ 0.6 = 1.67× uplift</text>`);
+  g.push(`<text x="${x(2)+bw/2}" y="${y(1)-32}" text-anchor="middle" style="fill:var(--bad);font:600 12px var(--font)">above peak: review</text>`);
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Example: 12 KL over 12 weeks needs 1.0 KL per week against a 0.6 baseline, an uplift of 1.67 times, above the observed peak of 0.9">${g.join('')}</svg><p class="cap">KL per week</p>`;
+}
+const HELP={
+ transfer:{title:'Does moving it leave less stock at risk?',lead:'A useful transfer does not have to solve the whole problem. We compare leaving the stock with moving it—and show what still needs action.'},
+ salespush:{title:'Sales-push feasibility',lead:'What selling pace would clear a town + child SKU stock pool by a planning date, compared with how it has sold so far.',
+  formula:'<b>Required pace</b> = Stock ÷ Weeks to deadline · <b>Uplift</b> = Required pace ÷ Baseline pace',
+  terms:[['Pool','Town + exact child SKU. Parent demand is shared once; stock ahead in the queue uses it first'],['Baseline','Historical monthly sales converted to KL per week'],['Uplift','Multiplier on the baseline needed to clear the pool. An assumption, not a forecast'],['Observed peak','Highest historical weekly pace; used only as context']],
+  worked:'12 KL ÷ 12 weeks = <b>1.0 KL/week</b> · 1.0 ÷ 0.6 = <b>1.67× uplift</b>',
+  cap:'Dummy data: 12 KL, 12 weeks, baseline 0.6 and observed peak 0.9 KL/week. Required pace is above the peak, so the pool is flagged for review.',
+  notes:['The deadline is a planning target chosen for this view, not an expiry, customer acceptance rule or the 300/90-day warning.','Uplift multipliers are assumptions, not predicted demand or probability of success. No seasonality, causality or cannibalisation is modelled.','Pools are never added into a portfolio requirement. Only the declared scenarios are precomputed; economics (cost, margin, discount) is unavailable.','Above the observed peak is a review flag, not impossibility. The source has missing calendar months and no stock-availability data.']},
+ doh:{title:'Days on hand',lead:'How many days the latest all-stock town or brand cohort with known demand would cover at the adjusted historical run rate. Missing-demand stock is excluded and flagged; this is not a seasonal forecast.',
+  formula:'<b>DOH</b> = Selected stock KL ÷ Relevant monthly secondary-sales KL × 30',
+  terms:[['Selected stock','Latest saved snapshot, all stock in this town/brand/parent with known demand'],['Relevant rate','Sum of rates counted once for each town + parent with selected stock'],['Adjusted rate','Monthly town-parent sales are winsorized only for isolated extreme deviations after a robust cross-town seasonal adjustment; low/zero months and ambiguous peaks are preserved']],
+  worked:'6 KL ÷ 3 KL/month × 30 = <b>60 days</b>',cap:'Dummy data: two batches sharing a town-parent have 2 KL + 4 KL stock and one shared 3 KL/month rate. Count that rate once, not twice.',
+  notes:['DOH stays in days when switching BDT/KL. Parent and footer values are recomputed, never averaged from batch or brand DOH.','Town and brand DOH includes all RSL groups and is independent of the stock/exposure/LND display metric. Stock movement filters do not affect it.','⚠ means missing-demand stock is excluded from DOH; click for missing sources and coverage. — means no stock with known demand. ∞ means known zero demand.','The source has one annual cycle: cross-town consensus protects shared peaks but cannot prove recurring or every local seasonal event. Sparse histories and ambiguous peaks stay unmodified.','Latest rate-dependent measures are refreshed from the current source. Saved historical workbooks remain unchanged.']},
+ trend:{title:'Stock trend',lead:"A small line of the brand's Actionable stock across the months, with a coloured dot that shows where it ended up compared with where it started.",
+  formula:'<b>Dot colour</b> = Last stock ÷ First stock, compared with ±5%',
+  terms:[['Line',"One point per month: the stock carried in from the previous saved report (LM stock). The final point is this month's stock: Carried over + New inclusions"],['First point',"The first month's LM stock (blue dot and dashed line in the chart)"],['Last point',"This month's stock (the coloured dot)"],['Grey band','First stock ± 5%. Ending inside the band counts as flat']],
+  worked:'Grew: 62 > 40 × 1.05 = 42 → <b>red</b> · Fell: 36 < 40 × 0.95 = 38 → <b>green</b> · Flat: 47.5 ≤ 51 ≤ 52.5 → <b>gray</b>',
+  cap:'Dummy data: six stock values per brand. Only the first and last values decide the dot colour; the points in between only shape the line.',
+  notes:['Red means stock grew by more than 5%. Green means it fell by more than 5%. Gray means it stayed within 5%.','Each line is scaled to its own lowest and highest value, so heights of two rows cannot be compared. Use the latest stock breakdown for actual amounts.','A line can swing a lot in the middle and still get a gray dot, because only the first and last points count.','The "All actionable" row at the bottom uses the same rule on the total across all brands.']},
+ red:{title:'Reduction %',lead:"How much of last month's Actionable stock is gone this month. New batches that arrived this month are ignored.",
+  formula:'<b>Reduction %</b> = (LM stock − Carried over) ÷ LM stock',
+  terms:[['LM stock',"Actionable stock in last month's saved report"],['Carried over',"This month's stock in batches that were already in last month's report"],['Cleared','LM stock − Carried over (the green step in the chart)']],
+  worked:`(${DUMMY.lm} − ${DUMMY.carried}) ÷ ${DUMMY.lm} = <b>${DUMMY.cleared}%</b>`,
+  cap:`Dummy data: ${DUMMY.lm} in last month, ${DUMMY.cleared} cleared, ${DUMMY.added} of new batches arrive. The new batches do not change Reduction %.`,
+  notes:['Darker blue means a larger share was cleared.','Red with a minus sign means batches already in stock grew.','"new" means the brand had no Actionable stock last month, so there is nothing to divide by.',"The Avg column is total cleared ÷ total LM stock across the months, so bigger months count for more."]},
+ net:{title:'Net change %',lead:"Whether the brand's total Actionable stock went up or down this month, counting the new batches that arrived.",
+  formula:'<b>Net change %</b> = (Carried over + New inclusions − LM stock) ÷ LM stock',
+  terms:[['Carried over',"This month's stock in batches that were already in last month's report"],['New inclusions',"This month's stock in batches that were not in last month's report"],['This month',"Carried over + New inclusions"]],
+  worked:`(${DUMMY.carried} + ${DUMMY.added} − ${DUMMY.lm}) ÷ ${DUMMY.lm} = <b>−5%</b>`,
+  cap:`Same dummy data: stock falls from ${DUMMY.lm} to ${DUMMY.now}. The brand cleared ${DUMMY.cleared}% but took in ${DUMMY.added}, so the net change is small.`,
+  notes:['Green means stock fell. Red means stock grew.','A brand can clear a lot and still grow overall when new inclusions are larger than what was cleared.','A small last-month stock can give an extreme percentage (for example +974%). Check the detail panel for the selected-unit amounts.','"new" means the brand had no Actionable stock last month.']}
+};
+let helpOpener=null;
+function showHelp(m){
+  const h=HELP[m];$('#helpTitle').textContent=h.title;$('#helpLead').textContent=h.lead;
+  $('#help').dataset.topic=m;
+  $('#helpTabs').hidden=m==='transfer'||m==='salespush';
+  $$('#helpTabs .tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.h===m));
+  if(m==='transfer'){$('#helpBody').html=transferViz();return}
+  $('#helpBody').html=`<h3>Formula</h3><p class="formula">${h.formula}</p>
+   <ul class="terms">${h.terms.map(([a,b])=>`<li><b>${a}</b>: ${b}</li>`).join('')}</ul>
+   <h3>Example with dummy data</h3><div class="wf">${m==='salespush'?salesPushViz():m==='trend'?trendViz():m==='doh'?'<p class="formula">2 KL + 4 KL stock · 3 KL/month demand → 60 days</p>':waterfall(m)}</div><p class="cap">${h.cap}</p>
+   <p class="worked">${h.worked}</p>
+   <h3>Good to know</h3><ul class="terms">${h.notes.map(n=>`<li>${n}</li>`).join('')}</ul>`;
+}
+function openHelp(m,opener){helpOpener=opener||null;showHelp(m);$('#help').hidden=false;$('#helpClose').focus()}
+function closeHelp(){$('#help').hidden=true;helpOpener&&helpOpener.focus()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-help]');if(b){e.stopPropagation();openHelp(b.dataset.help,b)}});
+$$('#helpTabs .tab').forEach(t=>t.onclick=()=>showHelp(t.dataset.h));
+$$('#help [data-close]').forEach(b=>b.onclick=closeHelp);
+addEventListener('keydown',e=>{
+  if($('#help').hidden)return;
+  if(e.key==='Escape')closeHelp();
+  if(e.key==='Tab'){
+    const focusable=$$('button,summary',$('#help')).filter(b=>b.getClientRects().length),first=focusable[0],last=focusable.at(-1);
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  }
+});
+function closeMovementOverlay(){$('#mv').hidden=true;if(statusFocus){statusFocus.focus({preventScroll:true});statusFocus=null}}
+$$('#mv [data-mvclose]').forEach(b=>b.onclick=closeMovementOverlay);
+addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mv').hidden)closeMovementOverlay();if(e.key==='Tab'&&!$('#mv').hidden){const focusable=$$('button,[tabindex="0"]',$('#mv'));const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+/*DOH_OVERLAY*/
+$('#exportBtn').onclick=()=>curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():toast('Export is not connected yet');
 </script>
 </body>
 </html>
