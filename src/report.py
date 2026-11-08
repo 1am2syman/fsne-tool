@@ -99,9 +99,9 @@ def transform(
         raise ValueError(
             "Closing stock must be positive and finite for the inferred report"
         )
-    if stock.filter((pl.col("avg_sec") <= 0) | ~pl.col("avg_sec").is_finite()).height:
+    if stock.filter((pl.col("avg_sec") < 0) | ~pl.col("avg_sec").is_finite()).height:
         raise ValueError(
-            "Non-null sales rates must be positive and finite for the inferred report"
+            "Non-null sales rates must be nonnegative and finite for the inferred report"
         )
     if landing.get_column("material_code").n_unique() != landing.height:
         raise ValueError("Landing rates must have one row per material_code")
@@ -131,7 +131,12 @@ def transform(
             (pl.col("NOS") * pl.col("db_landing_rate")).alias(
                 "total_closing_stock_bdt"
             ),
-            (pl.col("total_closing_stock_kl") / pl.col("avg_sec_m") * 30).alias("doh"),
+            # A known zero rate means unbounded cover. Persist null rather than
+            # Infinity for portable Excel/JSON; aggregate UI DOH renders ∞ from
+            # the retained zero rate. Zero demand still consumes no stock.
+            pl.when(pl.col("avg_sec_m") > 0)
+            .then(pl.col("total_closing_stock_kl") / pl.col("avg_sec_m") * 30)
+            .alias("doh"),
         )
         .with_columns(
             pl.when(pl.col("rsl_days") <= 90)
@@ -200,7 +205,7 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
     if config.height != 1 or config.item(0, "starting_date") is None:
         raise ValueError("config_table must contain one non-null starting_date")
     return transform(
-        soh_db.build(data_dir),
+        soh_db.build(data_dir, as_of=config.item(0, "starting_date")),
         db_landing.build(data_dir),
         config.item(0, "starting_date"),
     )

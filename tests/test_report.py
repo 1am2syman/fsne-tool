@@ -108,7 +108,9 @@ class InferredReportTests(unittest.TestCase):
             transform(
                 source.with_columns(pl.lit(-1.0).alias("Closing Stock")), landing(), DAY
             )
-        for invalid in [0.0, -1.0, float("nan"), float("inf")]:
+        with self.assertRaises(ValueError):
+            transform(source.with_columns(pl.lit(0.0).alias('Closing Stock')), landing(), DAY)
+        for invalid in [-1.0, float("nan"), float("inf")]:
             with self.assertRaises(ValueError):
                 transform(
                     source.with_columns(pl.lit(invalid).alias("avg_sec")),

@@ -1,5 +1,6 @@
 """Translation of queries/soh_db.txt with native left joins."""
 
+from datetime import date as Date
 from pathlib import Path
 
 import polars as pl
@@ -112,7 +113,9 @@ def transform(
     )
 
 
-def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
+def build(
+    data_dir: str | Path = "data/current", as_of: Date | None = None, **_: object
+) -> pl.DataFrame:
     source = promote_headers(
         raw_csvs(
             matching_files(
@@ -123,7 +126,7 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
             34,
         )
     )
-    return transform(source, ph.build(data_dir), run_rate_parent.build(data_dir))
+    return transform(source, ph.build(data_dir), run_rate_parent.build(data_dir, as_of=as_of))
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ from pathlib import Path
 
 import polars as pl
 
+from . import db_landing, report, run_rate_parent, secondary, soh_db, starting_date
 from .io import resolve_path
 from .report import build
 
@@ -73,6 +74,7 @@ def compare(actual: pl.DataFrame, expected: pl.DataFrame) -> pl.DataFrame:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=Path("sample_input"))
+    parser.add_argument('--legacy', action='store_true', help='Verify unadjusted original formulas against the legacy reference; use a separate output directory')
     parser.add_argument(
         "--reference", type=Path, default=Path("sample_output/sample_output.xlsx")
     )
@@ -90,6 +92,8 @@ def main() -> None:
         raise ValueError(
             "Generated outputs must be separate from the reference directory"
         )
+    if args.legacy and output == resolve_path('output').resolve():
+        raise ValueError('Legacy verification needs --output-dir output/legacy-compare; do not overwrite production outputs')
     before = hashlib.sha256(reference.read_bytes()).hexdigest()
     input_hashes = {
         path: hashlib.sha256(path.read_bytes()).hexdigest()
@@ -97,7 +101,15 @@ def main() -> None:
         if path.is_file()
     }
     # Generation has no access to reference values; the reference is read below.
-    actual = build(args.data_dir)
+    if args.legacy:
+        report_date = starting_date.build(args.data_dir).item(0, 'starting_date')
+        stock = soh_db.build(args.data_dir, as_of=report_date).drop('avg_sec')
+        rates = run_rate_parent.raw_rates(run_rate_parent.source_through(secondary.load(args.data_dir), report_date))
+        stock = stock.join(rates, left_on=['Town', 'parent_material_code'],
+                           right_on=['town', 'parent_material_code'], how='left', validate='m:1')
+        actual = report.transform(stock, db_landing.build(args.data_dir), report_date)
+    else:
+        actual = build(args.data_dir)
     output.mkdir(parents=True, exist_ok=True)
     actual.write_excel(target, worksheet="Sheet1", float_precision=15)
     actual.write_parquet(output / "inferred_report.parquet")
