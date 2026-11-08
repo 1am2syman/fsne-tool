@@ -8,3 +8,15 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Generated run output (rebuild with ui/build.py and `python -m src ...`)
+ui/index.html
+output/*
+!output/inferred_report.parquet
+!output/inferred_report.xlsx
+!output/comparison.csv
+!output/comparison.json
+!output/current_measures.json
+
+# Local validation evidence
+validation-artifacts/
