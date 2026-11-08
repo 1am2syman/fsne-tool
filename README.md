@@ -96,6 +96,26 @@ uvx ruff check src tests
 uvx pyright --project pyrightconfig.json
 ```
 
+## Rebuild generated outputs and the UI
+
+Only the final report files in `output/` (`inferred_report.*`, `comparison.*`, `current_measures.json`) and the sources are tracked.
+Everything else is regenerable and gitignored: the other `output/*` files, `output/legacy-compare/`, `ui/index.html` and `validation-artifacts/`.
+
+```bash
+# 1. movement history (inputs of ui/build.py), from the saved reports in history/
+uv run python -m src movement_series  --history-dir history --output output/movement_series.parquet
+uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
+# 2. adjusted report + run-rate/transfer/sales-push outputs + ui/index.html
+uv run python ui/build.py
+# 3. publish the preview
+cp ui/index.html ~/previews/fsne-ui/index.html
+# optional: parity of the original unadjusted formulas (separate output dir)
+uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
+```
+
+`ui/build.py` also writes `run_rate_audit.parquet`, `run_rate_flags.csv`, `run_rate_impact.json`, `run_rates.parquet`,
+`legacy_report.parquet`, `transfer_comparison.parquet` and `current_measures.json`. See `docs/run-rates.md`.
+
 ## total-stock-movement (LM vs CM, by brand)
 
 ```bash

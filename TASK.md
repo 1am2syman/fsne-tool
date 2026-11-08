@@ -11,3 +11,9 @@ Progress: src/report.py generates all 30 final columns from sample_input only. F
 Inferred rules: child-material/town queues; independent capped fractional DOH durations accumulate before truncating absolute Excel date serials; 300-day reserves for 1x/2x consumption, 90-day reserve for forecast; missing rates imply full consumption beyond reserve. Valuation uses NOS × native material landing rate. Full derivation, nonpositive/nonfinite input rejection, duplicate/tie extrapolations and unavailable historical screenshot measures are in docs/inference.md. No reference data is used to generate rows. Next: user can regenerate using `uv run python -m src report --data-dir sample_input --output output/inferred_report.xlsx`; validate another independent period or obtain original formulas before claiming general business-rule equivalence.
 
 Safety: do not modify original queries or existing unrelated files; no row-wise Python transformation UDFs; no hardcoded absolute machine paths.
+
+## Current state (2026-11-08)
+
+Beyond the original translation, the repo now also contains: run-rate winsorization with audit outputs (`docs/run-rates.md`), stock-movement series per brand and parent (`src/movement.py`), brand status aggregation, inventory projection, risk calendar, sales-push feasibility and transfer opportunities (`docs/*.md`), and a dashboard built by `ui/build.py` from `ui/template.html`. Production rates are adjusted, so rate-dependent columns intentionally differ from `sample_output.xlsx`; the unadjusted baseline (`python -m src.compare_report --legacy --output-dir output/legacy-compare`) is the one that matches the reference. 104 tests pass; ruff is clean.
+
+Tracked outputs are only `output/inferred_report.*`, `comparison.*` and `current_measures.json`. Everything else under `output/`, `ui/index.html` and `validation-artifacts/` is generated and gitignored; see "Rebuild generated outputs and the UI" in `README.md`.

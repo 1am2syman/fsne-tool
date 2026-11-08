@@ -1,6 +1,7 @@
 """Assemble ui/index.html from template.html + data computed by the pipeline.
 
   uv run python -m src movement_series --history-dir history --output output/movement_series.parquet
+  uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
   uv run python ui/build.py
 """
 import datetime as dt
