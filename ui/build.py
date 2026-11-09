@@ -3,7 +3,11 @@
   uv run python -m src movement_series --history-dir history --output output/movement_series.parquet
   uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
   uv run python ui/build.py
+
+The server (`python -m server`) runs this per upload with --data-dir/--history-dir/
+--output-dir/--html pointing at the run folder. Defaults reproduce the sample build.
 """
+import argparse
 import datetime as dt
 import json
 import pathlib
@@ -25,7 +29,14 @@ from ui.status_data import build_payload
 from ui.transfer_data import build_payload as transfer_payload
 
 d = pathlib.Path(__file__).parent
-src = d.parent / 'output' / 'movement_series.parquet'
+_ap = argparse.ArgumentParser(description=__doc__)
+_ap.add_argument('--data-dir', type=pathlib.Path, default=d.parent / 'sample_input')
+_ap.add_argument('--history-dir', type=pathlib.Path, default=d.parent / 'history')
+_ap.add_argument('--output-dir', type=pathlib.Path, default=d.parent / 'output')
+_ap.add_argument('--html', type=pathlib.Path, default=d / 'index.html')
+_args = _ap.parse_args()
+DATA, HIST, OUT, HTML = (p.resolve() for p in (_args.data_dir, _args.history_dir, _args.output_dir, _args.html))
+src = OUT / 'movement_series.parquet'
 if not src.exists():
     raise SystemExit(f'{src} missing: run the movement_series pipeline first')
 
@@ -33,7 +44,7 @@ s = pl.read_parquet(src).sort('month')
 months = s['month'].unique().sort().to_list()
 def r2(v):
     return None if v is None else round(v, 2)
-history = read_reports(d.parent / 'history')
+history = read_reports(HIST)
 volume_series = transform_series(history, keys=(BRAND, RSL), stock_column='total_closing_stock_kl')
 volume_parents = transform_parent_series(history, rsl=True, stock_column='total_closing_stock_kl')
 volume_by = {(r['brand'], r.get('parent_code'), r['month'], r['rsl_group']): r
@@ -55,7 +66,7 @@ def slot(store, month, r):
 by = {}
 for r in s.iter_rows(named=True):
     slot(by.setdefault(r['brand'], {}), r['month'], r)
-par_src = d.parent / 'output' / 'movement_parents.parquet'
+par_src = OUT / 'movement_parents.parquet'
 if not par_src.exists():
     raise SystemExit(f'{par_src} missing: run the movement_parents pipeline first')
 par = {}
@@ -72,7 +83,7 @@ series = {'labels': [m.strftime('%b') for m in months], 'start': start, 'year': 
                       'p': [{'c': p['c'], 'd': p['d'], 'm': [p['by'].get(m) for m in months]} for p in par.get(b, {}).values()]}
                      for b, v in by.items()]}
 latest_saved = None
-for path in sorted((d.parent / 'history').glob('*.xlsx'), reverse=True):
+for path in sorted(HIST.glob('*.xlsx'), reverse=True):
     candidate = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
     dates = candidate['report_date'].cast(pl.String).str.slice(0, 10).str.to_date()
     if months[-1] in dates:
@@ -80,22 +91,24 @@ for path in sorted((d.parent / 'history').glob('*.xlsx'), reverse=True):
         break
 if latest_saved is None:
     raise ValueError('Latest movement snapshot is absent from saved reports')
-current, refreshed, doh, impact = build_current(d.parent / 'sample_input', latest_saved, months[-1], d.parent / 'output')
-(d.parent / 'output' / 'run_rate_impact.json').write_text(json.dumps(impact, indent=2) + '\n')
-(d.parent / 'output' / 'current_measures.json').write_text(json.dumps(impact['measures_after'], indent=2) + '\n')
+current, refreshed, doh, impact = build_current(DATA, latest_saved, months[-1], OUT)
+(OUT / 'run_rate_impact.json').write_text(json.dumps(impact, indent=2) + '\n')
+(OUT / 'current_measures.json').write_text(json.dumps(impact['measures_after'], indent=2) + '\n')
 series['doh'] = doh
 batch = json.dumps(current.sort('total_closing_stock_bdt', descending=True, nulls_last=True).head(400).to_dicts(), separators=(',', ':'), allow_nan=False)
-t = (d / 'template.html').read_text().replace('/*DOH_OVERLAY*/', (d / 'doh_overlay.js').read_text())
+t = ((d / 'template.html').read_text()
+     .replace('/*DOH_OVERLAY*/', (d / 'doh_overlay.js').read_text())
+     .replace('/*ONBOARDING*/', (d / 'onboarding.js').read_text()))
 # Match the movement report's month window, including its opening snapshot.
 opening = (months[0].replace(day=1) - dt.timedelta(days=1)).replace(day=1)
-status = build_payload(d.parent / 'history', [opening, *[m.replace(day=1) for m in months]], current=refreshed)
-transfer = transfer_payload(current, d.parent / 'sample_input', d.parent / 'output')
-sales_push = sales_push_payload(d.parent / 'sample_input', current)
+status = build_payload(HIST, [opening, *[m.replace(day=1) for m in months]], current=refreshed)
+transfer = transfer_payload(current, DATA, OUT)
+sales_push = sales_push_payload(DATA, current)
 t = (t.replace('/*SALESPUSH*/{}', json.dumps(sales_push, separators=(',', ':'), allow_nan=False, default=str).replace('<', '\\u003c'))
      .replace('/*TRANSFER*/{}', json.dumps(transfer, separators=(',', ':'), allow_nan=False, default=str).replace('<', '\\u003c'))
      .replace('/*BATCH*/[]', batch.replace('<', '\\u003c'))
      .replace('/*SERIES*/{}', json.dumps(series, separators=(',', ':'), allow_nan=False).replace('<', '\\u003c'))
      .replace('/*MEASURES*/{}', json.dumps(impact['measures_after'], separators=(',', ':'), allow_nan=False))
      .replace('/*STATUS*/{}', json.dumps(status, separators=(',', ':'), allow_nan=False).replace('<', '\\u003c')))
-(d / 'index.html').write_text(t)
+HTML.write_text(t)
 print(f'built: {len(series["brands"])} brands x {len(months)} months ({series["labels"][0]}-{series["labels"][-1]})')

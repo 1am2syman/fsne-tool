@@ -106,6 +106,8 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .panel-h h2{font-size:13.5px;font-weight:600}
 .panel-h p{color:var(--ink3);font-size:12.5px}
 .cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+.cols[hidden],.panel[hidden]{display:none}
+#appNotice{margin:0 0 14px;color:var(--ink2);font-size:13px}#onboardingError{margin:0 0 14px;font-size:13px}#onboardingError[hidden]{display:none}
 
 /* inputs list */
 .file{display:grid;grid-template-columns:20px 1fr auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);transition:background .12s}
@@ -531,7 +533,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <!-- ONBOARDING -->
 <section class="view on" id="v-onboarding">
   <div class="head">
-    <div><h1>Onboarding</h1><p class="lede">Add the source files, set the run parameters, and start a calculation.</p></div>
+    <div><h1>Onboarding</h1><p class="lede">Upload the five source files, then calculate and save a report.</p></div>
     <button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button>
   </div>
   <div class="tabs" role="tablist" id="obTabs">
@@ -540,6 +542,8 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <button class="tab" role="tab" aria-selected="false" data-t="archive">Archive<span class="count" id="archN"></span></button>
   </div>
 
+  <p id="appNotice" role="status" aria-live="polite">Connecting to the run service…</p>
+  <p id="onboardingError" role="alert" class="badc" hidden></p>
   <div id="ob-setup" class="cols">
     <div class="panel">
       <div class="panel-h"><h2>Source files</h2><p id="fileProg" class="mono"></p></div>
@@ -548,18 +552,22 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div class="panel">
       <div class="panel-h"><h2>Run parameters</h2></div>
       <div class="form">
-        <div class="row"><label for="sDate">Report date</label><input type="date" id="sDate"></div>
-        <div class="row"><label for="sLabel">Label</label><input id="sLabel" placeholder="Oct-2026 close"></div>
-        <div class="row"><label for="rateWindow">Run-rate window<small>All supplied sales months · read only</small></label><input id="rateWindow" type="number" value="12" readonly></div>
-        <div class="row"><label>Rotation multiplier<small>Applied to average run rate</small></label><input type="number" value="2" step=".5"></div>
-        <div class="row"><div class="l">Keep batch-key whitespace<small>Matches legacy soh_db and sec_history</small></div><button class="sw" role="switch" aria-checked="true" aria-label="Keep batch-key whitespace"></button></div>
-        <div class="row"><div class="l">Archive previous run<small>When this run completes</small></div><button class="sw" role="switch" aria-checked="false" aria-label="Archive previous run"></button></div>
+        <div class="row"><label for="sDate">Report date<small>Read from the uploaded configuration</small></label><input type="date" id="sDate" readonly></div>
+        <div class="row"><label for="sLabel">Label</label><input id="sLabel" maxlength="80" placeholder="Oct-2026 close"></div>
+        <div class="row"><div class="l">Run-rate window<small>All supplied sales months up to the report date</small></div><span>Automatic</span></div>
+        <div class="row"><div class="l">Rotation multiplier<small>Applied to average run rate</small></div><span>2×</span></div>
+        <div class="row"><div class="l">Batch-key whitespace<small>Preserved to match the source queries</small></div><span>Preserved</span></div>
+        <div class="row"><div class="l">Archive previous runs<small>Only after this run completes successfully</small></div><button id="archivePrevious" class="sw" role="switch" aria-checked="false" aria-label="Archive previous runs"></button></div>
       </div>
     </div>
   </div>
 
   <div id="ob-runs" hidden><div data-sheet="runsT"></div></div>
   <div id="ob-archive" hidden><div data-sheet="archiveT"></div></div>
+  <div id="runLogPanel" class="panel" hidden>
+    <div class="panel-h"><h2 id="runLogTitle">Run log</h2><button class="btn sm" id="closeRunLog">Close</button></div>
+    <pre id="runLog" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;padding:18px" tabindex="0"></pre>
+  </div>
 </section>
 
 <!-- REPORTS -->
@@ -739,8 +747,6 @@ $('.overview-nav').onchange=e=>{const k=e.target.value;const target=k==='onboard
 function tabs(sel,key,fn){$$(sel+' .tab').forEach(t=>t.onclick=()=>{$$(sel+' .tab').forEach(x=>x.setAttribute('aria-selected',x===t));fn(t.dataset[key])})}
 tabs('#obTabs','t',k=>['setup','runs','archive'].forEach(n=>{$('#ob-'+n).hidden=n!==k}));
 $$('.sw').forEach(s=>s.onclick=()=>s.setAttribute('aria-checked',s.getAttribute('aria-checked')!=='true'));
-$('#sDate').value=SERIES.doh.date;
-$('#rateWindow').value=SERIES.doh.source_months;
 
 /* spreadsheet table: column letters, row numbers (header is row 1), frozen header + first column, cell selection, formula bar */
 const L=i=>String.fromCharCode(65+i), SHEETS={};
@@ -776,48 +782,7 @@ function table({t,cols,rows,sort,onSort,foot,emptyMsg,onSelect,groups}){
 }
 const cmp=(k,d)=>(a,b)=>{const x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y):x-y)*d};
 
-/* source files */
-const FILES=[['Run configuration','config.xlsx'],['Stock on hand','DB Landing for FSNE.xlsx'],['Secondary sales, month on month','Mode_Sec_Month on Month.xlsb'],['Product hierarchy','PH_FG.xlsx'],['Shelf-life report','Product Shelflife Report.csv']];
-$('#files').html=FILES.map(([l,n],i)=>`<label class="file" data-i="${i}"><span class="st"></span><div><b>${l}</b><small>${esc(n)}</small></div><span class="btn sm">Choose file</span><input type="file"></label>`).join('');
-const prog=()=>{$('#fileProg').textContent=$$('.file.done').length+' of '+FILES.length+' added'};prog();
-$$('.file').forEach(d=>{
-  const done=file=>{d.classList.add('done');d.querySelector('small').textContent=file.name+' · '+Math.max(1,Math.round(file.size/1024)).toLocaleString()+' KB';d.querySelector('.btn').textContent='Replace';prog()};
-  d.querySelector('input').onchange=e=>e.target.files[0]&&done(e.target.files[0]);
-  d.ondragover=e=>{e.preventDefault();d.classList.add('over')};d.ondragleave=()=>d.classList.remove('over');
-  d.ondrop=e=>{e.preventDefault();d.classList.remove('over');e.dataTransfer.files[0]&&done(e.dataTransfer.files[0])};
-});
-
-/* runs + archive */
-let runs=[
- {id:'RUN-0042',label:'Sep-2026 close',date:'30 Sep 2026',rows:27891,dur:'48 s',st:'ok'},
- {id:'RUN-0041',label:'Aug-2026 close',date:'31 Aug 2026',rows:26840,dur:'44 s',st:'ok'},
- {id:'RUN-0040',label:'Aug-2026 draft',date:'25 Aug 2026',rows:null,dur:'6 s',st:'bad',err:'Shelf-life report missing Batch code column'},
- {id:'RUN-0039',label:'Jul-2026 close',date:'31 Jul 2026',rows:25112,dur:'41 s',st:'ok'}];
-let arch=[{id:'RUN-0038',label:'Jun-2026 close',date:'30 Jun 2026',at:'4 Jul 2026'},{id:'RUN-0037',label:'May-2026 close',date:'31 May 2026',at:'3 Jun 2026'}];
-let seq=42;
-const ST={ok:['s-ok','Completed'],bad:['s-bad','Failed'],run:['s-run','Running']};
-const rcols=[
- {k:'id',h:'Run',r:r=>r.id,cls:'mono'},{k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},{k:'date',h:'Report date',r:r=>r.date,cls:'dim'},
- {k:'rows',h:'Batches',num:1,r:r=>f(r.rows)},{k:'dur',h:'Time',num:1,r:r=>r.dur,cls:'dim'},
- {k:'st',h:'Status',r:r=>`<span class="dot ${ST[r.st][0]}">${r.st==='run'?esc(r.step):ST[r.st][1]}</span>${r.err?`<span class="dim" style="margin-left:8px">${esc(r.err)}</span>`:''}`},
- {k:'a',h:'',r:r=>`<button class="btn sm ghost" data-a="${r.id}" ${r.st==='run'?'disabled':''}>Archive</button>`}];
-const acols=[
- {k:'id',h:'Run',r:r=>r.id,cls:'mono'},{k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},{k:'date',h:'Report date',r:r=>r.date,cls:'dim'},{k:'at',h:'Archived',r:r=>r.at,cls:'dim'},
- {k:'a',h:'',r:r=>`<button class="btn sm ghost" data-rs="${r.id}">Restore</button>`}];
-function drawRuns(){
-  table({t:'#runsT',cols:rcols,rows:runs,emptyMsg:'No runs yet. Add the source files and choose Start run.'});
-  table({t:'#archiveT',cols:acols,rows:arch,emptyMsg:'Archived runs show up here. Archive a run to keep its results without cluttering Runs.'});
-  $('#runsN').textContent=runs.length;$('#archN').textContent=arch.length;
-  const n=runs.filter(r=>r.st==='run').length;$('#runCount').textContent=n?n+' running':'';
-  $$('[data-a]').forEach(b=>b.onclick=()=>{const i=runs.findIndex(r=>r.id===b.dataset.a),r=runs.splice(i,1)[0];arch.unshift({...r,at:'Today'});drawRuns();toast(r.id+' archived')});
-  $$('[data-rs]').forEach(b=>b.onclick=()=>{const i=arch.findIndex(r=>r.id===b.dataset.rs),r=arch.splice(i,1)[0];runs.push({id:r.id,label:r.label,date:r.date,rows:null,dur:'–',st:'ok'});drawRuns();toast(r.id+' restored')});
-}
-$('#runBtn').onclick=()=>{
-  const r={id:'RUN-'+String(++seq+1).padStart(4,'0'),label:$('#sLabel').value||'Untitled run',date:new Date($('#sDate').value).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),rows:null,dur:'…',st:'run',step:'Query 1 of 8'};
-  runs.unshift(r);drawRuns();$$('#obTabs .tab')[1].click();
-  let q=1;const t=setInterval(()=>{q++;if(q>8){clearInterval(t);r.st='ok';r.rows=27891;r.dur='47 s';toast(r.id+' completed')}else r.step='Query '+q+' of 8';drawRuns()},420);
-};
-drawRuns();
+/*ONBOARDING*/
 
 /* batch report */
 const serial=n=>new Date(Date.UTC(1899,11,30)+n*864e5).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
