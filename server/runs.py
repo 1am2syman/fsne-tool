@@ -268,9 +268,12 @@ class Store:
         self._sh(run_id, "-m", "src", "report", "--data-dir", str(data), "--output", str(out / "inferred_report.parquet"))
 
         self._step(run_id, 3, total, "saving this report as a snapshot")
+        label_counts: dict[str, int] = {}
         rows = snapshot(
-            out / "inferred_report.parquet", report_date, hist, out / "inferred_report.xlsx", self.history_paths()
+            out / "inferred_report.parquet", report_date, hist, out / "inferred_report.xlsx", self.history_paths(),
+            label_counts=label_counts,
         )
+        self.update(run_id, summary=label_counts)
 
         self._step(run_id, 4, total, "building the stock-movement history")
         for query, name in (("movement_series", "movement_series"), ("movement_parents", "movement_parents")):
@@ -305,13 +308,15 @@ def read_report_date(data_dir: Path) -> str:
 
 
 def snapshot(
-    report_parquet: Path, report_date: str, hist_dir: Path, xlsx_out: Path, history_paths: list[Path]
+    report_parquet: Path, report_date: str, hist_dir: Path, xlsx_out: Path, history_paths: list[Path],
+    *, label_counts: dict[str, int] | None = None,
 ) -> int:
     """Create a private as-of history and preserve matching manual labels.
 
     One saved snapshot per report date; later successful runs replace an earlier
     version in this view. Future snapshots never leak into an older-period run.
-    Manual labels are copied only for exact batch identities from the same date.
+    Same-date labels match exact batches; new dates inherit the latest earlier
+    labels by movement batch key, without assigning a status to new batches.
     """
     import fastexcel
     import polars as pl
@@ -334,7 +339,8 @@ def snapshot(
         if dates[0] <= report_date:
             by_date[dates[0]] = path
     manual = {"mitigation_status": "mitigation_status_category", "action_plan": "action_plan_remarks"}
-    if report_date in by_date:
+    same_date = report_date in by_date
+    if same_date:
         same = pl.read_excel(by_date.pop(report_date), sheet_id=1, infer_schema_length=0)
         labels = same.select(
             "batch_index", *[
@@ -343,8 +349,27 @@ def snapshot(
             ]
         )
         saved = saved.join(labels, on="batch_index", how="left", validate="1:1", maintain_order="left")
+    elif by_date:
+        from src.movement import KEY, batch_key
+
+        previous = pl.read_excel(by_date[max(by_date)], sheet_id=1, infer_schema_length=0)
+        labels = previous.select(
+            batch_key(), *[
+                pl.col(c if c in previous.columns else legacy).cast(pl.String).alias(c)
+                for c, legacy in manual.items()
+            ]
+        ).group_by(KEY, maintain_order=True).agg(pl.col(c).drop_nulls().first() for c in manual)
+        saved = saved.with_columns(batch_key()).join(
+            labels, on=KEY, how="left", validate="m:1", maintain_order="left"
+        ).drop(KEY)
     else:
         saved = saved.with_columns(pl.lit(None, dtype=pl.String).alias(c) for c in manual)
+    if label_counts is not None:
+        labelled = saved["mitigation_status"].is_not_null().sum()
+        label_counts.update(
+            mitigation_carried_batches=int(labelled) if not same_date else 0,
+            mitigation_unlabelled_batches=saved.height - int(labelled),
+        )
     hist_dir.mkdir(parents=True, exist_ok=True)
     for old in hist_dir.iterdir():
         old.unlink()
