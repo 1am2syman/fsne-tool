@@ -1,0 +1,184 @@
+"""HTTP API + dashboard host. Standard library only; bind to localhost and proxy.
+
+Every URL is relative to the page, so the app works under a path prefix such as
+``/fsne-app/`` behind ``preview --proxy``.
+
+    GET    /                          dashboard (latest completed run, or ?run=RUN-0001)
+    GET    api/runs                   all runs, newest first
+    POST   api/runs                   {"label", "archive_previous"} -> new draft run
+    PUT    api/runs/<id>/files/<slot> raw body, X-Filename header
+    POST   api/runs/<id>/start        queue the run
+    GET    api/runs/<id>              one run
+    GET    api/runs/<id>/log          pipeline log (text)
+    GET    api/runs/<id>/report.xlsx  the 30-column report
+    POST   api/runs/<id>/discard      delete an unstarted run (failed upload)
+    POST   api/runs/<id>/archive      /restore
+    GET    api/slots                  the five file slots
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlsplit
+
+from .runs import ROOT, SLOTS, RunError, Store
+
+FALLBACK_HTML = ROOT / "ui" / "index.html"
+ROUTE = re.compile(r"^/api/runs/(?P<id>RUN-\d{4,})(?:/(?P<rest>.*))?$")
+
+
+def _length(header: str | None) -> int:
+    """Content-Length as a non-negative int; anything malformed counts as 0."""
+    return int(header) if header and header.isdigit() else 0
+
+
+def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> ThreadingHTTPServer:
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+        server_version = "fsne"
+
+        # ---- helpers ---------------------------------------------------
+        def _send(self, status: int, body: bytes, ctype: str, extra: dict | None = None) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            for k, v in (extra or {}).items():
+                self.send_header(k, v)
+            self.end_headers()
+            if self.command != "HEAD":
+                self.wfile.write(body)
+
+        def _json(self, payload: object, status: int = 200) -> None:
+            self._send(status, json.dumps(payload).encode(), "application/json")
+
+        def _error(self, status: int, message: str) -> None:
+            # A rejected upload may leave an unread request body. Do not parse
+            # those bytes as another HTTP request on this connection.
+            self.close_connection = True
+            self._json({"error": message}, status)
+
+        def _file(self, path: Path, ctype: str, name: str | None = None) -> None:
+            if not path.is_file():
+                return self._error(404, "Not found")
+            return self._send(200, path.read_bytes(), ctype, {"Content-Disposition": f'attachment; filename="{name}"'} if name else None)
+
+        def _body_json(self) -> dict:
+            length = _length(self.headers.get("Content-Length"))
+            if length > 1 << 16:
+                raise RunError("Request too large")
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                data = json.loads(raw or b"{}")
+            except ValueError as exc:
+                raise RunError("Body must be JSON") from exc
+            if not isinstance(data, dict):
+                raise RunError("Body must be a JSON object")
+            return data
+
+        def _dispatch(self, method: str) -> None:
+            parsed = urlsplit(self.path)
+            url, query = parsed.path, parsed.query
+            try:
+                if method in {"POST", "PUT"}:
+                    origin = self.headers.get("Origin")
+                    # Browsers may send writes only from the app's own origin.
+                    if origin and urlsplit(origin).netloc != self.headers.get("Host"):
+                        return self._error(403, "Cross-origin writes are not allowed")
+                    self.connection.settimeout(120)
+                if method in {"GET", "HEAD"} and url in {"/", "/index.html"}:
+                    return self._page(query)
+                if method == "GET" and url == "/api/context":
+                    run_id = parse_qs(query).get("run", [None])[0] or store.latest_ok()
+                    meta = store.get(run_id) if run_id else None
+                    return self._json({"run": meta, "sample": meta is None})
+                if url == "/api/slots" and method == "GET":
+                    return self._json([{"slot": k, "label": v[0], "stem": v[1], "ext": v[2]} for k, v in SLOTS.items()])
+                if url == "/api/runs":
+                    if method == "GET":
+                        return self._json(store.list())
+                    if method == "POST":
+                        body = self._body_json()
+                        return self._json(
+                            store.create(
+                                str(body.get("label", "")),
+                                archive_previous=bool(body.get("archive_previous")),
+                            ),
+                            201,
+                        )
+                m = ROUTE.match(url)
+                if m:
+                    return self._run_route(method, m["id"], m["rest"] or "")
+                return self._error(404, "Not found")
+            except (BrokenPipeError, ConnectionResetError):
+                self.close_connection = True
+                return None
+            except RunError as exc:
+                status = 404 if str(exc) == "Unknown run" else 400
+                return self._error(status, str(exc))
+            except Exception as exc:  # noqa: BLE001 - last resort, never leak a traceback to the page
+                return self._error(500, f"Server error: {exc.__class__.__name__}")
+
+        def _page(self, query: str) -> None:
+            run_id = parse_qs(query).get("run", [None])[0]
+            if run_id:
+                meta = store.get(run_id)
+                if meta["status"] != "ok":
+                    raise RunError("That run has no results")
+            else:
+                run_id = store.latest_ok()
+            html = store.path(run_id) / "index.html" if run_id else FALLBACK_HTML
+            return self._file(html, "text/html; charset=utf-8")
+
+        def _run_route(self, method: str, run_id: str, rest: str) -> None:
+            if method == "POST":
+                self._body_json()
+            store.get(run_id)
+            if not rest and method == "GET":
+                return self._json(store.get(run_id))
+            if rest == "log" and method == "GET":
+                return self._send(200, store.log(run_id).encode(), "text/plain; charset=utf-8")
+            if rest == "report.xlsx" and method == "GET":
+                if store.get(run_id)["status"] != "ok":
+                    raise RunError("That run has no completed report")
+                return self._file(
+                    store.path(run_id) / "output" / "inferred_report.xlsx",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    f"{run_id}-report.xlsx",
+                )
+            if rest.startswith("files/") and method == "PUT":
+                slot = rest[6:]
+                filename = unquote(self.headers.get("X-Filename", ""))
+                length = _length(self.headers.get("Content-Length"))
+                return self._json(store.save_file(run_id, slot, filename, self.rfile, length))
+            if rest == "start" and method == "POST":
+                return self._json(store.start(run_id))
+            if rest == "discard" and method == "POST":
+                store.discard(run_id)
+                return self._json({"discarded": run_id})
+            if rest in {"archive", "restore"} and method == "POST":
+                return self._json(store.archive(run_id, rest == "archive"))
+            return self._error(404, "Not found")
+
+        def do_GET(self) -> None:
+            self._dispatch("GET")
+
+        def do_HEAD(self) -> None:
+            self._dispatch("HEAD")
+
+        def do_POST(self) -> None:
+            self._dispatch("POST")
+
+        def do_PUT(self) -> None:
+            self._dispatch("PUT")
+
+        def log_message(self, format: str, *args: object) -> None:  # Base-class signature; keep request logs quiet.
+            return None
+
+    ThreadingHTTPServer.allow_reuse_address = True
+    ThreadingHTTPServer.daemon_threads = True
+    return ThreadingHTTPServer((host, port), Handler)
+
