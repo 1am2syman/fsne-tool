@@ -228,10 +228,11 @@ class Store:
                 self.update(run_id, status="running", started=_now())
                 rows = self._execute(run_id)
                 self.update(run_id, status="ok", step=None, rows=rows, seconds=round(time.monotonic() - began))
-                if self.get(run_id)["archive_previous"]:
-                    for other in self.list():
-                        if other["id"] != run_id and other["status"] == "ok" and not other["archived"]:
-                            self.update(other["id"], archived=_now())
+                report_date = self.get(run_id)["report_date"]
+                for other in self.list():
+                    if (other["id"] != run_id and other["status"] == "ok" and not other["archived"]
+                            and other.get("report_date") == report_date):
+                        self.update(other["id"], archived=_now())
             except Exception as exc:  # noqa: BLE001 - persist any pipeline failure and keep the worker alive
                 msg = str(exc) or exc.__class__.__name__
                 with (self.path(run_id) / "log.txt").open("a") as log:
@@ -276,7 +277,7 @@ class Store:
             out / "inferred_report.parquet", report_date, hist, out / "inferred_report.xlsx", self.history_paths(),
             label_counts=label_counts,
         )
-        self.update(run_id, summary=label_counts)
+        self.update(run_id, summary={**self.get(run_id).get("summary", {}), **label_counts})
 
         self._step(run_id, 4, total, "building the stock-movement history")
         for query, name in (("movement_series", "movement_series"), ("movement_parents", "movement_parents")):
@@ -287,6 +288,7 @@ class Store:
             run_id, "ui/build.py", "--data-dir", str(data), "--history-dir", str(hist),
             "--output-dir", str(out), "--html", str(run / "index.html"),
         )
+        self.update(run_id, summary={**self.get(run_id).get("summary", {}), **run_summary(out, hist, data, report_date)})
         return rows
 
     def history_paths(self) -> list[Path]:
@@ -297,6 +299,42 @@ class Store:
             for m in reversed(self.list()) if m["status"] == "ok"
         )
         return paths
+
+
+def run_summary(out: Path, hist: Path, data: Path, report_date: str) -> dict:
+    import polars as pl
+
+    from src.db_landing import build as landing_rates
+
+    current = pl.read_parquet(out / "inferred_report.parquet")
+    totals = current.select(pl.col("total_closing_stock_bdt").sum(), pl.col("exposure_bdt").sum()).row(0, named=True)
+    rates = landing_rates(data).select(pl.col("material_code"), pl.col("db_landing_rate"))
+    missing_rates = current.join(rates, left_on="Material Code", right_on="material_code", how="left")
+    previous = None
+    for path in hist.glob("saved-*.xlsx"):
+        frame = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
+        dates = frame["report_date"].drop_nulls().cast(pl.String).str.slice(0, 10)
+        if len(dates) and (previous is None or dates[0] > previous[0]):
+            previous = (dates[0], frame)
+    previous_totals = None
+    if previous:
+        previous_totals = previous[1].select(
+            pl.col("total_closing_stock_bdt").cast(pl.Float64, strict=False).sum(),
+            pl.col("exposure_bdt").cast(pl.Float64, strict=False).sum(),
+        ).row(0, named=True)
+    try:
+        impact = json.loads((out / "run_rate_impact.json").read_text())
+    except (OSError, ValueError, KeyError) as exc:
+        raise RunError("The run summary could not be read. Check the run log for details.") from exc
+    return {
+        "report_date": report_date, "batches": current.height, **totals,
+        "previous_report_date": previous[0] if previous else None,
+        "stock_change_bdt": totals["total_closing_stock_bdt"] - previous_totals["total_closing_stock_bdt"] if previous_totals else None,
+        "exposure_change_bdt": totals["exposure_bdt"] - previous_totals["exposure_bdt"] if previous_totals else None,
+        "materials_missing_hierarchy": current.filter(pl.col("parent_material_code").is_null())["Material Code"].drop_nulls().n_unique(),
+        "batches_missing_landing_rate": missing_rates.filter(pl.col("db_landing_rate").is_null()).height,
+        "winsorized_months": impact["winsorized_months"],
+    }
 
 
 def pipeline_message(detail: str, step: str | None = None) -> str:

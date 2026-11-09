@@ -8,6 +8,13 @@
     ['hierarchy', 'Product hierarchy', '.xlsx'],
     ['shelflife', 'Shelf-life report', '.csv'],
   ];
+  const help = {
+    config: 'Excel configuration with config_table and starting_date for the report month. Example: config.xlsx',
+    landing: 'Excel landing rates by material, with Row Labels and DB Landing rate. Example: DB Landing for FSNE.xlsx',
+    secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
+    hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
+    shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry and stock. Example: Product Shelflife Report Multiple FSNE.csv',
+  };
   let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null;
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
   const apiUrl = path => location.origin + basePath + 'api/' + path;
@@ -29,13 +36,12 @@
     $('#discardDraft').hidden = !draft;
     $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
-    $('#archivePrevious').disabled = busy || !online;
     $$('#files input').forEach(input => input.disabled = busy || !online);
     $('#fileProg').textContent = selected.size + ' of ' + slots.length + ' selected';
   }
   $('#runBtn').disabled = true;
   $('#sDate').value = '';
-  $('#files').html = slots.map(([slot, label, ext]) => `<label class="file" data-slot="${slot}"><span class="st"></span><div><b>${label}</b><small>${ext.replaceAll(',', ' / ')}</small></div><span class="btn sm">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label>`).join('');
+  $('#files').html = slots.map(([slot, label, ext]) => `<label class="file" data-slot="${slot}"><span class="st"></span><div><b>${label}</b><small>${ext.replaceAll(',', ' / ')}</small><span class="file-help">${esc(help[slot])}</span></div><span class="btn sm">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label>`).join('');
   function showDraft(run) {
     draft = run;
     selected.clear();
@@ -98,11 +104,18 @@
     const median = durations.length ? (durations.length % 2 ? durations[mid] : Math.round((durations[mid-1] + durations[mid])/2)) : null;
     return (r.step || 'Running') + ' · ' + elapsed + ' s elapsed' + (median == null ? '' : ' · typical ' + median + ' s');
   }
+  function summary(r) {
+    const s = r.summary;
+    if (!s || s.total_closing_stock_bdt == null) return '—';
+    const val = n => n == null ? '—' : Number(n).toLocaleString('en-GB', {maximumFractionDigits: 2});
+    return `<details><summary>Stock ৳${val(s.total_closing_stock_bdt)} · exposure ৳${val(s.exposure_bdt)}</summary><div>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ৳${val(s.stock_change_bdt)} · exposure change: ৳${val(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing landing rate: ${val(s.batches_missing_landing_rate)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
+  }
   const columns = [
     {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
     {k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},
     {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
     {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
+    {k:'summary',h:'Summary',r:summary},
     {k:'seconds',h:'Time',r:r=>r.seconds == null ? '—' : r.seconds + ' s',cls:'dim'},
     {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
     {k:'actions',h:'Results and actions',r:actions},
@@ -167,6 +180,7 @@
     try {
       const context = await api('context' + location.search);
       loadedRun = context.run;
+      $('#reportIdentity').textContent = loadedRun ? loadedRun.id + ' · ' + loadedRun.label : 'Sample';
       online = true;
       $('#appNotice').textContent = loadedRun ? `Viewing ${loadedRun.id} · ${loadedRun.label}. Select new files to start another run.` : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
       await refresh();
@@ -175,6 +189,7 @@
       poll();
     } catch {
       online = false;
+      $('#reportIdentity').textContent = 'Sample';
       $('#appNotice').textContent = 'This is a saved report. Open the live app to upload files and run calculations.';
       drawRuns();
     }
