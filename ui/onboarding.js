@@ -13,7 +13,7 @@
     landing: 'Excel landing rates by material, with Row Labels and DB Landing rate. Example: DB Landing for FSNE.xlsx',
     secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
-    shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry and stock. Example: Product Shelflife Report Multiple FSNE.csv',
+    shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry and stock. Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
   };
   let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null;
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
