@@ -42,7 +42,10 @@ class ServerTests(unittest.TestCase):
         run = self.store.create("August close")
         for slot, (_, _, extensions) in SLOTS.items():
             data = config_bytes() if slot == "config" else b"test placeholder"
-            self.store.save_file(run["id"], slot, "uploaded" + extensions[0], io.BytesIO(data), len(data))
+            # Lifecycle tests use placeholders; validation has its own focused tests.
+            with patch("server.runs.validate_upload", return_value="2026-08-30" if slot == "config" else None), \
+                 patch("server.runs.validate_sales_month"):
+                self.store.save_file(run["id"], slot, "uploaded" + extensions[0], io.BytesIO(data), len(data))
         return self.store.get(run["id"])
 
     def test_start_requires_all_files_and_is_accepted_once(self):

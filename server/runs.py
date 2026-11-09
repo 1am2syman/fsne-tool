@@ -159,12 +159,12 @@ class Store:
                         remaining -= len(chunk)
                 if remaining:
                     raise RunError(f"{label}: upload was cut short")
-                report_date = None
-                if slot == "config":
-                    try:
-                        report_date = read_report_date(Path(staging))
-                    except Exception as exc:
-                        raise RunError(f"{label}: could not read the report date ({exc})") from exc
+                report_date = validate_upload(slot, Path(staging))
+                if slot in {"config", "secondary"}:
+                    config_date = report_date if slot == "config" else meta.get("report_date")
+                    secondary_dir = Path(staging) if slot == "secondary" else folder
+                    if config_date and (slot == "secondary" or "secondary" in meta["files"]):
+                        validate_sales_month(secondary_dir, config_date)
                 for old in folder.glob(f"{stem}.*"):
                     old.unlink()
                 tmp.replace(folder / f"{stem}{ext}")
@@ -252,7 +252,7 @@ class Store:
             lines = [ln for ln in self.log(run_id).strip().splitlines() if ln.strip()]
             exceptions = [ln for ln in lines if re.match(r"^[\w.]+(?:Error|Exception):", ln)]
             detail = exceptions[-1] if exceptions else lines[-1] if lines else "see log"
-            raise RunError(f"{cmd[0] if cmd[0] != '-m' else cmd[1]} failed: {detail}")
+            raise RunError(pipeline_message(detail))
 
     def _execute(self, run_id: str) -> int:
         run = self.path(run_id)
@@ -294,6 +294,74 @@ class Store:
             for m in reversed(self.list()) if m["status"] == "ok"
         )
         return paths
+
+
+def pipeline_message(detail: str) -> str:
+    """Translate recognized pipeline failures; the full traceback stays in the log."""
+    known = (
+        ("Latest run-rate source month", "Secondary sales: choose a file whose latest month matches the configuration report month."),
+        ("Current source report date", "Run configuration: check the report date and choose files for that month."),
+        ("Current hierarchy differs", "Product hierarchy: choose the hierarchy that matches the shelf-life report."),
+        ("Current inputs do not reproduce", "Shelf-life report: choose the stock report for the configured month."),
+        ("Current inputs differ from saved stock", "Shelf-life report or stock on hand: check the files match the configured month."),
+        ("Secondary sales need", "Secondary sales: check that the file contains valid sales months."),
+        ("Need at least two reports with an Actionable status", "Saved history: at least two months need mitigation statuses marked Actionable."),
+    )
+    for marker, message in known:
+        if marker in detail:
+            return message
+    return "The calculation could not be completed. Check the uploaded files and see the run log for technical details."
+
+
+def validate_sales_month(data_dir: Path, report_date: str) -> None:
+    from src.io import date as parse_date
+    from src.secondary import load
+
+    try:
+        months = load(data_dir).select(parse_date("Month-Year").dt.truncate("1mo"))
+        latest = months["Month-Year"].max()
+        if latest is None or str(latest)[:7] != report_date[:7]:
+            found = str(latest)[:7] if latest is not None else "no valid month"
+            raise RunError(
+                f"Secondary sales: latest month is {found}, but the configuration report month is "
+                f"{report_date[:7]}. Choose files for the same month."
+            )
+    except RunError:
+        raise
+    except Exception as exc:
+        raise RunError("Secondary sales: check that Month-Year contains valid dates.") from exc
+
+
+def validate_upload(slot: str, data_dir: Path) -> str | None:
+    from src import db_landing, ph, run_rate_parent, sec_history, secondary, soh_db
+    from src.io import promote_headers, raw_csvs
+
+    label = SLOTS[slot][0]
+    try:
+        if slot == "config":
+            return read_report_date(data_dir)
+        if slot == "landing":
+            frame = db_landing.build(data_dir)
+        elif slot == "hierarchy":
+            frame = ph.build(data_dir)
+        elif slot == "secondary":
+            frame = secondary.load(data_dir)
+            sec_history.transform(frame)
+            run_rate_parent.monthly_sales(frame)
+        else:
+            frame = promote_headers(raw_csvs(list(data_dir.glob("*.csv")), 34))
+            missing = [column for column in soh_db.COLUMNS if column not in frame.columns]
+            if missing:
+                raise RunError(f"{label}: missing columns: {', '.join(missing)}. Choose a complete shelf-life report.")
+        if frame.is_empty():
+            raise RunError(f"{label}: the file contains no data rows. Choose a complete file.")
+    except RunError:
+        raise
+    except Exception as exc:
+        if slot == "config":
+            raise RunError(f"{label}: check that config_table contains a valid starting_date.") from exc
+        raise RunError(f"{label}: could not read the expected data or columns. Check the file and choose it again.") from exc
+    return None
 
 
 def read_report_date(data_dir: Path) -> str:
