@@ -66,6 +66,20 @@ def test_sales_month_mismatch_rejects_either_upload_order(tmp_path):
             assert second not in store.get(run["id"])["files"]
 
 
+def test_queued_cancel_and_delete_preserve_run_ids(tmp_path):
+    store = Store(tmp_path / "runs", tmp_path / "history", start_worker=False)
+    run = store.create("cancel")
+    store.update(run["id"], status="queued")
+    store.jobs.put(run["id"])
+    assert store.cancel(run["id"])["status"] == "cancelled"
+    store.delete(run["id"])
+    next_run = store.create("next")
+    assert next_run["id"] != run["id"]
+    store.jobs.put(None)
+    store._worker()
+    assert store.get(next_run["id"])["status"] == "draft"
+
+
 def test_sales_month_and_pipeline_error_messages(tmp_path):
     with patch("src.secondary.load", return_value=pl.DataFrame({"Month-Year": ["2026-07-01", "2026-08-01"]})):
         validate_sales_month(tmp_path, "2026-08-30")

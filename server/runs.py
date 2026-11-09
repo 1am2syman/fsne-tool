@@ -60,6 +60,8 @@ class Store:
         self.dir.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         self.jobs: queue.Queue[str | None] = queue.Queue()
+        self.process: subprocess.Popen | None = None
+        self.process_run: str | None = None
         for meta in self.list():
             if meta["status"] in {"queued", "running"}:
                 meta.update(status="bad", error="Interrupted: the server restarted during this run")
@@ -110,9 +112,12 @@ class Store:
         return sorted(metas, key=lambda m: int(m["id"][4:]), reverse=True)
 
     # ---- lifecycle -----------------------------------------------------
-    def create(self, label: str, *, archive_previous: bool = False) -> dict:
+    def create(self, label: str, *, archive_previous: bool = False, started_by: str = "local") -> dict:
         with self.lock:
-            n = 1 + max((int(m["id"][4:]) for m in self.list()), default=0)
+            sequence = self.dir / ".last-run-id"
+            last = int(sequence.read_text()) if sequence.exists() else 0
+            n = 1 + max(last, max((int(m["id"][4:]) for m in self.list()), default=0))
+            sequence.write_text(str(n))
             run_id = f"RUN-{n:04d}"
             (self.dir / run_id / "input").mkdir(parents=True)
             meta = {
@@ -121,6 +126,7 @@ class Store:
                 "status": "draft",
                 "step": None,
                 "created": _now(),
+                "started_by": started_by[:255] or "local",
                 "report_date": None,
                 "rows": None,
                 "seconds": None,
@@ -174,7 +180,7 @@ class Store:
             self._write(meta)
             return meta
 
-    def start(self, run_id: str, label: str | None = None) -> dict:
+    def start(self, run_id: str, label: str | None = None, started_by: str | None = None) -> dict:
         with self.lock:
             meta = self.get(run_id)
             if meta["status"] != "draft":
@@ -184,6 +190,8 @@ class Store:
                 raise RunError("Missing files: " + ", ".join(missing))
             if label is not None:
                 meta["label"] = label.strip()[:80] or "Untitled run"
+            if started_by is not None:
+                meta["started_by"] = started_by[:255] or "local"
             meta.update(status="queued", step="Waiting for a free worker")
             self._write(meta)
             self.jobs.put(run_id)
@@ -194,6 +202,27 @@ class Store:
         if meta["status"] in {"queued", "running"}:
             raise RunError("A running run cannot be archived")
         return self.update(run_id, archived=_now() if archived else None)
+
+    def cancel(self, run_id: str) -> dict:
+        with self.lock:
+            meta = self.get(run_id)
+            if meta["status"] not in {"queued", "running"}:
+                raise RunError("Only a queued or running run can be cancelled")
+            if meta["status"] == "queued":
+                return self.update(run_id, status="cancelled", step=None, error=None)
+            meta = self.update(run_id, cancel_requested=True, step="Cancelling")
+            if self.process_run == run_id and self.process and self.process.poll() is None:
+                self.process.terminate()
+            return meta
+
+    def delete(self, run_id: str) -> None:
+        with self.lock:
+            if self.get(run_id)["status"] not in {"ok", "bad", "cancelled"}:
+                raise RunError("Only completed, failed or cancelled runs can be deleted")
+            try:
+                shutil.rmtree(self.path(run_id))
+            except OSError as exc:
+                raise RunError(f"Could not delete {run_id}: {exc.strerror}") from exc
 
     def discard(self, run_id: str) -> None:
         """Delete a draft whose upload failed; started runs are history and stay."""
@@ -225,21 +254,40 @@ class Store:
                 return
             began = time.monotonic()
             try:
-                self.update(run_id, status="running", started=_now())
+                with self.lock:
+                    try:
+                        meta = self.get(run_id)
+                    except RunError:
+                        continue
+                    if meta["status"] != "queued":
+                        continue
+                    self.update(run_id, status="running", started=_now())
                 rows = self._execute(run_id)
-                self.update(run_id, status="ok", step=None, rows=rows, seconds=round(time.monotonic() - began))
+                with self.lock:
+                    self._check_cancel(run_id)
+                    self.update(run_id, status="ok", step=None, rows=rows, seconds=round(time.monotonic() - began))
                 report_date = self.get(run_id)["report_date"]
                 for other in self.list():
                     if (other["id"] != run_id and other["status"] == "ok" and not other["archived"]
                             and other.get("report_date") == report_date):
                         self.update(other["id"], archived=_now())
             except Exception as exc:  # noqa: BLE001 - persist any pipeline failure and keep the worker alive
-                msg = str(exc) or exc.__class__.__name__
-                with (self.path(run_id) / "log.txt").open("a") as log:
-                    traceback.print_exc(file=log)
-                self.update(run_id, status="bad", step=None, error=msg, seconds=round(time.monotonic() - began))
+                with self.lock:
+                    meta = self.get(run_id)
+                    if meta.get("cancel_requested"):
+                        self.update(run_id, status="cancelled", step=None, error=None, seconds=round(time.monotonic() - began))
+                        continue
+                    msg = str(exc) or exc.__class__.__name__
+                    with (self.path(run_id) / "log.txt").open("a") as log:
+                        traceback.print_exc(file=log)
+                    self.update(run_id, status="bad", step=None, error=msg, seconds=round(time.monotonic() - began))
+
+    def _check_cancel(self, run_id: str) -> None:
+        if self.get(run_id).get("cancel_requested"):
+            raise RunError("Run cancelled")
 
     def _step(self, run_id: str, n: int, total: int, text: str) -> None:
+        self._check_cancel(run_id)
         self.update(run_id, step=f"Step {n} of {total}: {text}")
         with (self.path(run_id) / "log.txt").open("a") as log:
             log.write(f"\n=== Step {n} of {total}: {text} ===\n")
@@ -249,9 +297,23 @@ class Store:
         with (run / "log.txt").open("a") as log:
             log.write("$ " + " ".join(cmd) + "\n")
             log.flush()
-            proc = subprocess.run(
-                [sys.executable, *cmd], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, timeout=3600, check=False
-            )
+            with self.lock:
+                self._check_cancel(run_id)
+                env = {**os.environ, "PYTHONWARNINGS": "ignore::FutureWarning"}
+                self.process = subprocess.Popen([sys.executable, *cmd], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, env=env)
+                self.process_run = run_id
+                proc = self.process
+            try:
+                proc.wait(timeout=3600)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                raise
+            finally:
+                with self.lock:
+                    self.process = None
+                    self.process_run = None
+            self._check_cancel(run_id)
         if proc.returncode:
             lines = [ln for ln in self.log(run_id).strip().splitlines() if ln.strip()]
             exceptions = [ln for ln in lines if re.match(r"^[\w.]+(?:Error|Exception):", ln)]

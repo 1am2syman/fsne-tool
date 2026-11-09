@@ -79,6 +79,9 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 raise RunError("Body must be a JSON object")
             return data
 
+        def _user(self) -> str:
+            return self.headers.get("Tailscale-User-Name") or self.headers.get("Tailscale-User-Login") or "local"
+
         def _dispatch(self, method: str) -> None:
             parsed = urlsplit(self.path)
             url, query = parsed.path, parsed.query
@@ -94,7 +97,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 if method == "GET" and url == "/api/context":
                     run_id = parse_qs(query).get("run", [None])[0] or store.latest_ok()
                     meta = store.get(run_id) if run_id else None
-                    return self._json({"run": meta, "sample": meta is None})
+                    return self._json({"run": meta, "sample": meta is None, "user": self._user()})
                 if url == "/api/slots" and method == "GET":
                     return self._json([{"slot": k, "label": v[0], "stem": v[1], "ext": v[2]} for k, v in SLOTS.items()])
                 if url == "/api/runs":
@@ -105,7 +108,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                         return self._json(
                             store.create(
                                 str(body.get("label", "")),
-                                archive_previous=bool(body.get("archive_previous")),
+                                archive_previous=bool(body.get("archive_previous")), started_by=self._user(),
                             ),
                             201,
                         )
@@ -154,7 +157,12 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 length = _length(self.headers.get("Content-Length"))
                 return self._json(store.save_file(run_id, slot, filename, self.rfile, length))
             if rest == "start" and method == "POST":
-                return self._json(store.start(run_id, str(body["label"]) if "label" in body else None))
+                return self._json(store.start(run_id, str(body["label"]) if "label" in body else None, self._user()))
+            if rest == "cancel" and method == "POST":
+                return self._json(store.cancel(run_id))
+            if rest == "delete" and method == "POST":
+                store.delete(run_id)
+                return self._json({"deleted": run_id})
             if rest == "discard" and method == "POST":
                 store.discard(run_id)
                 return self._json({"discarded": run_id})

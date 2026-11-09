@@ -40,7 +40,7 @@
     $('#fileProg').textContent = selected.size + ' of ' + slots.length + ' selected';
   }
   $('#runBtn').disabled = true;
-  $('#sDate').value = '';
+  $('#sDate').textContent = '';
   $('#files').html = slots.map(([slot, label, ext]) => `<label class="file" data-slot="${slot}"><span class="st"></span><div><b>${label}</b><small>${ext.replaceAll(',', ' / ')}</small><span class="file-help">${esc(help[slot])}</span></div><span class="btn sm">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label>`).join('');
   function showDraft(run) {
     draft = run;
@@ -52,7 +52,7 @@
       el.querySelector('small').textContent = file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : slots.find(s => s[0] === el.dataset.slot)[2].replaceAll(',', ' / ');
       el.querySelector('.btn').textContent = file ? 'Replace' : 'Choose file';
     });
-    $('#sDate').value = run?.report_date || '';
+    $('#sDate').textContent = run?.report_date || 'Not yet uploaded';
     if (run) $('#sLabel').value = run.label === 'Untitled run' ? '' : run.label;
     controls();
   }
@@ -85,7 +85,7 @@
     el.ondragleave = () => el.classList.remove('over');
     el.ondrop = e => {e.preventDefault(); el.classList.remove('over'); choose(e.dataTransfer.files[0]);};
   });
-  const status = {draft: ['s-idle', 'Incomplete upload'], queued: ['s-idle', 'Queued'], running: ['s-run', 'Running'], ok: ['s-ok', 'Completed'], bad: ['s-bad', 'Failed']};
+  const status = {draft: ['s-idle', 'Incomplete upload'], queued: ['s-idle', 'Queued'], running: ['s-run', 'Running'], ok: ['s-ok', 'Completed'], bad: ['s-bad', 'Failed'], cancelled: ['s-idle', 'Cancelled']};
   const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
   function resultsUrl(id) {
     return basePath + '?run=' + encodeURIComponent(id) + '#results';
@@ -93,7 +93,8 @@
   function actions(r) {
     return (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">Open results</a> <a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Excel</a> ` : '') +
       `<button class="btn sm ghost" data-log="${r.id}">Log</button> ` +
-      (!['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>` : '');
+      (['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-cancel="${r.id}">Cancel</button>` : `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>`) +
+      (['ok','bad','cancelled'].includes(r.status) ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '');
   }
   function progress(r) {
     if (r.status === 'ok') return 'Done — open results';
@@ -113,6 +114,7 @@
   const columns = [
     {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
     {k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},
+    {k:'started_by',h:'Started by',r:r=>esc(r.started_by || 'local')},
     {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
     {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
     {k:'summary',h:'Summary',r:summary},
@@ -122,8 +124,11 @@
   ];
   function drawRuns() {
     const active = runs.filter(r => !r.archived), archived = runs.filter(r => r.archived);
-    table({t:'#runsT',cols:columns,rows:active,emptyMsg:'No runs yet. Select all five source files and choose Start run.'});
-    table({t:'#archiveT',cols:columns,rows:archived,emptyMsg:'Archived runs appear here. Their results remain available.'});
+    function renderList(target, rows, empty) {
+      $(target).html = rows.length ? `<div class="runs-scroll"><table class="runs-table"><thead><tr>${columns.map(c=>`<th scope="col">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${columns.map(c=>`<td>${c.r(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p>${empty}</p>`;
+    }
+    renderList('#runsT', active, 'No runs yet. Upload all five source files and choose Start run.');
+    renderList('#archiveT', archived, 'Archived runs appear here. Their data still feeds later history.');
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
@@ -134,11 +139,23 @@
       try {await post('runs/' + b.dataset.archive + '/' + (b.dataset.value === 'true' ? 'archive' : 'restore')); await refresh();}
       catch (e) {error(e.message); b.disabled = false;}
     });
+    $$('[data-cancel]').forEach(b => b.onclick = async () => {
+      if (!confirm('Cancel this run?')) return;
+      try {await post('runs/' + b.dataset.cancel + '/cancel'); await refresh();} catch (e) {error(e.message);}
+    });
+    $$('[data-delete]').forEach(b => b.onclick = async () => {
+      if (!confirm('Delete this run and its files? Later runs may have used it as history.')) return;
+      try {await post('runs/' + b.dataset.delete + '/delete'); await refresh();} catch (e) {error(e.message);}
+    });
     $$('[data-log]').forEach(b => b.onclick = async () => {
       try {
         const response = await fetch(apiUrl('runs/' + b.dataset.log + '/log'), {cache:'no-store'});
         if (!response.ok) throw new Error('Could not load the run log');
-        $('#runLog').textContent = await response.text() || 'No pipeline steps have run yet.';
+        const raw = await response.text();
+        const run = runs.find(r => r.id === b.dataset.log);
+        const steps = raw.split('\n').filter(line => line.startsWith('=== Step'));
+        $('#runLogSummary').textContent = [...steps, ...(run?.error ? ['Error: ' + run.error] : [])].join('\n') || 'No pipeline steps have run yet.';
+        $('#runLog').textContent = raw || 'No technical details yet.';
         $('#runLogTitle').textContent = b.dataset.log + ' log';
         $('#runLogPanel').hidden = false;
         $('#runLogPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -181,8 +198,9 @@
       const context = await api('context' + location.search);
       loadedRun = context.run;
       $('#reportIdentity').textContent = loadedRun ? loadedRun.id + ' · ' + loadedRun.label : 'Sample';
+      $('.who b').textContent = context.user || 'local';
       online = true;
-      $('#appNotice').textContent = loadedRun ? `Viewing ${loadedRun.id} · ${loadedRun.label}. Select new files to start another run.` : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
+      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (location.hash === '#results' && loadedRun) $('.item[data-r="overview"]').click();
