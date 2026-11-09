@@ -15,7 +15,8 @@
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
     shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry and stock. Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
   };
-  let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null;
+  let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
+  const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
   const apiUrl = path => location.origin + basePath + 'api/' + path;
   const error = message => {
@@ -52,7 +53,7 @@
       el.querySelector('small').textContent = file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : slots.find(s => s[0] === el.dataset.slot)[2].replaceAll(',', ' / ');
       el.querySelector('.btn').textContent = file ? 'Replace' : 'Choose file';
     });
-    $('#sDate').textContent = run?.report_date || 'Not yet uploaded';
+    $('#sDate').textContent = run?.report_date ? dateText(run.report_date) : 'Not yet uploaded';
     if (run) $('#sLabel').value = run.label === 'Untitled run' ? '' : run.label;
     controls();
   }
@@ -65,6 +66,7 @@
       if (!allowed.includes(suffix) || !file.size || file.size > 1024 ** 3) {
         invalidSlot = slot;
         error('Choose a nonempty ' + allowed.join(' / ') + ' file, up to 1 GB.');
+        $('#appNotice').textContent = 'Upload rejected. Choose a valid file to continue.';
         controls();
         el.querySelector('input').value = '';
         return;
@@ -77,7 +79,7 @@
         invalidSlot = null; showDraft(meta);
         $('#appNotice').textContent = 'Draft ' + draft.id + ' saved. You can return to it later.';
         await refresh();
-      } catch (e) {error(e.message);}
+      } catch (e) {error(e.message); $('#appNotice').textContent = 'Upload rejected. Check the file and try again.';}
       finally {busy = false; el.querySelector('input').value = ''; controls();}
     }
     el.querySelector('input').onchange = e => choose(e.target.files[0]);
@@ -86,7 +88,7 @@
     el.ondrop = e => {e.preventDefault(); el.classList.remove('over'); choose(e.dataTransfer.files[0]);};
   });
   const status = {draft: ['s-idle', 'Incomplete upload'], queued: ['s-idle', 'Queued'], running: ['s-run', 'Running'], ok: ['s-ok', 'Completed'], bad: ['s-bad', 'Failed'], cancelled: ['s-idle', 'Cancelled']};
-  const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
+
   function resultsUrl(id) {
     return basePath + '?run=' + encodeURIComponent(id) + '#results';
   }
@@ -108,17 +110,16 @@
   function summary(r) {
     const s = r.summary;
     if (!s || s.total_closing_stock_bdt == null) return '—';
-    const val = n => n == null ? '—' : Number(n).toLocaleString('en-GB', {maximumFractionDigits: 2});
-    return `<details><summary>Stock ৳${val(s.total_closing_stock_bdt)} · exposure ৳${val(s.exposure_bdt)}</summary><div>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ৳${val(s.stock_change_bdt)} · exposure change: ৳${val(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing landing rate: ${val(s.batches_missing_landing_rate)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
+    const money = n => n == null ? '—' : (n < 0 ? '−' : '') + Math.abs(n / 1e6).toLocaleString('en-GB', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M BDT';
+    const val = n => n == null ? '—' : Number(n).toLocaleString('en-GB');
+    return `<details data-summary="${r.id}"><summary>View summary</summary><div>Stock: ${money(s.total_closing_stock_bdt)} · exposure: ${money(s.exposure_bdt)}<br>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ${money(s.stock_change_bdt)} · exposure change: ${money(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing landing rate: ${val(s.batches_missing_landing_rate)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
   }
   const columns = [
     {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
-    {k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},
-    {k:'started_by',h:'Started by',r:r=>esc(r.started_by || 'local')},
+    {k:'label',h:'Label',r:r=>`${esc(r.label)}<div class="run-secondary">${esc(r.started_by || 'local')}${r.seconds == null ? '' : ' · ' + r.seconds + ' s'}</div>`,cls:'name'},
     {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
     {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
     {k:'summary',h:'Summary',r:summary},
-    {k:'seconds',h:'Time',r:r=>r.seconds == null ? '—' : r.seconds + ' s',cls:'dim'},
     {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
     {k:'actions',h:'Results and actions',r:actions},
   ];
@@ -127,8 +128,10 @@
     function renderList(target, rows, empty) {
       $(target).html = rows.length ? `<div class="runs-scroll"><table class="runs-table"><thead><tr>${columns.map(c=>`<th scope="col">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${columns.map(c=>`<td>${c.r(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p>${empty}</p>`;
     }
+    const openSummaries = new Set($$('[data-summary][open]').map(el => el.dataset.summary));
     renderList('#runsT', active, 'No runs yet. Upload all five source files and choose Start run.');
     renderList('#archiveT', archived, 'Archived runs appear here. Their data still feeds later history.');
+    $$('[data-summary]').forEach(el => {el.open = openSummaries.has(el.dataset.summary);});
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
@@ -163,7 +166,13 @@
     });
   }
   $('#closeRunLog').onclick = () => $('#runLogPanel').hidden = true;
-  async function refresh() {runs = await api('runs'); drawRuns();}
+  async function refresh() {
+    runs = await api('runs'); drawRuns();
+    const run = runs.find(r => r.id === trackedRun);
+    if (run && !busy && !draft && ['ok', 'bad', 'cancelled'].includes(run.status)) {
+      $('#appNotice').textContent = run.id + (run.status === 'ok' ? ' completed. Open results in Runs.' : run.status === 'bad' ? ' failed. See Runs for details.' : ' was cancelled.');
+    }
+  }
   async function poll() {
     if (polling) return;
     polling = true;
@@ -174,7 +183,7 @@
   $('#discardDraft').onclick = async () => {
     if (!draft || busy || !confirm('Discard this draft and its uploaded files?')) return;
     busy = true; controls();
-    try {await post('runs/' + draft.id + '/discard'); invalidSlot = null; showDraft(null); $('#sLabel').value = ''; error(''); await refresh();}
+    try {await post('runs/' + draft.id + '/discard'); invalidSlot = null; showDraft(null); $('#sLabel').value = ''; error(''); $('#appNotice').textContent = 'Draft discarded. Upload files to start a new run.'; await refresh();}
     catch (e) {error(e.message);}
     finally {busy = false; controls();}
   };
@@ -186,6 +195,7 @@
     try {
       const id = draft.id;
       await post('runs/' + id + '/start', {label: $('#sLabel').value});
+      trackedRun = id;
       showDraft(null); $('#sLabel').value = '';
       $('#appNotice').textContent = id + ' accepted. Follow its progress in Runs.';
       $$('#obTabs .tab')[1].click();
@@ -198,16 +208,19 @@
       const context = await api('context' + location.search);
       loadedRun = context.run;
       $('#reportIdentity').textContent = loadedRun ? loadedRun.id + ' · ' + loadedRun.label : 'Sample';
+      $('#repRun').textContent = STATUS.labels.at(-1) + ' snapshot';
       $('.who b').textContent = context.user || 'local';
       online = true;
       $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
+      if (draft) $('#appNotice').textContent = 'Draft ' + draft.id + ' resumed. Continue uploading files or start the run.';
       if (location.hash === '#results' && loadedRun) $('.item[data-r="overview"]').click();
       poll();
     } catch {
       online = false;
       $('#reportIdentity').textContent = 'Sample';
+      $('#repRun').textContent = STATUS.labels.at(-1) + ' snapshot';
       $('#appNotice').textContent = 'This is a saved report. Open the live app to upload files and run calculations.';
       drawRuns();
     }
