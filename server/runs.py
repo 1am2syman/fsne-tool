@@ -23,6 +23,7 @@ import tempfile
 import threading
 import time
 import traceback
+from contextlib import suppress
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -212,7 +213,8 @@ class Store:
                 return self.update(run_id, status="cancelled", step=None, error=None)
             meta = self.update(run_id, cancel_requested=True, step="Cancelling")
             if self.process_run == run_id and self.process and self.process.poll() is None:
-                self.process.terminate()
+                with suppress(ProcessLookupError):
+                    self.process.terminate()  # It may have exited since poll().
             return meta
 
     def delete(self, run_id: str) -> None:

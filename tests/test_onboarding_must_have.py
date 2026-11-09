@@ -1,7 +1,7 @@
 from datetime import date
 from io import BytesIO
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import polars as pl
 
@@ -78,6 +78,15 @@ def test_queued_cancel_and_delete_preserve_run_ids(tmp_path):
     store.jobs.put(None)
     store._worker()
     assert store.get(next_run["id"])["status"] == "draft"
+    store.update(next_run["id"], status="running")
+    process = Mock()
+    process.poll.return_value = None
+    store.process = process
+    store.process_run = next_run["id"]
+    assert store.cancel(next_run["id"])["cancel_requested"]
+    process.terminate.assert_called_once()
+    with TestCase().assertRaisesRegex(RunError, "cancelled"):
+        store._check_cancel(next_run["id"])
 
 
 def test_sales_month_and_pipeline_error_messages(tmp_path):
