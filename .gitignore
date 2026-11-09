@@ -20,3 +20,6 @@ output/*
 
 # Local validation evidence
 validation-artifacts/
+
+# Per-run uploads and results written by the app server
+runs/

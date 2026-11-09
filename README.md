@@ -13,6 +13,26 @@ Every query in `queries/` has a matching Python module in `src/`:
 | `soh_db.py` | Filenames containing `shelflife` or `Shelflife`, parsed as CSV; `ph` and `run_rate_parent` |
 | `starting_date.py` | Excel filenames containing `config` or `Config`; named Excel table `config_table` with `variable` / `value` columns |
 
+## Upload and run in the browser
+
+Start the app from the repository checkout:
+
+```bash
+uv sync
+uv run python ui/build.py  # initial sample dashboard; see prerequisites below
+uv run python -m server --port 8770
+```
+
+Open `http://127.0.0.1:8770/`. In **Onboarding**, select the five files, give the run a label, and choose **Start run**. The report date comes from `starting_date` in the configuration workbook's `config_table`; changing a filename does not change its date or contents. Upload slots accept arbitrary filenames and save them under the names the queries expect. Landing rates and hierarchy require the same worksheets/columns as the supplied samples. Configuration accepts `.xlsx`/`.xlsm`, landing `.xlsx`/`.xlsm`, secondary sales `.xlsb`/`.xlsx`/`.xlsm`, hierarchy `.xlsx`, and shelf life `.csv` (up to 1 GiB each).
+
+**Runs** shows actual queued/running/completed/failed states and the current pipeline step. A completed run offers **Open results** and the full 30-column **Excel** download. **Log** shows validation and calculation errors. Runs and archive/restore choices survive page reloads and server restarts. Jobs execute one at a time; a job interrupted by a server restart is marked failed, and its uploaded inputs remain available on disk. Reselect the files to submit a corrected run. An upload failure keeps the browser's selected files for retry.
+
+Each run is isolated under ignored `runs/RUN-0001/` with `input/`, `output/`, private `history/`, `index.html`, `meta.json` and `log.txt`. The server never writes to `sample_input/` or the bundled `history/`. Its history view combines bundled snapshots and previous successful runs, takes one version per report date (latest successful run wins), and excludes future snapshots. Exact batch identities retain manual mitigation labels from the same saved period. New periods/batches have no manual mitigation labels; they are not automatically classified as Actionable. Movement still measures the manually labeled Actionable cohort. Archive hides runs from the active list without deleting results or historical facts.
+
+The current dashboard needs saved history for movement comparisons and a matching latest secondary-sales month; unsuitable inputs fail visibly instead of falling back to sample data. The static `ui/index.html` and static preview can display results, but uploads require the live server. The batch table is the top 400 stock rows; the Excel download contains all rows. Rotation stays at 2×, rates use all supplied months through the report date, and batch-key whitespace follows the source queries.
+
+The server binds to localhost. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
+
 ## Generate the inferred final sample report
 
 ```bash
@@ -92,7 +112,7 @@ Sample inputs and a final reference report are supplied in `sample_input/` and `
 
 ```bash
 uv run python -m unittest discover -s tests -v
-uvx ruff check src tests
+uvx ruff check src tests ui server
 uvx pyright --project pyrightconfig.json
 ```
 
