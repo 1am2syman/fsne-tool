@@ -268,11 +268,11 @@ class Store:
                 with self.lock:
                     self._check_cancel(run_id)
                     self.update(run_id, status="ok", step=None, rows=rows, seconds=round(time.monotonic() - began))
-                report_date = self.get(run_id)["report_date"]
-                for other in self.list():
-                    if (other["id"] != run_id and other["status"] == "ok" and not other["archived"]
-                            and other.get("report_date") == report_date):
-                        self.update(other["id"], archived=_now())
+                    report_date = self.get(run_id)["report_date"]
+                    for other in self.list():
+                        if (other["id"] != run_id and other["status"] == "ok" and not other["archived"]
+                                and other.get("report_date") == report_date):
+                            self.update(other["id"], archived=_now())
             except Exception as exc:  # noqa: BLE001 - persist any pipeline failure and keep the worker alive
                 with self.lock:
                     meta = self.get(run_id)
