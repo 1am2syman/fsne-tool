@@ -8,7 +8,7 @@
     ['hierarchy', 'Product hierarchy', '.xlsx'],
     ['shelflife', 'Shelf-life report', '.csv'],
   ];
-  let online = false, busy = false, runs = [], polling = false, loadedRun = null;
+  let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null;
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
   const apiUrl = path => location.origin + basePath + 'api/' + path;
   const error = message => {
@@ -23,7 +23,11 @@
   }
   const post = (path, body = {}) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   function controls() {
-    $('#runBtn').disabled = !online || busy || selected.size !== slots.length;
+    const missing = slots.length - selected.size;
+    $('#runBtn').disabled = !online || busy || missing > 0 || !!invalidSlot;
+    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
+    $('#discardDraft').hidden = !draft;
+    $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
     $('#archivePrevious').disabled = busy || !online;
     $$('#files input').forEach(input => input.disabled = busy || !online);
@@ -32,23 +36,43 @@
   $('#runBtn').disabled = true;
   $('#sDate').value = '';
   $('#files').html = slots.map(([slot, label, ext]) => `<label class="file" data-slot="${slot}"><span class="st"></span><div><b>${label}</b><small>${ext.replaceAll(',', ' / ')}</small></div><span class="btn sm">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label>`).join('');
+  function showDraft(run) {
+    draft = run;
+    selected.clear();
+    for (const [slot, file] of Object.entries(run?.files || {})) selected.set(slot, file);
+    $$('#files .file').forEach(el => {
+      const file = selected.get(el.dataset.slot);
+      el.classList.toggle('done', !!file);
+      el.querySelector('small').textContent = file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : slots.find(s => s[0] === el.dataset.slot)[2].replaceAll(',', ' / ');
+      el.querySelector('.btn').textContent = file ? 'Replace' : 'Choose file';
+    });
+    $('#sDate').value = run?.report_date || '';
+    if (run) $('#sLabel').value = run.label === 'Untitled run' ? '' : run.label;
+    controls();
+  }
   $$('#files .file').forEach(el => {
     const slot = el.dataset.slot;
-    function choose(file) {
+    async function choose(file) {
       if (!file || busy || !online) return;
       const allowed = slots.find(s => s[0] === slot)[2].split(',');
       const suffix = '.' + file.name.split('.').at(-1).toLowerCase();
       if (!allowed.includes(suffix) || !file.size || file.size > 1024 ** 3) {
+        invalidSlot = slot;
         error('Choose a nonempty ' + allowed.join(' / ') + ' file, up to 1 GB.');
+        controls();
         el.querySelector('input').value = '';
         return;
       }
-      selected.set(slot, file);
-      el.classList.add('done');
-      el.querySelector('small').textContent = file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB selected';
-      el.querySelector('.btn').textContent = 'Replace';
-      if (slot === 'config') $('#sDate').value = '';
-      error(''); controls();
+      busy = true; invalidSlot = slot; error(''); controls();
+      try {
+        if (!draft) draft = await post('runs', {label: $('#sLabel').value});
+        $('#appNotice').textContent = 'Uploading and checking ' + slots.find(s => s[0] === slot)[1] + '…';
+        const meta = await api('runs/' + draft.id + '/files/' + slot, {method:'PUT',headers:{'X-Filename':encodeURIComponent(file.name)},body:file});
+        invalidSlot = null; showDraft(meta);
+        $('#appNotice').textContent = 'Draft ' + draft.id + ' saved. You can return to it later.';
+        await refresh();
+      } catch (e) {error(e.message);}
+      finally {busy = false; el.querySelector('input').value = ''; controls();}
     }
     el.querySelector('input').onchange = e => choose(e.target.files[0]);
     el.ondragover = e => {e.preventDefault(); if (online && !busy) el.classList.add('over');};
@@ -65,13 +89,22 @@
       `<button class="btn sm ghost" data-log="${r.id}">Log</button> ` +
       (!['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>` : '');
   }
+  function progress(r) {
+    if (r.status === 'ok') return 'Done — open results';
+    if (r.status !== 'running') return r.step || status[r.status][1];
+    const elapsed = r.started ? Math.max(0, Math.floor((Date.now() - Date.parse(r.started)) / 1000)) : 0;
+    const durations = runs.filter(x => x.status === 'ok' && x.seconds != null).map(x => x.seconds).sort((a,b) => a-b);
+    const mid = Math.floor(durations.length / 2);
+    const median = durations.length ? (durations.length % 2 ? durations[mid] : Math.round((durations[mid-1] + durations[mid])/2)) : null;
+    return (r.step || 'Running') + ' · ' + elapsed + ' s elapsed' + (median == null ? '' : ' · typical ' + median + ' s');
+  }
   const columns = [
     {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
     {k:'label',h:'Label',r:r=>esc(r.label),cls:'name'},
     {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
     {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
     {k:'seconds',h:'Time',r:r=>r.seconds == null ? '—' : r.seconds + ' s',cls:'dim'},
-    {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(r.step || status[r.status][1])}</span>${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
+    {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
     {k:'actions',h:'Results and actions',r:actions},
   ];
   function drawRuns() {
@@ -81,6 +114,8 @@
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
+    const newest = runs.find(r => r.status !== 'draft');
+    document.title = running ? 'Running · FSNE' : newest?.status === 'ok' ? 'Done · FSNE' : 'FSNE';
     $$('[data-archive]').forEach(b => b.onclick = async () => {
       b.disabled = true;
       try {await post('runs/' + b.dataset.archive + '/' + (b.dataset.value === 'true' ? 'archive' : 'restore')); await refresh();}
@@ -106,34 +141,26 @@
     catch (e) {error('Could not refresh runs: ' + e.message);}
     finally {polling = false; setTimeout(poll, 2500);}
   }
+  $('#discardDraft').onclick = async () => {
+    if (!draft || busy || !confirm('Discard this draft and its uploaded files?')) return;
+    busy = true; controls();
+    try {await post('runs/' + draft.id + '/discard'); invalidSlot = null; showDraft(null); $('#sLabel').value = ''; error(''); await refresh();}
+    catch (e) {error(e.message);}
+    finally {busy = false; controls();}
+  };
   $('#runBtn').onclick = async () => {
-    if (busy || !online || selected.size !== slots.length) return;
+    if (busy || !online || !draft || invalidSlot || selected.size !== slots.length) return;
+    const previous = runs.find(r => r.status === 'ok' && r.report_date === draft.report_date);
+    if (previous && !confirm('A completed run already exists for this report date (' + previous.id + '). Start a replacement? It will replace that month in later history.')) return;
     busy = true; error(''); controls();
-    let acceptedId = null, draftId = null;
     try {
-      const run = await post('runs', {label: $('#sLabel').value, archive_previous: $('#archivePrevious').getAttribute('aria-checked') === 'true'});
-      draftId = run.id;
-      for (let i = 0; i < slots.length; i++) {
-        const [slot, label] = slots[i], file = selected.get(slot);
-        $('#appNotice').textContent = `Uploading ${i + 1} of ${slots.length}: ${label}…`;
-        const meta = await api('runs/' + run.id + '/files/' + slot, {method:'PUT',headers:{'X-Filename':encodeURIComponent(file.name)},body:file});
-        if (meta.report_date) $('#sDate').value = meta.report_date;
-      }
-      await post('runs/' + run.id + '/start');
-      acceptedId = run.id;
-      selected.clear();
-      $$('#files .file').forEach(el => {
-        el.classList.remove('done'); el.querySelector('input').value = '';
-        el.querySelector('small').textContent = 'Select a file for the next run'; el.querySelector('.btn').textContent = 'Choose file';
-      });
-      $('#appNotice').textContent = run.id + ' accepted. Follow its progress in Runs, then choose Open results.';
+      const id = draft.id;
+      await post('runs/' + id + '/start', {label: $('#sLabel').value});
+      showDraft(null); $('#sLabel').value = '';
+      $('#appNotice').textContent = id + ' accepted. Follow its progress in Runs.';
       $$('#obTabs .tab')[1].click();
       await refresh();
-    } catch (e) {
-      if (draftId && !acceptedId) await post('runs/' + draftId + '/discard').catch(() => {});
-      error(e.message);
-      $('#appNotice').textContent = acceptedId ? `${acceptedId} was accepted. Check Runs for its status.` : 'Run was not started. Your selected files are kept so you can correct the problem and retry.';
-    }
+    } catch (e) {error(e.message);}
     finally {busy = false; controls(); refresh().catch(() => {});}
   };
   async function init() {
@@ -143,6 +170,7 @@
       online = true;
       $('#appNotice').textContent = loadedRun ? `Viewing ${loadedRun.id} · ${loadedRun.label}. Select new files to start another run.` : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
       await refresh();
+      showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (location.hash === '#results' && loadedRun) $('.item[data-r="overview"]').click();
       poll();
     } catch {

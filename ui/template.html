@@ -534,7 +534,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <section class="view on" id="v-onboarding">
   <div class="head">
     <div><h1>Onboarding</h1><p class="lede">Upload the five source files, then calculate and save a report.</p></div>
-    <button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button>
+    <div><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" aria-live="polite"></p></div>
   </div>
   <div class="tabs" role="tablist" id="obTabs">
     <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
@@ -548,6 +548,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div class="panel">
       <div class="panel-h"><h2>Source files</h2><p id="fileProg" class="mono"></p></div>
       <div id="files"></div>
+      <button id="discardDraft" class="btn sm ghost" type="button" hidden>Discard draft</button>
     </div>
     <div class="panel">
       <div class="panel-h"><h2>Run parameters</h2></div>

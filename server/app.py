@@ -134,8 +134,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             return self._file(html, "text/html; charset=utf-8")
 
         def _run_route(self, method: str, run_id: str, rest: str) -> None:
-            if method == "POST":
-                self._body_json()
+            body = self._body_json() if method == "POST" else {}
             store.get(run_id)
             if not rest and method == "GET":
                 return self._json(store.get(run_id))
@@ -155,7 +154,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 length = _length(self.headers.get("Content-Length"))
                 return self._json(store.save_file(run_id, slot, filename, self.rfile, length))
             if rest == "start" and method == "POST":
-                return self._json(store.start(run_id))
+                return self._json(store.start(run_id, str(body["label"]) if "label" in body else None))
             if rest == "discard" and method == "POST":
                 store.discard(run_id)
                 return self._json({"discarded": run_id})

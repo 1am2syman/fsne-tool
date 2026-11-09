@@ -174,7 +174,7 @@ class Store:
             self._write(meta)
             return meta
 
-    def start(self, run_id: str) -> dict:
+    def start(self, run_id: str, label: str | None = None) -> dict:
         with self.lock:
             meta = self.get(run_id)
             if meta["status"] != "draft":
@@ -182,7 +182,10 @@ class Store:
             missing = [SLOTS[s][0] for s in SLOTS if s not in meta["files"]]
             if missing:
                 raise RunError("Missing files: " + ", ".join(missing))
-            meta = self.update(run_id, status="queued", step="Waiting for a free worker")
+            if label is not None:
+                meta["label"] = label.strip()[:80] or "Untitled run"
+            meta.update(status="queued", step="Waiting for a free worker")
+            self._write(meta)
             self.jobs.put(run_id)
             return meta
 
@@ -252,7 +255,7 @@ class Store:
             lines = [ln for ln in self.log(run_id).strip().splitlines() if ln.strip()]
             exceptions = [ln for ln in lines if re.match(r"^[\w.]+(?:Error|Exception):", ln)]
             detail = exceptions[-1] if exceptions else lines[-1] if lines else "see log"
-            raise RunError(pipeline_message(detail))
+            raise RunError(pipeline_message(detail, self.get(run_id).get("step")))
 
     def _execute(self, run_id: str) -> int:
         run = self.path(run_id)
@@ -296,7 +299,7 @@ class Store:
         return paths
 
 
-def pipeline_message(detail: str) -> str:
+def pipeline_message(detail: str, step: str | None = None) -> str:
     """Translate recognized pipeline failures; the full traceback stays in the log."""
     known = (
         ("Latest run-rate source month", "Secondary sales: choose a file whose latest month matches the configuration report month."),
@@ -310,7 +313,8 @@ def pipeline_message(detail: str) -> str:
     for marker, message in known:
         if marker in detail:
             return message
-    return "The calculation could not be completed. Check the uploaded files and see the run log for technical details."
+    where = f" during {step.lower()}" if step else ""
+    return f"The calculation could not be completed{where}. Check the uploaded files and see the run log for technical details."
 
 
 def validate_sales_month(data_dir: Path, report_date: str) -> None:
