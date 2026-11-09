@@ -138,6 +138,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             if not run_id:
                 return self._file(FALLBACK_HTML, "text/html; charset=utf-8")
             run = store.path(run_id)
+            meta = store.get(run_id)
             payload = run / "data.json"
             legacy = run / "index.html"
             with store.lock:
@@ -156,7 +157,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     data = json.loads(payload.read_text())
                 except (OSError, ValueError) as exc:
                     raise RunError("Could not read this run's dashboard data") from exc
-            return self._send(200, render(data).encode(), "text/html; charset=utf-8")
+            return self._send(200, render(data, meta).encode(), "text/html; charset=utf-8")
 
         def _run_route(self, method: str, run_id: str, rest: str) -> None:
             body = self._body_json() if method == "POST" else {}

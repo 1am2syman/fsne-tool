@@ -219,8 +219,6 @@
       poll();
     } catch {
       online = false;
-      $('#reportIdentity').textContent = 'Sample';
-      $('#repRun').textContent = STATUS.labels.at(-1) + ' snapshot';
       $('#appNotice').textContent = 'This is a saved report. Open the live app to upload files and run calculations.';
       drawRuns();
     }
