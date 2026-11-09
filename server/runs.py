@@ -5,7 +5,7 @@ Each run lives in ``runs/RUN-0001/``::
     input/     the five uploaded files under the names the queries look for
     history/   symlinks to the shared history/ plus this run's own snapshot
     output/    pipeline outputs
-    index.html the dashboard built for this run
+    data.json  dashboard data rendered with the shared current template
     meta.json  status, timings, detected report date
     log.txt    stdout/stderr of every pipeline step
 """
@@ -277,7 +277,7 @@ class Store:
                     if meta.get("cancel_requested"):
                         self.update(run_id, status="cancelled", step=None, error=None, seconds=round(time.monotonic() - began))
                         continue
-                    msg = str(exc) or exc.__class__.__name__
+                    msg = (str(exc) or exc.__class__.__name__) if isinstance(exc, RunError) else pipeline_message(str(exc), meta.get("step"))
                     with (self.path(run_id) / "log.txt").open("a") as log:
                         traceback.print_exc(file=log)
                     self.update(run_id, status="bad", step=None, error=msg, seconds=round(time.monotonic() - began))
@@ -348,7 +348,7 @@ class Store:
         self._step(run_id, 5, total, "building the dashboard")
         self._sh(
             run_id, "ui/build.py", "--data-dir", str(data), "--history-dir", str(hist),
-            "--output-dir", str(out), "--html", str(run / "index.html"),
+            "--output-dir", str(out), "--payload", str(run / "data.json"),
         )
         self.update(run_id, summary={**self.get(run_id).get("summary", {}), **run_summary(out, hist, data, report_date)})
         return rows

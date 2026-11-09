@@ -23,6 +23,7 @@ from src.movement import (
     transform_parent_series,
     transform_series,
 )
+from ui.render import render
 from ui.run_rate_data import build_current
 from ui.sales_push_data import build_payload as sales_push_payload
 from ui.status_data import build_payload
@@ -34,6 +35,7 @@ _ap.add_argument('--data-dir', type=pathlib.Path, default=d.parent / 'sample_inp
 _ap.add_argument('--history-dir', type=pathlib.Path, default=d.parent / 'history')
 _ap.add_argument('--output-dir', type=pathlib.Path, default=d.parent / 'output')
 _ap.add_argument('--html', type=pathlib.Path, default=d / 'index.html')
+_ap.add_argument('--payload', type=pathlib.Path, default=None, help='write run data instead of a full HTML page')
 _args = _ap.parse_args()
 DATA, HIST, OUT, HTML = (p.resolve() for p in (_args.data_dir, _args.history_dir, _args.output_dir, _args.html))
 src = OUT / 'movement_series.parquet'
@@ -95,20 +97,16 @@ current, refreshed, doh, impact = build_current(DATA, latest_saved, months[-1], 
 (OUT / 'run_rate_impact.json').write_text(json.dumps(impact, indent=2) + '\n')
 (OUT / 'current_measures.json').write_text(json.dumps(impact['measures_after'], indent=2) + '\n')
 series['doh'] = doh
-batch = json.dumps(current.sort('total_closing_stock_bdt', descending=True, nulls_last=True).head(400).to_dicts(), separators=(',', ':'), allow_nan=False)
-t = ((d / 'template.html').read_text()
-     .replace('/*DOH_OVERLAY*/', (d / 'doh_overlay.js').read_text())
-     .replace('/*ONBOARDING*/', (d / 'onboarding.js').read_text()))
+batch = current.sort('total_closing_stock_bdt', descending=True, nulls_last=True).head(400).to_dicts()
 # Match the movement report's month window, including its opening snapshot.
 opening = (months[0].replace(day=1) - dt.timedelta(days=1)).replace(day=1)
 status = build_payload(HIST, [opening, *[m.replace(day=1) for m in months]], current=refreshed)
 transfer = transfer_payload(current, DATA, OUT)
 sales_push = sales_push_payload(DATA, current)
-t = (t.replace('/*SALESPUSH*/{}', json.dumps(sales_push, separators=(',', ':'), allow_nan=False, default=str).replace('<', '\\u003c'))
-     .replace('/*TRANSFER*/{}', json.dumps(transfer, separators=(',', ':'), allow_nan=False, default=str).replace('<', '\\u003c'))
-     .replace('/*BATCH*/[]', batch.replace('<', '\\u003c'))
-     .replace('/*SERIES*/{}', json.dumps(series, separators=(',', ':'), allow_nan=False).replace('<', '\\u003c'))
-     .replace('/*MEASURES*/{}', json.dumps(impact['measures_after'], separators=(',', ':'), allow_nan=False))
-     .replace('/*STATUS*/{}', json.dumps(status, separators=(',', ':'), allow_nan=False).replace('<', '\\u003c')))
-HTML.write_text(t)
+payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
+           'MEASURES': impact['measures_after'], 'STATUS': status}
+if _args.payload:
+    _args.payload.write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False, default=str))
+else:
+    HTML.write_text(render(payload))
 print(f'built: {len(series["brands"])} brands x {len(months)} months ({series["labels"][0]}-{series["labels"][-1]})')

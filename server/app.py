@@ -24,6 +24,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
+from ui.render import extract_legacy, render
+
 from .runs import ROOT, SLOTS, RunError, Store
 
 FALLBACK_HTML = ROOT / "ui" / "index.html"
@@ -133,8 +135,28 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     raise RunError("That run has no results")
             else:
                 run_id = store.latest_ok()
-            html = store.path(run_id) / "index.html" if run_id else FALLBACK_HTML
-            return self._file(html, "text/html; charset=utf-8")
+            if not run_id:
+                return self._file(FALLBACK_HTML, "text/html; charset=utf-8")
+            run = store.path(run_id)
+            payload = run / "data.json"
+            legacy = run / "index.html"
+            with store.lock:
+                if not payload.exists() and legacy.exists():
+                    try:
+                        data = extract_legacy(legacy.read_text())
+                    except (ValueError, KeyError) as exc:
+                        raise RunError("Could not read this older run's dashboard data") from exc
+                    tmp = run / "data.json.tmp"
+                    tmp.write_text(json.dumps(data, separators=(",", ":")))
+                    tmp.replace(payload)
+                    legacy.unlink()
+                if not payload.exists():
+                    return self._error(404, "Results data not found")
+                try:
+                    data = json.loads(payload.read_text())
+                except (OSError, ValueError) as exc:
+                    raise RunError("Could not read this run's dashboard data") from exc
+            return self._send(200, render(data).encode(), "text/html; charset=utf-8")
 
         def _run_route(self, method: str, run_id: str, rest: str) -> None:
             body = self._body_json() if method == "POST" else {}
