@@ -207,11 +207,11 @@
     try {
       const context = await api('context' + location.search);
       loadedRun = context.run;
-      $('#reportIdentity').textContent = loadedRun ? loadedRun.id + ' · ' + loadedRun.label : 'Sample';
-      $('#repRun').textContent = STATUS.labels.at(-1) + ' snapshot';
+      $('#reportIdentity').textContent = loadedRun ? loadedRun.id + ' · ' + loadedRun.label : HAS_REPORT ? 'Sample' : 'No report yet';
+      $('#repRun').textContent = HAS_REPORT ? STATUS.labels.at(-1) + ' snapshot' : '';
       $('.who b').textContent = context.user || 'local';
       online = true;
-      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : 'Reports currently show the bundled sample. Upload your files to calculate a new run.';
+      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Upload the five source files to calculate your first run.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (draft) $('#appNotice').textContent = 'Draft ' + draft.id + ' resumed. Continue uploading files or start the run.';

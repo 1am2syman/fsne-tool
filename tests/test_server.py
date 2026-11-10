@@ -144,6 +144,28 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(second.status, 200)
         self.assertIsNotNone(json.loads(second.read())[0]["archived"])
 
+    def test_fresh_install_opens_upload_without_building_sample_reports(self):
+        server = make_server(self.store, port=0)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+        self.addCleanup(conn.close)
+        # Fresh checkouts have no generated dashboard; sample dates may differ
+        # from saved history, so starting uploads must not calculate a sample.
+        with patch("server.app.FALLBACK_HTML", self.root / "missing-index.html"):
+            conn.request("GET", "/")
+            response = conn.getresponse()
+            page = response.read().decode()
+        self.assertEqual(response.status, 200)
+        self.assertIn("Monthly upload", page)
+        self.assertIn("const HAS_REPORT = false;", page)
+        self.assertNotIn("/*ONBOARDING*/", page)
+        conn.request("POST", "/api/runs", '{"label":"First real month"}')
+        response = conn.getresponse()
+        self.assertEqual(response.status, 201)
+        self.assertEqual(json.loads(response.read())["status"], "draft")
+
     def test_http_roundtrip_error_controls_and_download_guard(self):
         server = make_server(self.store, port=0)
         thread = threading.Thread(target=server.serve_forever, daemon=True)

@@ -12,16 +12,6 @@ echo Preparing dependencies...
 call uv sync
 if errorlevel 1 goto :failed
 
-if not exist "ui\index.html" (
-    echo Preparing the initial dashboard. This may take a few minutes...
-    call uv run python -m src movement_series --history-dir history --output output/movement_series.parquet
-    if errorlevel 1 goto :failed
-    call uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
-    if errorlevel 1 goto :failed
-    call uv run python ui/build.py
-    if errorlevel 1 goto :failed
-)
-
 echo Starting FSNE. Keep this window open while using the app.
 echo Close this window to stop the server.
 call uv run python -m server --port 8770 --open-browser

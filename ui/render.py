@@ -8,12 +8,17 @@ UI = Path(__file__).resolve().parent
 NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH")
 
 
-def render(payload: dict, run: dict | None = None) -> str:
-    template = ((UI / "template.html").read_text()
-                .replace("/*DOH_OVERLAY*/", (UI / "doh_overlay.js").read_text())
-                .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text()))
-    identity = f"{run['id']} · {run['label']}" if run else "Sample"
-    snapshot = f"{payload['STATUS']['labels'][-1]} snapshot"
+def render(payload: dict | None = None, run: dict | None = None) -> str:
+    """Render reports when available, otherwise open the upload workspace."""
+    has_report = payload is not None
+    if payload is None:
+        payload = {name: ([] if name == "BATCH" else {}) for name in NAMES}
+    template = ((UI / "template.html").read_text(encoding="utf-8")
+                .replace("/*DOH_OVERLAY*/", (UI / "doh_overlay.js").read_text(encoding="utf-8"))
+                .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text(encoding="utf-8"))
+                .replace("/*HAS_REPORT*/true", json.dumps(has_report)))
+    identity = f"{run['id']} · {run['label']}" if run else "Sample" if has_report else "No report yet"
+    snapshot = f"{payload['STATUS']['labels'][-1]} snapshot" if has_report else ""
     template = (template.replace("<!--REPORT_IDENTITY-->Sample", escape(identity))
                 .replace("<!--REPORT_SNAPSHOT-->", escape(snapshot)))
     for name in NAMES:

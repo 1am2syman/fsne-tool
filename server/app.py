@@ -136,7 +136,9 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             else:
                 run_id = store.latest_ok()
             if not run_id:
-                return self._file(FALLBACK_HTML, "text/html; charset=utf-8")
+                if FALLBACK_HTML.is_file():
+                    return self._file(FALLBACK_HTML, "text/html; charset=utf-8")
+                return self._send(200, render().encode("utf-8"), "text/html; charset=utf-8")
             run = store.path(run_id)
             meta = store.get(run_id)
             payload = run / "data.json"

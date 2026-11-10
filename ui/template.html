@@ -705,6 +705,8 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+(() => {
+const HAS_REPORT = /*HAS_REPORT*/true;
 const BATCH = /*BATCH*/[];
 const SERIES = /*SERIES*/{};
 const STATUS = /*STATUS*/{};
@@ -738,12 +740,17 @@ $('#theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'
 function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push'}[k];['overview','batch','move','status','transfer','salespush'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':k));$('#mTools').hidden=k!=='move';$('#unitTools').hidden=k==='salespush';$('#sTools').hidden=!isStatus;if(isStatus||k==='move')$(isStatus?'#sExp':'#mExp').after($('#unitTools'));else $('#exportBtn').before($('#unitTools'));$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':'Recalculated snapshot · '+new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});$('#repDate').hidden=true;$('#repSep').hidden=false;if(isStatus)setStatusView(k);if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
 let curRep='batch';
 $$('.item[data-view]').forEach(b=>b.onclick=()=>{
-  if(b.dataset.view==='reports'){curRep=b.dataset.r||curRep;showRep(curRep)}
+  if(b.dataset.view==='reports'){if(!HAS_REPORT)return;curRep=b.dataset.r||curRep;showRep(curRep)}
   const cur=x=>x.dataset.view==='reports'?(b.dataset.view==='reports'&&(b.dataset.r?x===b:x.dataset.r===curRep)):x===b;
   $$('.item[data-view]').forEach(x=>{x.toggleAttribute('aria-current',cur(x)&&!(x.dataset.view==='reports'&&!x.dataset.r))}); $$('.item[aria-current]').forEach(x=>x.setAttribute('aria-current','page'));
   $$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+b.dataset.view));
 });
 $('.overview-nav').onchange=e=>{const k=e.target.value;const target=k==='onboarding'?'[data-view="onboarding"]':`.item[data-r="${k}"]`;$(target).click();e.target.value='overview'};
+if(!HAS_REPORT){
+  $$('.item[data-view="reports"]').forEach(b=>{b.disabled=true;b.title='Complete a run to view reports'});
+  $$('.overview-nav option').forEach(o=>{o.disabled=o.value!=='onboarding'});
+  $('.overview-nav').value='onboarding';
+}
 function tabs(sel,key,fn){$$(sel+' .tab').forEach(t=>t.onclick=()=>{$$(sel+' .tab').forEach(x=>x.setAttribute('aria-selected',x===t));fn(t.dataset[key])})}
 tabs('#obTabs','t',k=>['setup','runs','archive'].forEach(n=>{$('#ob-'+n).hidden=n!==k}));
 $$('.sw').forEach(s=>s.onclick=()=>s.setAttribute('aria-checked',s.getAttribute('aria-checked')!=='true'));
@@ -783,6 +790,9 @@ function table({t,cols,rows,sort,onSort,foot,emptyMsg,onSelect,groups}){
 const cmp=(k,d)=>(a,b)=>{const x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y):x-y)*d};
 
 /*ONBOARDING*/
+
+// Uploads and run management work before any report data exists.
+if(!HAS_REPORT)return;
 
 /* batch report */
 const serial=n=>new Date(Date.UTC(1899,11,30)+n*864e5).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
@@ -1645,6 +1655,7 @@ $$('#mv [data-mvclose]').forEach(b=>b.onclick=closeMovementOverlay);
 addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mv').hidden)closeMovementOverlay();if(e.key==='Tab'&&!$('#mv').hidden){const focusable=$$('button,[tabindex="0"]',$('#mv'));const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
 /*DOH_OVERLAY*/
 $('#exportBtn').onclick=()=>curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():toast('Export is not connected yet');
+})();
 </script>
 </body>
 </html>
