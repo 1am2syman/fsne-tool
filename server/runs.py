@@ -2,7 +2,7 @@
 
 Each run lives in ``runs/RUN-0001/``::
 
-    input/     the five uploaded files under the names the queries look for
+    input/     the uploaded files under the names the queries look for
     history/   symlinks to the shared history/ plus this run's own snapshot
     output/    pipeline outputs
     data.json  dashboard data rendered with the shared current template
@@ -39,7 +39,6 @@ RUN_ID = re.compile(r"^RUN-\d{4,}$")
 # the translated queries match on (see src/io.matching_files callers).
 SLOTS: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "config": ("Run configuration", "config", (".xlsx", ".xlsm")),
-    "landing": ("Landing rates", "DB Landing for FSNE", (".xlsx", ".xlsm")),
     "secondary": ("Secondary sales, month on month", "Mode_Sec_Month on Month", (".xlsb", ".xlsx", ".xlsm")),
     "hierarchy": ("Product hierarchy", "PH_FG", (".xlsx",)),
     "shelflife": ("Shelf-life report", "Product Shelflife Report", (".csv",)),
@@ -401,7 +400,7 @@ class Store:
             run_id, "ui/build.py", "--data-dir", str(data), "--history-dir", str(hist),
             "--output-dir", str(out), "--payload", str(run / "data.json"),
         )
-        self.update(run_id, summary={**self.get(run_id).get("summary", {}), **run_summary(out, hist, data, report_date)})
+        self.update(run_id, summary={**self.get(run_id).get("summary", {}), **run_summary(out, hist, report_date)})
         return rows
 
     def history_paths(self) -> list[Path]:
@@ -414,15 +413,11 @@ class Store:
         return paths
 
 
-def run_summary(out: Path, hist: Path, data: Path, report_date: str) -> dict:
+def run_summary(out: Path, hist: Path, report_date: str) -> dict:
     import polars as pl
-
-    from src.db_landing import build as landing_rates
 
     current = pl.read_parquet(out / "inferred_report.parquet")
     totals = current.select(pl.col("total_closing_stock_bdt").sum(), pl.col("exposure_bdt").sum()).row(0, named=True)
-    rates = landing_rates(data).select(pl.col("material_code"), pl.col("db_landing_rate"))
-    missing_rates = current.join(rates, left_on="Material Code", right_on="material_code", how="left")
     previous = None
     for path in hist.glob("saved-*.xlsx"):
         frame = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
@@ -445,7 +440,7 @@ def run_summary(out: Path, hist: Path, data: Path, report_date: str) -> dict:
         "stock_change_bdt": totals["total_closing_stock_bdt"] - previous_totals["total_closing_stock_bdt"] if previous_totals else None,
         "exposure_change_bdt": totals["exposure_bdt"] - previous_totals["exposure_bdt"] if previous_totals else None,
         "materials_missing_hierarchy": current.filter(pl.col("parent_material_code").is_null())["Material Code"].drop_nulls().n_unique(),
-        "batches_missing_landing_rate": missing_rates.filter(pl.col("db_landing_rate").is_null()).height,
+        "batches_missing_value": current.filter(pl.col("total_closing_stock_bdt").is_null()).height,
         "winsorized_months": impact["winsorized_months"],
     }
 
@@ -488,16 +483,14 @@ def validate_sales_month(data_dir: Path, report_date: str) -> None:
 
 
 def validate_upload(slot: str, data_dir: Path) -> str | None:
-    from src import db_landing, ph, run_rate_parent, sec_history, secondary, soh_db
+    from src import ph, run_rate_parent, sec_history, secondary, soh_db
     from src.io import promote_headers, raw_csvs
 
     label = SLOTS[slot][0]
     try:
         if slot == "config":
             return read_report_date(data_dir)
-        if slot == "landing":
-            frame = db_landing.build(data_dir)
-        elif slot == "hierarchy":
+        if slot == "hierarchy":
             frame = ph.build(data_dir)
         elif slot == "secondary":
             frame = secondary.load(data_dir)

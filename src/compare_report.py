@@ -7,12 +7,16 @@ from pathlib import Path
 
 import polars as pl
 
-from . import db_landing, report, run_rate_parent, secondary, soh_db, starting_date
+from . import report, run_rate_parent, secondary, soh_db, starting_date
 from .io import resolve_path
 from .report import build
 
 ABS_TOL = 1e-8
 REL_TOL = 1e-12
+# The reference workbook valued stock with a separate per-material rate workbook; the
+# pipeline now uses the shelf-life file's `DB Landing value`. Valuation columns
+# therefore differ by design and are reported apart from the physical columns.
+VALUATION_MARKER = "bdt"
 
 
 def compare(actual: pl.DataFrame, expected: pl.DataFrame) -> pl.DataFrame:
@@ -107,7 +111,7 @@ def main() -> None:
         rates = run_rate_parent.raw_rates(run_rate_parent.source_through(secondary.load(args.data_dir), report_date))
         stock = stock.join(rates, left_on=['Town', 'parent_material_code'],
                            right_on=['town', 'parent_material_code'], how='left', validate='m:1')
-        actual = report.transform(stock, db_landing.build(args.data_dir), report_date)
+        actual = report.transform(stock, report_date)
     else:
         actual = build(args.data_dir)
     output.mkdir(parents=True, exist_ok=True)
@@ -134,19 +138,20 @@ def main() -> None:
         pl.col("lnd_fc_bdt").sum(),
     ).row(0, named=True)
     (output / "current_measures.json").write_text(json.dumps(measures, indent=2) + "\n")
+    mismatches = pl.sum_horizontal("null_mismatches", "value_mismatches")
+    valuation = pl.col("column").str.contains(VALUATION_MARKER)
+    physical_mismatches = metrics.filter(~valuation).select(mismatches.sum()).item()
+    valuation_differing = metrics.filter(valuation & (mismatches > 0)).height
     summary = {
-        "status": "sample_match"
-        if metrics.select(
-            pl.sum_horizontal("null_mismatches", "value_mismatches").sum()
-        ).item()
-        == 0
+        "status": "sample_match_except_valuation"
+        if physical_mismatches == 0
         else "sample_mismatch",
+        "non_valuation_mismatched_cells": physical_mismatches,
+        "valuation_columns_differing": valuation_differing,
         "rows": actual.height,
         "columns": actual.width,
         "cells_checked": actual.height * actual.width,
-        "mismatched_cells": metrics.select(
-            pl.sum_horizontal("null_mismatches", "value_mismatches").sum()
-        ).item(),
+        "mismatched_cells": metrics.select(mismatches.sum()).item(),
         "excel_roundtrip_mismatches": roundtrip_metrics.select(
             pl.sum_horizontal("null_mismatches", "value_mismatches").sum()
         ).item(),
@@ -171,7 +176,7 @@ def main() -> None:
         raise AssertionError("Reference integrity or Excel roundtrip failed")
     print(json.dumps(summary, indent=2))
     print("COMPARISON_COMPLETE")
-    if summary["mismatched_cells"] or not summary["row_order_matches"]:
+    if physical_mismatches or not summary["row_order_matches"]:
         raise AssertionError(
             "Inferred report differs from reference; inspect comparison artifacts"
         )

@@ -27,7 +27,7 @@ from pathlib import Path
 
 import polars as pl
 
-from . import db_landing, report, soh_db, starting_date
+from . import report, soh_db, starting_date
 from .cli import run
 from .inventory_projection import (
     DAYS_PER_MONTH,
@@ -495,7 +495,7 @@ def _inputs(data_dir: str | Path) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFr
         raise ValueError("config_table must contain one non-null starting_date")
     as_of = config.item(0, "starting_date")
     stock = soh_db.build(data_dir, as_of=as_of)
-    batches = report.transform(stock, db_landing.build(data_dir), as_of)
+    batches = report.transform(stock, as_of)
     shares = child_shares(source_through(load(data_dir), as_of))
     return batches, shares, received_dates(stock)
 

@@ -15,7 +15,6 @@ import polars as pl
 from openpyxl.worksheet.table import Table
 
 from src import (
-    db_landing,
     history,
     ph,
     run_rate_parent,
@@ -113,17 +112,6 @@ class TransformationTests(unittest.TestCase):
         )
         self.assertEqual(result["parent_material_code"].to_list(), [1, 10])
         self.assertEqual(result["volume"].to_list(), [2, 4])
-
-    def test_landing_excludes_grand(self):
-        result = db_landing.transform(
-            pl.DataFrame(
-                {
-                    "Row Labels": ["1", "Grand Total", "grand total"],
-                    "DB Landing rate": ["1,234.5", "bad", "bad"],
-                }
-            )
-        )
-        self.assertEqual(result.rows(), [(1, 1234.5)])
 
     def test_history_filters_and_right_splits(self):
         values = {
@@ -237,12 +225,6 @@ class IntegrationTests(unittest.TestCase):
                 [["starting_date", date(2025, 1, 1)], ["other", "keep"]],
                 table="config_table",
             )
-            workbook(
-                current / "landing.xlsx",
-                ["Row Labels", "Unused", "Unused2", "DB Landing rate", "Unused3"],
-                [[1, None, None, 3.5, None], ["Grand Total", None, None, 3.5, None]],
-                table="landing_table",
-            )
             hist_headers = [
                 "report_date",
                 *history.TEXT_COLUMNS,
@@ -286,7 +268,6 @@ class IntegrationTests(unittest.TestCase):
             extra.close()
             relative = current.relative_to(ROOT)
             self.assertEqual(ph.build(relative).rows(), [(1, "Product", 2, 10)])
-            self.assertEqual(db_landing.build(relative).rows(), [(1, 3.5)])
             self.assertEqual(
                 starting_date.build(relative)["starting_date"][0], date(2025, 1, 1)
             )

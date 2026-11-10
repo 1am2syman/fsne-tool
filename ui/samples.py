@@ -44,11 +44,6 @@ def files() -> dict[str, tuple[str, bytes, str]]:
     """slot -> (download filename, contents, MIME type); never use business data."""
     xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     config = _workbook(["variable", "value"], [["starting_date", "2026-08-30"]], config=True)
-    landing = _workbook(
-        ["Row Labels", "Material description", "Volume", "DB Landing rate", "Notes"],
-        [[1001, "Example product 100 ml", 100, 50.0, "Synthetic example"],
-         [1002, "Example product 200 ml", 200, 90.0, "Synthetic example"]],
-    )
     hierarchy = _workbook(
         ["material_code", "material_desc", "volume", "parent_material_code"],
         [[1001, "Example product 100 ml", 100, 1000], [1002, "Example product 200 ml", 200, 1000]],
@@ -75,7 +70,6 @@ def files() -> dict[str, tuple[str, bytes, str]]:
         writer.writerow(row)
     return {
         "config": ("config-sample.xlsx", config, xlsx),
-        "landing": ("DB Landing for FSNE-sample.xlsx", landing, xlsx),
         "secondary": ("sec_sales-sample.xlsx", secondary, xlsx),
         "hierarchy": ("PH_FG.xlsx", hierarchy, xlsx),
         "shelflife": ("Product Shelflife Report-sample.csv", csv_stream.getvalue().encode("utf-8"), "text/csv"),

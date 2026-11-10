@@ -9,7 +9,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from server.runs import SLOTS, Store, validate_upload
-from src import db_landing, report, soh_db
+from src import report, soh_db
 from ui.render import render
 from ui.samples import downloads, files
 
@@ -43,15 +43,15 @@ def test_samples_embedded_in_fresh_and_saved_pages_download_exact_bytes():
     assert embedded == downloads()
 
 
-def test_landing_rate_changes_values_but_not_stock_or_consumption_volumes(tmp_path):
+def test_shelf_life_value_drives_bdt_but_not_stock_or_consumption_volumes(tmp_path):
     for name, contents, _ in files().values():
         (tmp_path / name).write_bytes(contents)
-    # Hierarchy has a fixed filename, already provided by the sample set.
     stock = soh_db.build(tmp_path)
-    rates = db_landing.build(tmp_path)
 
-    before = report.transform(stock, rates, date(2026, 8, 30))
-    after = report.transform(stock, rates.with_columns(pl.col("db_landing_rate") * 2), date(2026, 8, 30))
+    before = report.transform(stock, date(2026, 8, 30))
+    after = report.transform(
+        stock.with_columns(pl.col("DB Landing value") * 2), date(2026, 8, 30)
+    )
     volumes = [c for c in before.columns if c.endswith("_kl")] + ["doh", "avg_sec_m", "rsl_days"]
     values = [c for c in before.columns if c.endswith("_bdt")]
     assert_frame_equal(before.select(volumes), after.select(volumes))

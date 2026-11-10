@@ -5,8 +5,10 @@ Uses port 8771 and temporary January–July history; leaves the live service alo
 
 from __future__ import annotations
 
+import csv
 import http.client
 import json
+import math
 import os
 import shutil
 import signal
@@ -20,7 +22,6 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parent.parent
 PORT = 8771
 FILES = {
-    "landing": "DB Landing for FSNE.xlsx",
     "secondary": "Mode_Sec_Month on Month.xlsb",
     "hierarchy": "PH_FG.xlsx",
     "shelflife": "Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv",
@@ -38,6 +39,10 @@ def request(method: str, path: str, body: bytes | None = None, headers: dict | N
         return content
     finally:
         conn.close()
+
+
+def without_bdt(measures: dict) -> dict:
+    return {key: value for key, value in measures.items() if "bdt" not in key}
 
 
 def main() -> None:
@@ -99,7 +104,13 @@ def main() -> None:
                 assert (run_dir / "data.json").is_file() and not (run_dir / "index.html").exists()
                 actual = json.loads((run_dir / "output" / "current_measures.json").read_text())
                 expected = json.loads((ROOT / "output" / "current_measures.json").read_text())
-                assert actual == expected, "Sample measures differ from the baseline"
+                # Physical measures must equal the committed baseline. BDT measures
+                # changed basis (shelf-life `DB Landing value`); check the total
+                # against the CSV column itself instead.
+                assert without_bdt(actual) == without_bdt(expected), "Sample measures differ from the baseline"
+                with next((ROOT / "sample_input").glob("*.csv")).open(newline="", encoding="utf-8-sig") as handle:
+                    csv_value = math.fsum(float(row["DB Landing value"]) for row in csv.DictReader(handle))
+                assert abs(actual["total_closing_stock_bdt"] - csv_value) < 1e-3, "Stock value differs from the CSV"
                 print(f"E2E PASSED {run_id}: {summary['batches']} batches, "
                       f"{summary['mitigation_carried_batches']} carried, "
                       f"{summary['mitigation_unlabelled_batches']} unlabelled", flush=True)

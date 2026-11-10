@@ -23,7 +23,7 @@ from pathlib import Path
 
 import polars as pl
 
-from . import db_landing, report, risk_calendar, soh_db, starting_date
+from . import report, risk_calendar, soh_db, starting_date
 from .cli import run
 from .io import date as parse_date
 from .io import number
@@ -267,7 +267,7 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
         raise ValueError("config_table must contain one non-null starting_date")
     as_of = config.item(0, "starting_date")
     stock = soh_db.build(data_dir, as_of=as_of)
-    batches = report.transform(stock, db_landing.build(data_dir), as_of)
+    batches = report.transform(stock, as_of)
     shares = child_shares(source_through(load(data_dir), as_of))
     return transform(batches, shares, received_dates(stock))
 

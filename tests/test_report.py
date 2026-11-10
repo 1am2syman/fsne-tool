@@ -10,9 +10,7 @@ import polars as pl
 
 from src.cli import execute
 from src.compare_report import compare
-from src.db_landing import build as landing_build
 from src.report import COLUMNS, transform
-from tests.test_queries import workbook
 
 DAY = date(2026, 1, 1)
 
@@ -31,6 +29,7 @@ def stock_frame(days, quantities, rates=None, towns=None, materials=None):
             "Expiry Date": [DAY + timedelta(days=days_left) for days_left in days],
             "Closing Stock": quantities,
             "NOS": [round(value * 1000) for value in quantities],
+            "DB Landing value": [round(value * 1000) * 2.0 for value in quantities],
             "avg_sec": pl.Series(
                 rates if rates is not None else [0.3] * size, dtype=pl.Float64
             ),
@@ -40,16 +39,12 @@ def stock_frame(days, quantities, rates=None, towns=None, materials=None):
     )
 
 
-def landing():
-    return pl.DataFrame({"material_code": [1, 2], "db_landing_rate": [2.0, 4.0]})
-
-
 class InferredReportTests(unittest.TestCase):
     def test_fractional_durations_accumulate_before_truncation(self):
         # At .01/day, two .015 batches each take 1.5 days. Third starts on
         # day floor(1.5 + 1.5)=3, NOT floor(1.5)+floor(1.5)=2.
         result = transform(
-            stock_frame([310, 310, 310], [0.015, 0.015, 0.1]), landing(), DAY
+            stock_frame([310, 310, 310], [0.015, 0.015, 0.1]), DAY
         )
         self.assertEqual(result.columns, COLUMNS)
         self.assertAlmostEqual(result["consumable_kl"][0], 0.015)
@@ -62,7 +57,7 @@ class InferredReportTests(unittest.TestCase):
         # Each of the first two rows adds its OWN capped deadline of 5 days,
         # even though the second can't be consumed. Third begins after 10 days.
         result = transform(
-            stock_frame([305, 305, 315], [0.2, 0.2, 0.2]), landing(), DAY
+            stock_frame([305, 305, 315], [0.2, 0.2, 0.2]), DAY
         )
         for actual, expected in zip(
             result["consumable_kl"], [0.05, 0.0, 0.05], strict=True
@@ -73,13 +68,15 @@ class InferredReportTests(unittest.TestCase):
         source = stock_frame(
             [305, 305, 305], [0.2, 0.2, 0.2], materials=[1, 2, 1], towns=["A", "A", "B"]
         )
-        result = transform(source, landing(), DAY)
+        result = transform(source, DAY)
         for quantity in result["consumable_kl"]:
             self.assertAlmostEqual(quantity, 0.05)
 
-    def test_reserve_boundaries_null_rates_and_missing_landing(self):
-        source = stock_frame([90, 91, 180, 181, 300, 301], [0.1] * 6, rates=[None] * 6)
-        result = transform(source, landing().head(0), DAY)
+    def test_reserve_boundaries_null_rates_and_blank_stock_value(self):
+        source = stock_frame(
+            [90, 91, 180, 181, 300, 301], [0.1] * 6, rates=[None] * 6
+        ).with_columns(pl.lit(None, dtype=pl.Float64).alias("DB Landing value"))
+        result = transform(source, DAY)
         self.assertEqual(
             result["rsl_group"].to_list(),
             ["< 3M", "3M - 6M", "3M - 6M", "6M - 10M", "6M - 10M", "> 10M"],
@@ -92,54 +89,47 @@ class InferredReportTests(unittest.TestCase):
 
     def test_invariance_under_source_reordering_and_reference_free_dates(self):
         source = stock_frame([301, 310, 320], [0.2, 0.3, 0.4])
-        result = transform(source, landing(), DAY)
-        self.assertTrue(result.equals(transform(source.reverse(), landing(), DAY)))
+        result = transform(source, DAY)
+        self.assertTrue(result.equals(transform(source.reverse(), DAY)))
         self.assertEqual(result["report_date"][0], (DAY - date(1899, 12, 30)).days)
-        later = transform(source, landing(), DAY + timedelta(days=1))
+        later = transform(source, DAY + timedelta(days=1))
         self.assertEqual(later["rsl_days"][0], result["rsl_days"][0] - 1)
 
     def test_duplicate_distributor_aggregation_and_validation(self):
         source = stock_frame([310], [0.1])
-        result = transform(pl.concat([source, source]), landing(), DAY)
+        result = transform(pl.concat([source, source]), DAY)
         self.assertEqual(result.height, 1)
         self.assertAlmostEqual(result["total_closing_stock_kl"][0], 0.2)
         self.assertAlmostEqual(result["total_closing_stock_bdt"][0], 400.0)
+        # One blank value makes the whole batch value unknown; infinity is rejected.
+        blank = source.with_columns(pl.lit(None, dtype=pl.Float64).alias("DB Landing value"))
+        self.assertIsNone(transform(pl.concat([source, blank]), DAY)["total_closing_stock_bdt"][0])
+        with self.assertRaises(ValueError):
+            transform(source.with_columns(pl.lit(float("inf")).alias("DB Landing value")), DAY)
+        # Free goods are valued at zero: BDT shares are null, never NaN.
+        free = transform(source.with_columns(pl.lit(0.0).alias("DB Landing value")), DAY)
+        self.assertEqual(free["total_closing_stock_bdt"][0], 0.0)
+        self.assertIsNone(free["exposure_bdt_%"][0])
+        self.assertIsNone(free["lnd_fc_bdt_%"][0])
         with self.assertRaises(ValueError):
             transform(
-                source.with_columns(pl.lit(-1.0).alias("Closing Stock")), landing(), DAY
+                source.with_columns(pl.lit(-1.0).alias("Closing Stock")), DAY
             )
         with self.assertRaises(ValueError):
-            transform(source.with_columns(pl.lit(0.0).alias('Closing Stock')), landing(), DAY)
+            transform(source.with_columns(pl.lit(0.0).alias('Closing Stock')), DAY)
         for invalid in [-1.0, float("nan"), float("inf")]:
             with self.assertRaises(ValueError):
                 transform(
                     source.with_columns(pl.lit(invalid).alias("avg_sec")),
-                    landing(),
                     DAY,
                 )
             with self.assertRaises(ValueError):
                 transform(
                     source.with_columns(pl.lit(invalid).alias("Closing Stock")),
-                    landing(),
                     DAY,
                 )
-        with self.assertRaises(ValueError):
-            transform(source, pl.concat([landing(), landing()]), DAY)
-
-    def test_excel_numeric_precision_is_not_display_string_precision(self):
-        with tempfile.TemporaryDirectory() as folder:
-            value = 1.23456789012345
-            workbook(
-                Path(folder) / "landing.xlsx",
-                ["Row Labels", "unused", "unused2", "DB Landing rate"],
-                [[1, None, None, value]],
-            )
-            self.assertAlmostEqual(
-                landing_build(folder)["db_landing_rate"][0], value, places=13
-            )
-
     def test_comparator_detects_wrong_values_nulls_keys_and_nonfinite_values(self):
-        frame = transform(stock_frame([310], [0.1]), landing(), DAY)
+        frame = transform(stock_frame([310], [0.1]), DAY)
         self.assertEqual(compare(frame, frame)["value_mismatches"].sum(), 0)
         altered = frame.with_columns(
             (pl.col("consumable_kl") + 0.01).alias("consumable_kl")
@@ -174,7 +164,7 @@ class InferredReportTests(unittest.TestCase):
                 execute(never_build, args)
 
     def test_excel_roundtrip(self):
-        frame = transform(stock_frame([310], [0.1]), landing(), DAY)
+        frame = transform(stock_frame([310], [0.1]), DAY)
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "report.xlsx"
             frame.write_excel(path, worksheet="Sheet1", float_precision=15)

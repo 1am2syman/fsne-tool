@@ -44,9 +44,9 @@ def test_snapshot_inherits_first_non_null_labels_by_batch_key(tmp_path):
 def test_invalid_uploads_are_rejected_without_replacing_previous_files(tmp_path):
     store = Store(tmp_path / "runs", tmp_path / "history", start_worker=False)
     run = store.create("test")
-    for slot, name in [("landing", "bad.xlsx"), ("hierarchy", "bad.xlsx"),
+    for slot, name in [("hierarchy", "bad.xlsx"),
                        ("secondary", "bad.xlsx"), ("shelflife", "bad.csv")]:
-        with TestCase().assertRaisesRegex(RunError, {"landing": "Landing rates", "hierarchy": "Product hierarchy",
+        with TestCase().assertRaisesRegex(RunError, {"hierarchy": "Product hierarchy",
                                          "secondary": "Secondary sales", "shelflife": "Shelf-life"}[slot]):
             store.save_file(run["id"], slot, name, BytesIO(b"wrong data"), 10)
     assert store.get(run["id"])["files"] == {}

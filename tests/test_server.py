@@ -63,7 +63,7 @@ class ServerTests(unittest.TestCase):
             outcomes = list(pool.map(lambda _: start(), range(2)))
         self.assertCountEqual(outcomes, ["queued", "rejected"])
         with self.assertRaisesRegex(RunError, "before the run starts"):
-            self.store.save_file(run["id"], "landing", "x.xlsx", io.BytesIO(b"x"), 1)
+            self.store.save_file(run["id"], "hierarchy", "x.xlsx", io.BytesIO(b"x"), 1)
         with self.assertRaisesRegex(RunError, "cannot be archived"):
             self.store.archive(run["id"], True)
 

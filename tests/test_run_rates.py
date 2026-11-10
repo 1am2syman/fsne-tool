@@ -6,7 +6,7 @@ import polars as pl
 
 from src import report, run_rate_parent, run_rate_town, sec_history
 from src.doh import stock_pairs
-from tests.test_report import DAY, landing, stock_frame
+from tests.test_report import DAY, stock_frame
 
 
 def sales(spikes=None, towns=12, months=12, seasonal_month=5):
@@ -106,7 +106,7 @@ class WinsorTests(unittest.TestCase):
         self.assertEqual(run_rate_parent.adjustments(result)['reason'].unique().to_list(), ['insufficient_history'])
 
     def test_zero_demand_consumes_nothing_and_does_not_export_infinity(self):
-        current = report.transform(stock_frame([310, 320], [1., 2.], [0., 0.]), landing(), DAY)
+        current = report.transform(stock_frame([310, 320], [1., 2.], [0., 0.]), DAY)
         self.assertEqual(current['avg_sec_m'].to_list(), [0., 0.])
         self.assertEqual(current['doh'].null_count(), 2)
         self.assertEqual(current['consumable_kl'].sum(), 0)
@@ -120,15 +120,15 @@ class WinsorTests(unittest.TestCase):
         original = run_rate_parent.raw_rates(source).filter(pl.col('town') == 'T00')['avg_sec'][0]
         self.assertLess(adjusted, original)
         self.assertTrue(run_rate_town.transform(rates).sort('town')['avg_sec_town'].equals(rates.sort('town')['avg_sec']))
-        before = report.transform(stock_frame([310], [20.0], [original]), landing(), DAY)
-        after = report.transform(stock_frame([310], [20.0], [adjusted]), landing(), DAY)
+        before = report.transform(stock_frame([310], [20.0], [original]), DAY)
+        after = report.transform(stock_frame([310], [20.0], [adjusted]), DAY)
         self.assertGreater(after['doh'][0], before['doh'][0])
         self.assertLess(after['consumable_kl'][0], before['consumable_kl'][0])
         self.assertGreater(after['exposure_kl'][0], before['exposure_kl'][0])
         self.assertGreater(after['rotation_req_kl'][0], before['rotation_req_kl'][0])
         # A nearer expiry makes the liquidation capacity binding as well.
-        near_before = report.transform(stock_frame([100], [20.0], [original]), landing(), DAY)
-        near_after = report.transform(stock_frame([100], [20.0], [adjusted]), landing(), DAY)
+        near_before = report.transform(stock_frame([100], [20.0], [original]), DAY)
+        near_after = report.transform(stock_frame([100], [20.0], [adjusted]), DAY)
         self.assertGreater(near_after['lnd_fc_kl'][0], near_before['lnd_fc_kl'][0])
 
 

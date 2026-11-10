@@ -27,9 +27,7 @@ For each batch identity:
 - `total_pri_sales` / `total_sec_sales` = sums of CSV primary/secondary sales.
 - `avg_sec_m` = town/parent monthly rate from `run_rate_parent` (NOT the CSV last-six-month average).
 - `doh` = `total_closing_stock_kl / avg_sec_m * 30`.
-- `total_closing_stock_bdt` = sum of `NOS` × the **material's** DB landing rate. This is not the CSV `DB Landing value` and not `Closing Stock / KL per unit × rate`.
-
-Landing rates must retain native Excel floating-point precision. Calamine's forced string ingestion rounded rates to nine decimals and caused discrepancies; landing data is now read natively below the detected header before Polars string normalization.
+- `total_closing_stock_bdt` = sum of the CSV `DB Landing value` for the batch (that column is `NOS` × the row's landing rate). The reference workbook used a separate per-material landing-rate workbook instead; see [stock-valuation.md](stock-valuation.md) for why the pipeline changed.
 
 Remaining-shelf-life groups:
 
@@ -78,7 +76,7 @@ rotation_req_kl = S - consumable_kl_2x_rate
 lnd_fc_kl = S - consumed_before_90_day_cutoff
 ```
 
-Each BDT quantity is its KL quantity divided by total stock KL, multiplied by total stock BDT. Missing landing rates propagate null to BDT results, including BDT ratios (1,529 supplied rows have missing rates).
+Each BDT quantity is its KL quantity divided by total stock KL, multiplied by total stock BDT. A blank `DB Landing value` propagates null to BDT results, including BDT ratios; the supplied sample has none.
 
 Percentage columns are fractions, not numbers multiplied by 100:
 

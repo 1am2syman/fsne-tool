@@ -3,7 +3,6 @@
   const selected = new Map();
   const slots = [
     ['config', 'Run configuration', '.xlsx,.xlsm'],
-    ['landing', 'Landing rates', '.xlsx,.xlsm'],
     ['secondary', 'Secondary sales', '.xlsb,.xlsx,.xlsm'],
     ['hierarchy', 'Product hierarchy', '.xlsx'],
     ['shelflife', 'Shelf-life report', '.csv'],
@@ -11,10 +10,9 @@
   const requiredSlots = slots.filter(([slot]) => slot !== 'config');
   const help = {
     config: 'Optional import: fills the report date from config_table. You can edit the date above.',
-    landing: 'Excel landing rates by material, with Row Labels and DB Landing rate. Example: DB Landing for FSNE.xlsx',
     secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
-    shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry and stock. Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
+    shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry, stock and DB Landing value (the source of stock value in BDT). Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
   };
   let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
   const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
@@ -147,7 +145,7 @@
     if (!s || s.total_closing_stock_bdt == null) return '—';
     const money = n => n == null ? '—' : (n < 0 ? '−' : '') + Math.abs(n / 1e6).toLocaleString('en-GB', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M BDT';
     const val = n => n == null ? '—' : Number(n).toLocaleString('en-GB');
-    return `<details data-summary="${r.id}"><summary>View summary</summary><div>Stock: ${money(s.total_closing_stock_bdt)} · exposure: ${money(s.exposure_bdt)}<br>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ${money(s.stock_change_bdt)} · exposure change: ${money(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing landing rate: ${val(s.batches_missing_landing_rate)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
+    return `<details data-summary="${r.id}"><summary>View summary</summary><div>Stock: ${money(s.total_closing_stock_bdt)} · exposure: ${money(s.exposure_bdt)}<br>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ${money(s.stock_change_bdt)} · exposure change: ${money(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing a stock value: ${val(s.batches_missing_value)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
   }
   const columns = [
     {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
@@ -164,7 +162,7 @@
       $(target).html = rows.length ? `<div class="runs-scroll"><table class="runs-table"><thead><tr>${columns.map(c=>`<th scope="col">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${columns.map(c=>`<td>${c.r(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p>${empty}</p>`;
     }
     const openSummaries = new Set($$('[data-summary][open]').map(el => el.dataset.summary));
-    renderList('#runsT', active, 'No runs yet. Set a report date, upload four source files and choose Start run.');
+    renderList('#runsT', active, 'No runs yet. Set a report date, upload three source files and choose Start run.');
     renderList('#archiveT', archived, 'Archived runs appear here. Their data still feeds later history.');
     $$('[data-summary]').forEach(el => {el.open = openSummaries.has(el.dataset.summary);});
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';

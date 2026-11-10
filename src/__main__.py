@@ -3,7 +3,6 @@
 import argparse
 
 from . import (
-    db_landing,
     history,
     inventory_projection,
     movement,
@@ -21,7 +20,6 @@ from . import (
 from .cli import arguments, execute
 
 QUERIES = {
-    "db_landing": db_landing.build,
     "history": history.build,
     "inventory_projection": inventory_projection.build,
     "movement": movement.build,

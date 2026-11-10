@@ -4,7 +4,7 @@ from pathlib import Path
 
 import polars as pl
 
-from src import db_landing, report, run_rate_parent, soh_db, starting_date
+from src import report, run_rate_parent, soh_db, starting_date
 from src.doh import stock_pairs
 from src.io import date as parse_date
 from src.secondary import load
@@ -27,13 +27,12 @@ def build_current(data_dir: Path, saved: pl.DataFrame, latest_date, output_dir: 
     rates = run_rate_parent.rates_from_adjustments(audit)
     raw_rates = run_rate_parent.raw_rates(source)
     stock = soh_db.build(data_dir, as_of=config_date)
-    landing = db_landing.build(data_dir)
-    current = report.transform(stock, landing, config_date)
+    current = report.transform(stock, config_date)
     raw_stock = stock.drop('avg_sec').join(
         raw_rates, left_on=['Town', 'parent_material_code'],
         right_on=['town', 'parent_material_code'], how='left', validate='m:1',
     )
-    baseline = report.transform(raw_stock, landing, config_date)
+    baseline = report.transform(raw_stock, config_date)
     saved = saved.filter(parse_date('report_date') == config_date)
     if saved['batch_index'].n_unique() != saved.height:
         raise ValueError('Saved batch identities must be unique')
@@ -45,12 +44,13 @@ def build_current(data_dir: Path, saved: pl.DataFrame, latest_date, output_dir: 
     for c in identity:
         if identity_check.filter(~pl.col(c).eq_missing(pl.col('saved_' + c))).height:
             raise ValueError('Current hierarchy differs from saved snapshot: ' + c)
-    # Prices and stock are not adjusted by this policy. Validate both measures.
+    # Stock is not adjusted by this policy, so it must reproduce. BDT is excluded:
+    # it comes from the shelf-life file's DB Landing value, while older saved
+    # snapshots may carry values from the retired rate workbook.
     check = saved.select(
-        'batch_index', *[pl.col(c).cast(pl.Float64).alias('saved_' + c)
-                        for c in ['total_closing_stock_kl', 'total_closing_stock_bdt']]
+        'batch_index', pl.col('total_closing_stock_kl').cast(pl.Float64).alias('saved_total_closing_stock_kl')
     ).join(current, on='batch_index', validate='1:1')
-    for c in ['total_closing_stock_kl', 'total_closing_stock_bdt']:
+    for c in ['total_closing_stock_kl']:
         if check.filter(
             (pl.col(c).is_null() != pl.col('saved_' + c).is_null())
             | ((pl.col(c) - pl.col('saved_' + c)).abs() > 1e-8 + pl.col(c).abs() * 1e-10)

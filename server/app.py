@@ -14,7 +14,7 @@ Every URL is relative to the page, so the app works under a path prefix such as
     GET    api/runs/<id>/report.xlsx  the 30-column report
     POST   api/runs/<id>/discard      delete an unstarted run (failed upload)
     POST   api/runs/<id>/archive      /restore
-    GET    api/slots                  the five file slots
+    GET    api/slots                  the file slots
 """
 
 from __future__ import annotations

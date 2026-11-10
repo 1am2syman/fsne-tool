@@ -4,7 +4,6 @@ Every query in `queries/` has a matching Python module in `src/`:
 
 | Module | Inputs / dependencies |
 | --- | --- |
-| `db_landing.py` | Recursive Excel filenames containing `landing` or `Landing` |
 | `history.py` | Recursive history Excel filenames starting with `20`; all sheets |
 | `ph.py` | `PH_FG.xlsx`; all sheets |
 | `run_rate_parent.py` | Excel filenames containing `sec_` or `Sec_`; `Sheet1` |
@@ -24,7 +23,7 @@ uv sync
 uv run python -m server --port 8770
 ```
 
-Open `http://127.0.0.1:8770/`. In **Monthly upload**, enter the report date, optionally name the run, select the four source files and choose **Start run**. You can instead import a configuration workbook under **Import configuration from Excel · optional**; its `config_table.starting_date` fills the editable report-date field. The form date is saved for the pipeline; changing it is checked against any uploaded secondary-sales month. Run settings and accepted uploads survive reloads. Upload slots accept arbitrary filenames and save them under the names the queries expect. Each slot has a small sample-download button with synthetic rows in the accepted schema, including the optional configuration import. Sample downloads also work in saved dashboards. Landing accepts `.xlsx`/`.xlsm`, secondary sales `.xlsb`/`.xlsx`/`.xlsm`, hierarchy `.xlsx`, shelf life `.csv`, and optional configuration `.xlsx`/`.xlsm` (up to 1 GiB each).
+Open `http://127.0.0.1:8770/`. In **Monthly upload**, enter the report date, optionally name the run, select the three source files and choose **Start run**. You can instead import a configuration workbook under **Import configuration from Excel · optional**; its `config_table.starting_date` fills the editable report-date field. The form date is saved for the pipeline; changing it is checked against any uploaded secondary-sales month. Run settings and accepted uploads survive reloads. Stock value in BDT comes from the shelf-life report's `DB Landing value` column; no landing-rate workbook is needed (see [docs/stock-valuation.md](docs/stock-valuation.md)). Upload slots accept arbitrary filenames and save them under the names the queries expect. Each slot has a small sample-download button with synthetic rows in the accepted schema, including the optional configuration import. Sample downloads also work in saved dashboards. Secondary sales `.xlsb`/`.xlsx`/`.xlsm`, hierarchy `.xlsx`, shelf life `.csv`, and optional configuration `.xlsx`/`.xlsm` (up to 1 GiB each).
 
 **Runs** shows actual queued/running/completed/failed states and the current pipeline step. A completed run offers **Open results** and the full 30-column **Excel** download. **Log** shows validation and calculation errors. Runs and archive/restore choices survive page reloads and server restarts. Jobs execute one at a time; a job interrupted by a server restart is marked failed, and its uploaded inputs remain available on disk. Reselect the files to submit a corrected run. An upload failure keeps the browser's selected files for retry.
 
@@ -69,7 +68,6 @@ data/
   current/                 # replacement for Excel Table2.final_path
     PH_FG.xlsx
     sec_sales.xlsx
-    landing_rates.xlsx
     shelflife.csv
     config.xlsx
   history/                 # replacement for Excel Table2.history_path
@@ -105,7 +103,7 @@ Each query exposes `build(...)` for file loading and dependency resolution, and 
 
 Polars' Calamine reader handles worksheet/table data. `openpyxl` is used only to discover named tables in modern workbooks, not to transform rows. Legacy `.xls` / `.xlsb` worksheets are supported by Calamine; `config_table` discovery requires `.xlsx` / `.xlsm`. Cached formula values must be available: Python does not recalculate Excel formulas.
 
-`db_landing` reads sheets plus named table ranges because its M source does not filter workbook `Kind`; named tables are expanded by `Column1`…`Column5` field names as in M (tables with other field names contribute nulls and are filtered out). Exotic named ranges, Excel-specific error cells, quoted hyphens inside history batch identifiers, and 1904-date-system numeric serials are not emulated. Inputs containing these need workbook-specific validation. The date epoch and locale can be adjusted in `src/io.py`.
+Exotic named ranges, Excel-specific error cells, quoted hyphens inside history batch identifiers, and 1904-date-system numeric serials are not emulated. Inputs containing these need workbook-specific validation. The date epoch and locale can be adjusted in `src/io.py`.
 
 Sample inputs and a final reference report are supplied in `sample_input/` and `sample_output/`. Tests cover synthetic boundaries and generated Excel/CSV integration; `src.compare_report` checks the complete real sample and Excel serialization. No independent second-period reference or original final formulas are available.
 

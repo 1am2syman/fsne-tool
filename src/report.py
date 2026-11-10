@@ -9,7 +9,7 @@ from pathlib import Path
 
 import polars as pl
 
-from . import db_landing, soh_db, starting_date
+from . import soh_db, starting_date
 from .cli import run
 
 EXCEL_EPOCH = date(1899, 12, 30)
@@ -84,10 +84,11 @@ def _consumption(reserve_days: int, multiplier: int, duration_column: str) -> pl
     )
 
 
-def transform(
-    stock: pl.DataFrame, landing: pl.DataFrame, report_date: date
-) -> pl.DataFrame:
-    """Calculate a report from stock, per-material landing rates and config date.
+def transform(stock: pl.DataFrame, report_date: date) -> pl.DataFrame:
+    """Calculate a report from stock and the config date.
+
+    Stock value is the sum of the shelf-life report's `DB Landing value`, which
+    is `NOS` × that row's rate. A batch with any blank value is null.
 
     Duplicate distributor rows aggregate by batch identity. This grouping and
     equal-expiry tie ordering are extrapolations: the sample has unique keys.
@@ -103,8 +104,8 @@ def transform(
         raise ValueError(
             "Non-null sales rates must be nonnegative and finite for the inferred report"
         )
-    if landing.get_column("material_code").n_unique() != landing.height:
-        raise ValueError("Landing rates must have one row per material_code")
+    if stock.filter(~pl.col("DB Landing value").is_finite()).height:
+        raise ValueError("DB Landing value must be finite for the inferred report")
     serial = (report_date - EXCEL_EPOCH).days
     return (
         stock.lazy()
@@ -112,25 +113,18 @@ def transform(
         .agg(
             pl.col("Closing Stock").sum().alias("total_closing_stock_kl"),
             pl.col("NOS").sum(),
+            pl.when(pl.col("DB Landing value").null_count() == 0)
+            .then(pl.col("DB Landing value").sum())
+            .alias("total_closing_stock_bdt"),
             pl.col("avg_sec").first().alias("avg_sec_m"),
             pl.col("Primary Sales").sum().alias("total_pri_sales"),
             pl.col("Secondary Sales").sum().alias("total_sec_sales"),
-        )
-        .join(
-            landing.lazy(),
-            left_on="Material Code",
-            right_on="material_code",
-            how="left",
-            validate="m:1",
         )
         .with_columns(
             pl.lit(serial, dtype=pl.Int64).alias("report_date"),
             (pl.col("Expiry Date") - pl.lit(report_date))
             .dt.total_days()
             .alias("rsl_days"),
-            (pl.col("NOS") * pl.col("db_landing_rate")).alias(
-                "total_closing_stock_bdt"
-            ),
             # A known zero rate means unbounded cover. Persist null rather than
             # Infinity for portable Excel/JSON; aggregate UI DOH renders ∞ from
             # the retained zero rate. Zero demand still consumes no stock.
@@ -183,8 +177,11 @@ def transform(
             ]
         )
         .with_columns(
+            # A zero-valued batch (valid: free goods) has no BDT share; null, not NaN.
             *[
-                (pl.col(numerator) / pl.col(denominator)).alias(output)
+                pl.when(pl.col(denominator) > 0)
+                .then(pl.col(numerator) / pl.col(denominator))
+                .alias(output)
                 for numerator, denominator, output in [
                     ("exposure_kl", "total_closing_stock_kl", "exposure_kl_%"),
                     ("exposure_bdt", "total_closing_stock_bdt", "exposure_bdt_%"),
@@ -206,7 +203,6 @@ def build(data_dir: str | Path = "data/current", **_: object) -> pl.DataFrame:
         raise ValueError("config_table must contain one non-null starting_date")
     return transform(
         soh_db.build(data_dir, as_of=config.item(0, "starting_date")),
-        db_landing.build(data_dir),
         config.item(0, "starting_date"),
     )
 
