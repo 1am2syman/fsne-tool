@@ -1,5 +1,6 @@
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
@@ -96,3 +97,19 @@ def test_sales_month_and_pipeline_error_messages(tmp_path):
             validate_sales_month(tmp_path, "2026-09-30")
     assert "Secondary sales" in pipeline_message("ValueError: Latest run-rate source month does not match stock snapshot")
     assert "technical details" in pipeline_message("RuntimeError: unexpected")
+
+
+def test_history_link_falls_back_when_symlinks_are_not_permitted(tmp_path):
+    """Windows without symlink privilege raises WinError 1314 (an OSError)."""
+    from server.runs import link_history
+
+    target = tmp_path / "2026_07_06.xlsx"
+    target.write_bytes(b"history")
+    link = tmp_path / "saved-0000.xlsx"
+    with patch.object(Path, "symlink_to", side_effect=OSError(1314, "privilege not held")):
+        link_history(link, target)
+    assert link.read_bytes() == b"history" and not link.is_symlink()
+    other = tmp_path / "saved-0001.xlsx"
+    with patch.object(Path, "symlink_to", side_effect=OSError), patch("os.link", side_effect=OSError):
+        link_history(other, target)
+    assert other.read_bytes() == b"history"

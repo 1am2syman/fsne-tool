@@ -445,6 +445,21 @@ def run_summary(out: Path, hist: Path, report_date: str) -> dict:
     }
 
 
+def link_history(link: Path, target: Path) -> None:
+    """Expose a shared history file inside a run without duplicating it where possible.
+
+    Symlinks need a privilege Windows users usually lack (WinError 1314), so fall
+    back to a hard link, then to a copy. The file is only read, never edited.
+    """
+    try:
+        link.symlink_to(target)
+    except OSError:
+        try:
+            os.link(target, link)
+        except OSError:
+            shutil.copy2(target, link)
+
+
 def pipeline_message(detail: str, step: str | None = None) -> str:
     """Translate recognized pipeline failures; the full traceback stays in the log."""
     known = (
@@ -590,6 +605,6 @@ def snapshot(
     for old in hist_dir.iterdir():
         old.unlink()
     for i, (_, path) in enumerate(sorted(by_date.items())):
-        (hist_dir / f"saved-{i:04d}.xlsx").symlink_to(path.resolve())
+        link_history(hist_dir / f"saved-{i:04d}.xlsx", path.resolve())
     saved.write_excel(hist_dir / "snapshot.xlsx", worksheet="Sheet1", float_precision=15)
     return frame.height
