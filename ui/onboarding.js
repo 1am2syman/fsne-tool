@@ -4,12 +4,13 @@
   const slots = [
     ['config', 'Run configuration', '.xlsx,.xlsm'],
     ['landing', 'Landing rates', '.xlsx,.xlsm'],
-    ['secondary', 'Secondary sales, month on month', '.xlsb,.xlsx,.xlsm'],
+    ['secondary', 'Secondary sales', '.xlsb,.xlsx,.xlsm'],
     ['hierarchy', 'Product hierarchy', '.xlsx'],
     ['shelflife', 'Shelf-life report', '.csv'],
   ];
+  const requiredSlots = slots.filter(([slot]) => slot !== 'config');
   const help = {
-    config: 'Excel configuration with config_table and starting_date for the report month. Example: config.xlsx',
+    config: 'Optional import: fills the report date from config_table. You can edit the date above.',
     landing: 'Excel landing rates by material, with Row Labels and DB Landing rate. Example: DB Landing for FSNE.xlsx',
     secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
@@ -30,36 +31,65 @@
     return data;
   }
   const post = (path, body = {}) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+  let pendingSettings = Promise.resolve();
   function controls() {
-    const missing = slots.length - selected.size;
-    $('#runBtn').disabled = !online || busy || missing > 0 || !!invalidSlot;
-    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
+    const missing = requiredSlots.filter(([slot]) => !selected.has(slot)).length;
+    const hasDate = !!$('#sDate').value && $('#sDate').validity.valid;
+    $('#runBtn').disabled = !online || busy || missing > 0 || !hasDate || !!invalidSlot;
+    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot === 'config' ? 'Check the report date or configuration workbook.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : !hasDate ? 'Choose a report date.' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
     $('#discardDraft').hidden = !draft;
     $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
-    $$('#files input').forEach(input => input.disabled = busy || !online);
-    $('#fileProg').textContent = selected.size + ' of ' + slots.length + ' selected';
+    $('#sDate').disabled = busy || !online;
+    $$('#ob-setup input[type="file"]').forEach(input => input.disabled = busy || !online);
+    $('#fileProg').textContent = requiredSlots.length - missing + ' of ' + requiredSlots.length + ' selected';
   }
   $('#runBtn').disabled = true;
-  $('#sDate').textContent = '';
-  $('#files').html = slots.map(([slot, label, ext]) => `<label class="file" data-slot="${slot}"><span class="st"></span><div><b>${label}</b><small>${ext.replaceAll(',', ' / ')}</small><span class="file-help">${esc(help[slot])}</span></div><span class="btn sm">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label>`).join('');
-  function showDraft(run) {
+  const fileRow = ([slot, label, ext]) => `<div class="file" data-slot="${slot}"><span class="st"></span><div><div class="file-heading"><b>${label}</b><span class="file-ext">${ext.replaceAll(',', ' / ')}</span></div><small class="file-meta"></small><span class="file-help">${esc(help[slot])}</span></div><div class="file-actions"><a class="btn sm ghost file-sample" href="${esc(SAMPLES[slot].href)}" download="${esc(SAMPLES[slot].name)}" aria-label="Download ${label.toLowerCase()} sample" title="Download sample · synthetic example"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg></a><label class="btn sm"><span class="file-choose">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label></div></div>`;
+  $('#files').html = requiredSlots.map(fileRow).join('');
+  $('#configFile').html = fileRow(slots[0]);
+  function showDraft(run, keepFields = false) {
     draft = run;
     selected.clear();
     for (const [slot, file] of Object.entries(run?.files || {})) selected.set(slot, file);
-    $$('#files .file').forEach(el => {
+    $$('#ob-setup .file').forEach(el => {
       const file = selected.get(el.dataset.slot);
-      el.classList.toggle('done', !!file);
-      el.querySelector('small').textContent = file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : slots.find(s => s[0] === el.dataset.slot)[2].replaceAll(',', ' / ');
-      el.querySelector('.btn').textContent = file ? 'Replace' : 'Choose file';
+      el.classList.toggle('done', !!file && !file.generated);
+      el.querySelector('.file-meta').textContent = file?.generated ? 'Using the date entered above.' : file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : '';
+      el.querySelector('.file-choose').textContent = file && !file.generated ? 'Replace' : 'Choose file';
     });
-    $('#sDate').textContent = run?.report_date ? dateText(run.report_date) : 'Not yet uploaded';
-    if (run) $('#sLabel').value = run.label === 'Untitled run' ? '' : run.label;
+    if (!keepFields) {
+      $('#sDate').value = run?.report_date || '';
+      $('#sLabel').value = run && run.label !== 'Untitled run' ? run.label : '';
+    }
     controls();
   }
-  $$('#files .file').forEach(el => {
+  async function persistSettings() {
+    if (!draft) draft = await post('runs', {label: $('#sLabel').value});
+    const report_date = $('#sDate').value;
+    const label = $('#sLabel').value;
+    if (report_date && (draft.report_date !== report_date || draft.label !== (label.trim() || 'Untitled run'))) {
+      draft = await post('runs/' + draft.id + '/config', {report_date, label});
+    }
+    return draft;
+  }
+  function saveSettings() {
+    controls();
+    if (!online || busy || !$('#sDate').value || !$('#sDate').validity.valid) return;
+    pendingSettings = pendingSettings.then(async () => {
+      await persistSettings();
+      if (invalidSlot === 'config') invalidSlot = null;
+      showDraft(draft, true); error('');
+      $('#appNotice').textContent = 'Run settings saved for ' + dateText(draft.report_date) + '.';
+      await refresh();
+    }).catch(e => {invalidSlot = 'config'; error(e.message); controls();});
+  }
+  $('#sDate').onchange = saveSettings;
+  $('#sLabel').onchange = saveSettings;
+  $$('#ob-setup .file').forEach(el => {
     const slot = el.dataset.slot;
     async function choose(file) {
+      await pendingSettings;
       if (!file || busy || !online) return;
       const allowed = slots.find(s => s[0] === slot)[2].split(',');
       const suffix = '.' + file.name.split('.').at(-1).toLowerCase();
@@ -73,10 +103,15 @@
       }
       busy = true; invalidSlot = slot; error(''); controls();
       try {
-        if (!draft) draft = await post('runs', {label: $('#sLabel').value});
+        if (slot === 'config') {
+          if (!draft) draft = await post('runs', {label: $('#sLabel').value});
+        } else {
+          await persistSettings();
+        }
         $('#appNotice').textContent = 'Uploading and checking ' + slots.find(s => s[0] === slot)[1] + '…';
         const meta = await api('runs/' + draft.id + '/files/' + slot, {method:'PUT',headers:{'X-Filename':encodeURIComponent(file.name)},body:file});
-        invalidSlot = null; showDraft(meta);
+        if (slot === 'config') $('#sDate').value = meta.report_date;
+        invalidSlot = null; showDraft(meta, true);
         $('#appNotice').textContent = 'Draft ' + draft.id + ' saved. You can return to it later.';
         await refresh();
       } catch (e) {error(e.message); $('#appNotice').textContent = 'Upload rejected. Check the file and try again.';}
@@ -129,7 +164,7 @@
       $(target).html = rows.length ? `<div class="runs-scroll"><table class="runs-table"><thead><tr>${columns.map(c=>`<th scope="col">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${columns.map(c=>`<td>${c.r(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p>${empty}</p>`;
     }
     const openSummaries = new Set($$('[data-summary][open]').map(el => el.dataset.summary));
-    renderList('#runsT', active, 'No runs yet. Upload all five source files and choose Start run.');
+    renderList('#runsT', active, 'No runs yet. Set a report date, upload four source files and choose Start run.');
     renderList('#archiveT', archived, 'Archived runs appear here. Their data still feeds later history.');
     $$('[data-summary]').forEach(el => {el.open = openSummaries.has(el.dataset.summary);});
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
@@ -181,6 +216,7 @@
     finally {polling = false; setTimeout(poll, 2500);}
   }
   $('#discardDraft').onclick = async () => {
+    await pendingSettings;
     if (!draft || busy || !confirm('Discard this draft and its uploaded files?')) return;
     busy = true; controls();
     try {await post('runs/' + draft.id + '/discard'); invalidSlot = null; showDraft(null); $('#sLabel').value = ''; error(''); $('#appNotice').textContent = 'Draft discarded. Upload files to start a new run.'; await refresh();}
@@ -188,11 +224,13 @@
     finally {busy = false; controls();}
   };
   $('#runBtn').onclick = async () => {
-    if (busy || !online || !draft || invalidSlot || selected.size !== slots.length) return;
-    const previous = runs.find(r => r.status === 'ok' && r.report_date === draft.report_date);
+    await pendingSettings;
+    if (busy || !online || !draft || invalidSlot || !$('#sDate').value || requiredSlots.some(([slot]) => !selected.has(slot))) return;
+    const previous = runs.find(r => r.status === 'ok' && r.report_date === $('#sDate').value);
     if (previous && !confirm('A completed run already exists for this report date (' + previous.id + '). Start a replacement? It will replace that month in later history.')) return;
     busy = true; error(''); controls();
     try {
+      await persistSettings();
       const id = draft.id;
       await post('runs/' + id + '/start', {label: $('#sLabel').value});
       trackedRun = id;
@@ -211,7 +249,7 @@
       $('#repRun').textContent = HAS_REPORT ? STATUS.labels.at(-1) + ' snapshot' : '';
       $('.who b').textContent = context.user || 'local';
       online = true;
-      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Upload the five source files to calculate your first run.';
+      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Set a report date and upload four source files to calculate your first run.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (draft) $('#appNotice').textContent = 'Draft ' + draft.id + ' resumed. Continue uploading files or start the run.';

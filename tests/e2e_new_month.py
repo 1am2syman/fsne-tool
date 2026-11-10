@@ -20,7 +20,6 @@ from urllib.parse import quote
 ROOT = Path(__file__).resolve().parent.parent
 PORT = 8771
 FILES = {
-    "config": "config.xlsx",
     "landing": "DB Landing for FSNE.xlsx",
     "secondary": "Mode_Sec_Month on Month.xlsb",
     "hierarchy": "PH_FG.xlsx",
@@ -69,6 +68,12 @@ def main() -> None:
                         time.sleep(0.2)
                 run = json.loads(request("POST", "/api/runs", b'{"label":"New month e2e"}', {"Content-Type": "application/json"}))
                 run_id = run["id"]
+                configured = json.loads(request(
+                    "POST", f"/api/runs/{run_id}/config", b'{"report_date":"2026-08-30"}',
+                    {"Content-Type": "application/json"},
+                ))
+                assert configured["files"]["config"]["generated"] is True
+                assert configured["configuration_source"] == "form"
                 for slot, filename in FILES.items():
                     path = ROOT / "sample_input" / filename
                     request("PUT", f"/api/runs/{run_id}/files/{slot}", path.read_bytes(), {"X-Filename": quote(filename)})

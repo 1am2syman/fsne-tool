@@ -4,6 +4,8 @@ import json
 from html import escape
 from pathlib import Path
 
+from ui.samples import downloads
+
 UI = Path(__file__).resolve().parent
 NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH")
 
@@ -16,6 +18,7 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
     template = ((UI / "template.html").read_text(encoding="utf-8")
                 .replace("/*DOH_OVERLAY*/", (UI / "doh_overlay.js").read_text(encoding="utf-8"))
                 .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text(encoding="utf-8"))
+                .replace("/*SAMPLES*/{}", json.dumps(downloads(), separators=(",", ":")))
                 .replace("/*HAS_REPORT*/true", json.dumps(has_report)))
     identity = f"{run['id']} · {run['label']}" if run else "Sample" if has_report else "No report yet"
     snapshot = f"{payload['STATUS']['labels'][-1]} snapshot" if has_report else ""

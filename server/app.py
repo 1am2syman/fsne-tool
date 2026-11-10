@@ -7,6 +7,7 @@ Every URL is relative to the page, so the app works under a path prefix such as
     GET    api/runs                   all runs, newest first
     POST   api/runs                   {"label", "archive_previous"} -> new draft run
     PUT    api/runs/<id>/files/<slot> raw body, X-Filename header
+    POST   api/runs/<id>/config       {"report_date", "label"?} -> saved form configuration
     POST   api/runs/<id>/start        queue the run
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
@@ -101,7 +102,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     meta = store.get(run_id) if run_id else None
                     return self._json({"run": meta, "sample": meta is None, "user": self._user()})
                 if url == "/api/slots" and method == "GET":
-                    return self._json([{"slot": k, "label": v[0], "stem": v[1], "ext": v[2]} for k, v in SLOTS.items()])
+                    return self._json([{"slot": k, "label": v[0], "stem": v[1], "ext": v[2], "required": k != "config"} for k, v in SLOTS.items()])
                 if url == "/api/runs":
                     if method == "GET":
                         return self._json(store.list())
@@ -181,6 +182,10 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 filename = unquote(self.headers.get("X-Filename", ""))
                 length = _length(self.headers.get("Content-Length"))
                 return self._json(store.save_file(run_id, slot, filename, self.rfile, length))
+            if rest == "config" and method == "POST":
+                return self._json(store.configure(
+                    run_id, str(body.get("report_date", "")), str(body["label"]) if "label" in body else None,
+                ))
             if rest == "start" and method == "POST":
                 return self._json(store.start(run_id, str(body["label"]) if "label" in body else None, self._user()))
             if rest == "cancel" and method == "POST":

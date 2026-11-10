@@ -27,6 +27,9 @@ from contextlib import suppress
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from openpyxl import Workbook
+from openpyxl.worksheet.table import Table
+
 ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = Path(os.environ.get("FSNE_RUNS_DIR", ROOT / "runs"))
 SHARED_HISTORY = Path(os.environ.get("FSNE_HISTORY_DIR", ROOT / "history"))
@@ -36,7 +39,7 @@ RUN_ID = re.compile(r"^RUN-\d{4,}$")
 # the translated queries match on (see src/io.matching_files callers).
 SLOTS: dict[str, tuple[str, str, tuple[str, ...]]] = {
     "config": ("Run configuration", "config", (".xlsx", ".xlsm")),
-    "landing": ("Stock on hand", "DB Landing for FSNE", (".xlsx", ".xlsm")),
+    "landing": ("Landing rates", "DB Landing for FSNE", (".xlsx", ".xlsm")),
     "secondary": ("Secondary sales, month on month", "Mode_Sec_Month on Month", (".xlsb", ".xlsx", ".xlsm")),
     "hierarchy": ("Product hierarchy", "PH_FG", (".xlsx",)),
     "shelflife": ("Shelf-life report", "Product Shelflife Report", (".csv",)),
@@ -178,6 +181,50 @@ class Store:
             meta["files"][slot] = {"name": filename[:255], "size": length}
             if report_date:
                 meta["report_date"] = report_date
+                meta["configuration_source"] = "workbook"
+            self._write(meta)
+            return meta
+
+    def configure(self, run_id: str, report_date: str, label: str | None = None) -> dict:
+        """Save form settings as the config workbook consumed by the pipeline.
+
+        Validate against uploaded sales before replacing any accepted settings.
+        This shares the upload/start lock so a worker cannot read a partial file.
+        """
+        with self.lock:
+            meta = self.get(run_id)
+            if meta["status"] != "draft":
+                raise RunError("Settings can only be changed before the run starts")
+            try:
+                if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", report_date):
+                    raise ValueError("Expected an ISO date")
+                date.fromisoformat(report_date)
+            except (ValueError, TypeError):
+                raise RunError("Report date: choose a valid calendar date.") from None
+            folder = self.path(run_id) / "input"
+            if "secondary" in meta["files"]:
+                validate_sales_month(folder, report_date)
+            with tempfile.TemporaryDirectory(dir=self.path(run_id)) as staging:
+                target = Path(staging) / "config.xlsx"
+                workbook = Workbook()
+                sheet = workbook.active
+                assert sheet is not None
+                sheet.append(["variable", "value"])
+                sheet.append(["starting_date", report_date])
+                sheet.add_table(Table(displayName="config_table", ref="A1:B2"))
+                workbook.save(target)
+                workbook.close()
+                size = target.stat().st_size
+                target.replace(folder / "config.xlsx")
+            # Remove a previous macro workbook only after its replacement exists.
+            for old in folder.glob("config.*"):
+                if old.name != "config.xlsx":
+                    old.unlink()
+            meta["files"]["config"] = {"name": "Entered in form", "size": size, "generated": True}
+            meta["report_date"] = report_date
+            meta["configuration_source"] = "form"
+            if label is not None:
+                meta["label"] = label.strip()[:80] or "Untitled run"
             self._write(meta)
             return meta
 
@@ -186,9 +233,11 @@ class Store:
             meta = self.get(run_id)
             if meta["status"] != "draft":
                 raise RunError("This run has already started")
-            missing = [SLOTS[s][0] for s in SLOTS if s not in meta["files"]]
+            missing = [SLOTS[s][0] for s in SLOTS if s != "config" and s not in meta["files"]]
             if missing:
                 raise RunError("Missing files: " + ", ".join(missing))
+            if not meta.get("report_date") or "config" not in meta["files"]:
+                raise RunError("Choose a report date or import a configuration workbook.")
             if label is not None:
                 meta["label"] = label.strip()[:80] or "Untitled run"
             if started_by is not None:
