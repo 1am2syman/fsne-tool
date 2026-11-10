@@ -15,7 +15,9 @@ Every query in `queries/` has a matching Python module in `src/`:
 
 ## Upload and run in the browser
 
-Start the app from the repository checkout:
+On Windows, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and double-click `start-fsne.bat` in the repository folder. It installs dependencies, prepares the initial dashboard if needed, starts the server and opens the app in your default browser. The first setup can take several minutes. Keep the command window open while using the app; close it to stop the server. Port 8770 must be available.
+
+Alternatively, start the app from the repository checkout:
 
 ```bash
 uv sync
