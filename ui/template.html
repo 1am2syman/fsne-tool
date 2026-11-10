@@ -106,11 +106,13 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .panel-h h2{font-size:13.5px;font-weight:600}
 .panel-h p{color:var(--ink3);font-size:12.5px}
 .cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
+#ob-setup{align-items:stretch}#ob-setup>.panel{min-width:0}.source-panel{display:flex;flex-direction:column}#files{flex:1;display:grid;grid-template-rows:repeat(3,minmax(min-content,1fr))}.setup-footer{min-height:52px;padding:12px 18px;border-top:1px solid var(--line)}
 .cols[hidden],.panel[hidden]{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #appNotice{margin:0 0 14px;color:var(--ink2);font-size:13px}.file-help{display:block;color:var(--ink2);font-size:12px;margin-top:5px}#onboardingError{margin:0 0 14px;font-size:13px}#onboardingError[hidden]{display:none}
 
 /* inputs list */
-.file{display:grid;grid-template-columns:20px 1fr auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);transition:background .12s}
+.file{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);transition:background .12s}
 .file:last-child{border:0}
 .file.over{background:var(--accent-soft)}
 .file .st{width:16px;height:16px;border-radius:50%;border:1.5px dashed var(--line2)}
@@ -119,13 +121,12 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .file b{font-weight:500}
 .file-heading{display:flex;align-items:baseline;gap:10px;min-width:0}
 .file-ext{color:var(--ink3);font-size:11px;font-family:var(--mono);white-space:nowrap}
-.file-meta{display:block;color:var(--ink2);font-size:12px;overflow-wrap:anywhere}
-.file-meta:empty{display:none}
-.file-actions{display:flex;align-items:center;gap:6px}
+.file-meta{display:block;color:var(--ink2);font-size:12px;line-height:18px;height:18px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-actions{display:flex;align-items:center;gap:6px}.file-actions label{min-width:94px;justify-content:center}
 .file-sample{width:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .file-sample svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5}
 .file.done small{color:var(--ink2)}
-#discardDraft[hidden]{display:none}.file input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.file:focus-within{outline:2px solid var(--accent);outline-offset:-2px}.runs-scroll{overflow:auto}.runs-table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:680px;background:var(--surface)}.runs-table th,.runs-table td{position:static;text-align:left;vertical-align:top;padding:8px 6px;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}.runs-table th:nth-child(1){width:9%}.runs-table th:nth-child(2){width:16%}.runs-table th:nth-child(3){width:12%}.runs-table th:nth-child(4){width:9%}.runs-table th:nth-child(5){width:13%}.runs-table th:nth-child(6){width:16%}.runs-table th:nth-child(7){width:25%}.runs-table .btn{margin:2px 1px;white-space:nowrap}.run-secondary{color:var(--ink3);font-size:12px;margin-top:4px}
+#discardDraft[hidden]{display:none}.file input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.file:focus-within{outline:2px solid var(--accent);outline-offset:-2px}.runs-scroll{overflow:auto}.runs-table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1160px;background:var(--surface)}.runs-table th,.runs-table td{position:static;text-align:left;vertical-align:top;padding:8px 6px;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}.runs-table th:nth-child(1){width:90px}.runs-table th:nth-child(2){width:auto}.runs-table th:nth-child(3){width:125px}.runs-table th:nth-child(4){width:85px}.runs-table th:nth-child(5){width:140px}.runs-table th:nth-child(6){width:170px}.runs-table th:nth-child(7){width:370px}.runs-table th:nth-child(2),.runs-table td:nth-child(2){position:static;left:auto;z-index:auto}.run-actions{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}.run-actions>.btn{flex:none;margin:0}.run-secondary{color:var(--ink3);font-size:12px;margin-top:4px}
 
 .config-form{padding:20px 18px}.config-field{display:block;font-size:12.5px;font-weight:500;margin-bottom:20px}.config-field input{display:block;width:100%;height:38px;border:1px solid var(--line2);background:var(--surface);border-radius:6px;padding:0 10px;margin-top:7px;color:var(--ink)}.config-field small{display:block;font-size:11.5px;font-weight:400;color:var(--ink3);margin-top:6px}.optional-label{font-weight:400;color:var(--ink3)}.config-import{border-top:1px solid var(--line);padding-top:16px}.config-import summary,.config-about summary{font-size:12px;color:var(--ink2);cursor:pointer}.config-import .file{grid-template-columns:16px minmax(0,1fr);padding:14px 0 0}.config-import .file-actions{grid-column:2}.config-note{font-size:11.5px;color:var(--ink3);border-left:2px solid var(--line2);padding-left:10px;margin-top:20px}.config-about{margin-top:16px}.config-about p{font-size:12px;color:var(--ink2);margin-top:8px}
 .form{padding:6px 18px 14px}
@@ -542,7 +543,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <section class="view on" id="v-onboarding">
   <div class="head">
     <div><h1>Monthly upload</h1><p class="lede">Set the report date, add three source files, then calculate and save a report.</p></div>
-    <div><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" aria-live="polite"></p></div>
+    <div><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" class="sr-only" aria-live="polite"></p></div>
   </div>
   <div class="tabs" role="tablist" id="obTabs">
     <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
@@ -553,15 +554,15 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <p id="appNotice" role="status" aria-live="polite">Connecting to the run service…</p>
   <p id="onboardingError" role="alert" class="badc" hidden></p>
   <div id="ob-setup" class="cols">
-    <div class="panel">
+    <div class="panel source-panel">
       <div class="panel-h"><h2>Source files</h2><p id="fileProg" class="mono"></p></div>
       <div id="files"></div>
-      <button id="discardDraft" class="btn sm ghost" type="button" hidden>Discard draft</button>
+      <div class="setup-footer"><button id="discardDraft" class="btn sm ghost" type="button" hidden>Discard draft</button></div>
     </div>
     <div class="panel">
       <div class="panel-h"><h2>Run settings</h2><p>Enter directly</p></div>
       <div class="config-form">
-        <label class="config-field" for="sDate">Report date<input id="sDate" type="date" required disabled><small>Use the stock snapshot date.</small></label>
+        <label class="config-field" for="sDate">Report date<input id="sDate" type="date" required disabled aria-describedby="dateHint"><small id="dateHint">Choose the stock snapshot date.</small></label>
         <label class="config-field" for="sLabel">Run label <span class="optional-label">optional</span><input id="sLabel" maxlength="80" placeholder="e.g. August 2026 close" disabled><small>A name to recognize this run later.</small></label>
         <details class="config-import"><summary>Import configuration from Excel · optional</summary><div id="configFile"></div></details>
         <p class="config-note">The report date determines stock age and the sales-history cutoff.</p>

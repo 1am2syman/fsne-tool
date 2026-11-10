@@ -11,7 +11,7 @@ Every URL is relative to the page, so the app works under a path prefix such as
     POST   api/runs/<id>/start        queue the run
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
-    GET    api/runs/<id>/report.xlsx  the 30-column report
+    GET    api/runs/<id>/report.xlsx  the report with four action-plan columns
     POST   api/runs/<id>/discard      delete an unstarted run (failed upload)
     POST   api/runs/<id>/archive      /restore
     GET    api/slots                  the file slots
@@ -170,12 +170,12 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             if rest == "log" and method == "GET":
                 return self._send(200, store.log(run_id).encode(), "text/plain; charset=utf-8")
             if rest == "report.xlsx" and method == "GET":
-                if store.get(run_id)["status"] != "ok":
-                    raise RunError("That run has no completed report")
+                path = store.action_plan_path(run_id)
+                run_date = store.get(run_id)["run_date"].replace("-", "_")
                 return self._file(
-                    store.path(run_id) / "output" / "inferred_report.xlsx",
+                    path,
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    f"{run_id}-report.xlsx",
+                    f"action_plan_to_tm_{run_date}.xlsx",
                 )
             if rest.startswith("files/") and method == "PUT":
                 slot = rest[6:]

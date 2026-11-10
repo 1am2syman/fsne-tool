@@ -17,6 +17,7 @@ import os
 import queue
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -24,7 +25,7 @@ import threading
 import time
 import traceback
 from contextlib import suppress
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -241,7 +242,7 @@ class Store:
                 meta["label"] = label.strip()[:80] or "Untitled run"
             if started_by is not None:
                 meta["started_by"] = started_by[:255] or "local"
-            meta.update(status="queued", step="Waiting for a free worker")
+            meta.update(status="queued", step="Waiting for a free worker", run_date=date.today().isoformat())
             self._write(meta)
             self.jobs.put(run_id)
             return meta
@@ -269,19 +270,62 @@ class Store:
         with self.lock:
             if self.get(run_id)["status"] not in {"ok", "bad", "cancelled"}:
                 raise RunError("Only completed, failed or cancelled runs can be deleted")
+            meta = self.get(run_id)
             try:
-                shutil.rmtree(self.path(run_id))
+                # Later runs must keep their own history after this source is deleted.
+                self._detach_history(run_id)
+                remove_run_tree(self.path(run_id))
             except OSError as exc:
-                raise RunError(f"Could not delete {run_id}: {exc.strerror}") from exc
+                # rmtree may have removed meta.json before encountering a locked
+                # file. Keep the run visible so the user can close it and retry.
+                self._write(meta)
+                raise RunError(
+                    f"Could not delete {run_id}: {exc.strerror}. Close any files from this run in Excel and try again."
+                ) from exc
+
+    def _detach_history(self, run_id: str) -> None:
+        source = self.path(run_id).resolve()
+        for other in self.list():
+            if other["id"] == run_id:
+                continue
+            for link in (self.path(other["id"]) / "history").glob("*.xlsx"):
+                if link.is_symlink() and link.resolve().is_relative_to(source):
+                    with tempfile.TemporaryDirectory(dir=link.parent) as staging:
+                        copy = Path(staging) / link.name
+                        shutil.copyfile(link, copy)
+                        copy.replace(link)
+
+    def action_plan_path(self, run_id: str) -> Path:
+        """Build older runs' export from their frozen private history, once."""
+        with self.lock:
+            meta = self.get(run_id)
+            if meta["status"] != "ok":
+                raise RunError("That run has no completed report")
+            if not meta.get("run_date"):
+                started = datetime.fromisoformat(meta.get("started") or meta["created"])
+                self.update(run_id, run_date=started.astimezone().date().isoformat())
+            run = self.path(run_id)
+            target = run / "output" / "action_plan.xlsx"
+            if not target.exists():
+                import polars as pl
+
+                parquet = run / "output" / "inferred_report.parquet"
+                if not parquet.is_file():
+                    raise RunError("This run's source report is missing; calculate it again to export an action plan.")
+                paths = sorted((run / "history").glob("saved-*.xlsx"))
+                write_action_plan(pl.read_parquet(parquet), meta["report_date"], target, history_by_date(paths))
+            return target
 
     def discard(self, run_id: str) -> None:
         """Delete a draft whose upload failed; started runs are history and stay."""
         with self.lock:
-            if self.get(run_id)["status"] != "draft":
+            meta = self.get(run_id)
+            if meta["status"] != "draft":
                 raise RunError("Only an unstarted run can be discarded")
             try:
-                shutil.rmtree(self.path(run_id))
+                remove_run_tree(self.path(run_id))
             except OSError as exc:
+                self._write(meta)
                 raise RunError(f"Could not discard {run_id}: {exc.strerror}") from exc
 
     def log(self, run_id: str) -> str:
@@ -385,10 +429,13 @@ class Store:
 
         self._step(run_id, 3, total, "saving this report as a snapshot")
         label_counts: dict[str, int] = {}
-        rows = snapshot(
-            out / "inferred_report.parquet", report_date, hist, out / "inferred_report.xlsx", self.history_paths(),
-            label_counts=label_counts,
-        )
+        # Do not let a concurrent deletion remove a source between selecting
+        # the history files and installing this run's private history links.
+        with self.lock:
+            rows = snapshot(
+                out / "inferred_report.parquet", report_date, hist, out / "action_plan.xlsx", self.history_paths(),
+                label_counts=label_counts,
+            )
         self.update(run_id, summary={**self.get(run_id).get("summary", {}), **label_counts})
 
         self._step(run_id, 4, total, "building the stock-movement history")
@@ -448,9 +495,15 @@ def run_summary(out: Path, hist: Path, report_date: str) -> dict:
 def link_history(link: Path, target: Path) -> None:
     """Expose a shared history file inside a run without duplicating it where possible.
 
-    Symlinks need a privilege Windows users usually lack (WinError 1314), so fall
-    back to a hard link, then to a copy. The file is only read, never edited.
+    Symlinks need a privilege Windows users usually lack (WinError 1314), so
+    Windows uses writable private copies. Elsewhere fall back to a hard link,
+    then a copy when symlinks are unavailable.
     """
+    # Windows symlinks usually need elevation. A private copy also avoids
+    # inheriting a shared file's read-only attribute (copy2 preserves it).
+    if os.name == "nt":
+        shutil.copyfile(target, link)
+        return
     try:
         link.symlink_to(target)
     except OSError:
@@ -538,6 +591,77 @@ def read_report_date(data_dir: Path) -> str:
     return value.isoformat()[:10]
 
 
+def remove_run_tree(folder: Path) -> None:
+    """Retry read-only private files; never chmod a symlink/shared hard link."""
+    def retry_readonly(operation, path, exc_info):
+        error = exc_info[1]
+        entry = Path(path)
+        if not isinstance(error, PermissionError) or entry.is_symlink():
+            raise error
+        info = entry.stat()
+        if info.st_nlink > 1 or info.st_mode & stat.S_IWUSR:
+            raise error
+        entry.chmod(info.st_mode | stat.S_IWUSR)
+        operation(path)
+
+    shutil.rmtree(folder, onerror=retry_readonly)
+
+
+def history_by_date(paths: list[Path]) -> dict[str, Path]:
+    """One source per report date; later supplied versions win."""
+    import polars as pl
+
+    result: dict[str, Path] = {}
+    for path in paths:
+        # Reading bytes releases the OS handle before retaining parsed sheets.
+        dates = pl.read_excel(path.read_bytes(), columns=["report_date"], infer_schema_length=0)["report_date"]
+        unique = dates.drop_nulls().cast(pl.String).str.slice(0, 10).unique().to_list()
+        if len(unique) != 1:
+            raise RunError(f"Saved history {path.name} must contain exactly one report date")
+        date.fromisoformat(unique[0])
+        result[unique[0]] = path
+    return result
+
+
+def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, Path]) -> None:
+    """Exact left join to the previous calendar month; current entry cells blank.
+
+    Movement's shortened-key label inheritance stays in snapshot(), separately.
+    Legacy history spellings are accepted at this input boundary.
+    """
+    import polars as pl
+
+    month = (date.fromisoformat(report_date).replace(day=1) - timedelta(days=1)).isoformat()[:7]
+    candidates = [dt for dt in by_date if dt[:7] == month]
+    columns = ("action_plan", "mitigation_status")
+    planning = [f"lm_{c}" for c in columns] + list(columns)
+    frame = frame.drop([c for c in planning if c in frame.columns])
+    if candidates:
+        path = by_date[max(candidates)]
+        previous = pl.read_excel(path.read_bytes(), infer_schema_length=0)
+        if "batch_index" not in previous.columns:
+            raise RunError(f"Saved history {path.name} has no batch_index column")
+        keys = previous["batch_index"].cast(pl.String)
+        if keys.null_count() or (keys == "").any() or keys.n_unique() != previous.height:
+            raise RunError(f"Saved history {path.name}: batch_index must be nonempty and unique")
+        aliases = {"action_plan": "action_plan_remarks", "mitigation_status": "mitigation_status_category"}
+        labels = previous.select(
+            pl.col("batch_index").cast(pl.String),
+            *[(pl.col(c if c in previous.columns else aliases[c]).cast(pl.String)
+               if c in previous.columns or aliases[c] in previous.columns else pl.lit(None, dtype=pl.String)
+               ).alias(f"lm_{c}") for c in columns],
+        )
+        frame = frame.join(labels, on="batch_index", how="left", validate="m:1", maintain_order="left")
+    else:
+        frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(f"lm_{c}") for c in columns)
+    frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(c) for c in columns)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(dir=target.parent) as staging:
+        temporary = Path(staging) / target.name
+        frame.write_excel(temporary, worksheet="Sheet1", float_precision=15)
+        temporary.replace(target)
+
+
 def snapshot(
     report_parquet: Path, report_date: str, hist_dir: Path, xlsx_out: Path, history_paths: list[Path],
     *, label_counts: dict[str, int] | None = None,
@@ -549,26 +673,17 @@ def snapshot(
     Same-date labels match exact batches; new dates inherit the latest earlier
     labels by movement batch key, without assigning a status to new batches.
     """
-    import fastexcel
     import polars as pl
 
     frame = pl.read_parquet(report_parquet)
     if frame.is_empty():
         raise RunError("The uploaded files produced no stock rows")
-    xlsx_out.parent.mkdir(parents=True, exist_ok=True)
-    frame.write_excel(xlsx_out, worksheet="Sheet1", float_precision=15)
+    by_date = {dt: path for dt, path in history_by_date(history_paths).items() if dt <= report_date}
+    write_action_plan(frame, report_date, xlsx_out, by_date)
     epoch = pl.lit(date(1899, 12, 30))
     saved = frame.with_columns(
         (epoch + pl.duration(days=pl.col(c))).cast(pl.Date).alias(c) for c in ("report_date", "Expiry Date")
     )
-    by_date: dict[str, Path] = {}
-    for path in history_paths:
-        sheet = fastexcel.read_excel(path).load_sheet_by_idx(0, use_columns=["report_date"], dtypes="string")
-        dates = sheet.to_polars()["report_date"].drop_nulls().str.slice(0, 10).unique().to_list()
-        if len(dates) != 1:
-            raise RunError(f"Saved history {path.name} must contain exactly one report date")
-        if dates[0] <= report_date:
-            by_date[dates[0]] = path
     manual = {"mitigation_status": "mitigation_status_category", "action_plan": "action_plan_remarks"}
     same_date = report_date in by_date
     if same_date:

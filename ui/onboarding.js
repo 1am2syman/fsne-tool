@@ -34,7 +34,8 @@
     const missing = requiredSlots.filter(([slot]) => !selected.has(slot)).length;
     const hasDate = !!$('#sDate').value && $('#sDate').validity.valid;
     $('#runBtn').disabled = !online || busy || missing > 0 || !hasDate || !!invalidSlot;
-    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot === 'config' ? 'Check the report date or configuration workbook.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : !hasDate ? 'Choose a report date.' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
+    $('#dateHint').textContent = !hasDate ? 'Choose the stock snapshot date.' : 'Use the stock snapshot date.';
+    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot === 'config' ? 'Check the report date or configuration workbook.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : !hasDate ? '' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
     $('#discardDraft').hidden = !draft;
     $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
@@ -53,7 +54,10 @@
     $$('#ob-setup .file').forEach(el => {
       const file = selected.get(el.dataset.slot);
       el.classList.toggle('done', !!file && !file.generated);
-      el.querySelector('.file-meta').textContent = file?.generated ? 'Using the date entered above.' : file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : '';
+      const metadata = el.querySelector('.file-meta');
+      metadata.textContent = file?.generated ? 'Using the date entered above.' : file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : '';
+      metadata.title = metadata.textContent;
+      metadata.tabIndex = file ? 0 : -1;
       el.querySelector('.file-choose').textContent = file && !file.generated ? 'Replace' : 'Choose file';
     });
     if (!keepFields) {
@@ -126,10 +130,10 @@
     return basePath + '?run=' + encodeURIComponent(id) + '#results';
   }
   function actions(r) {
-    return (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">Open results</a> <a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Excel</a> ` : '') +
+    return '<div class="run-actions">' + (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">Open results</a> <a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Excel</a> ` : '') +
       `<button class="btn sm ghost" data-log="${r.id}">Log</button> ` +
       (['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-cancel="${r.id}">Cancel</button>` : `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>`) +
-      (['ok','bad','cancelled'].includes(r.status) ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '');
+      (['ok','bad','cancelled'].includes(r.status) ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '') + '</div>';
   }
   function progress(r) {
     if (r.status === 'ok') return 'Done — open results';
@@ -247,7 +251,7 @@
       $('#repRun').textContent = HAS_REPORT ? STATUS.labels.at(-1) + ' snapshot' : '';
       $('.who b').textContent = context.user || 'local';
       online = true;
-      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Set a report date and upload four source files to calculate your first run.';
+      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Set a report date and upload three source files to calculate your first run.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (draft) $('#appNotice').textContent = 'Draft ' + draft.id + ' resumed. Continue uploading files or start the run.';

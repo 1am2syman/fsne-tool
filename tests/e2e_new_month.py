@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import http.client
+import io
 import json
 import math
 import os
@@ -18,6 +19,9 @@ import tempfile
 import time
 from pathlib import Path
 from urllib.parse import quote
+
+import openpyxl
+import polars as pl
 
 ROOT = Path(__file__).resolve().parent.parent
 PORT = 8771
@@ -46,7 +50,7 @@ def without_bdt(measures: dict) -> dict:
 
 
 def main() -> None:
-    with tempfile.TemporaryDirectory(prefix="fsne-e2e-", dir="/tmp") as directory:
+    with tempfile.TemporaryDirectory(prefix="fsne-e2e-") as directory:
         temp = Path(directory)
         history = temp / "history"
         history.mkdir()
@@ -111,6 +115,37 @@ def main() -> None:
                 with next((ROOT / "sample_input").glob("*.csv")).open(newline="", encoding="utf-8-sig") as handle:
                     csv_value = math.fsum(float(row["DB Landing value"]) for row in csv.DictReader(handle))
                 assert abs(actual["total_closing_stock_bdt"] - csv_value) < 1e-3, "Stock value differs from the CSV"
+                # Exercise the same HTTP download used by the Excel button and
+                # reopen it independently of the writer.
+                conn = http.client.HTTPConnection("127.0.0.1", PORT, timeout=300)
+                conn.request("GET", f"/api/runs/{run_id}/report.xlsx")
+                response = conn.getresponse()
+                assert response.status == 200
+                expected_name = "action_plan_to_tm_" + meta["run_date"].replace("-", "_") + ".xlsx"
+                assert expected_name in response.getheader("Content-Disposition")
+                workbook = openpyxl.load_workbook(io.BytesIO(response.read()), read_only=True, data_only=True)
+                conn.close()
+                sheet = workbook.active
+                assert sheet is not None
+                exported = list(sheet.values)
+                workbook.close()
+                head, records = exported[0], exported[1:]
+                assert head[-4:] == ("lm_action_plan", "lm_mitigation_status", "action_plan", "mitigation_status")
+                assert len(records) == summary["batches"]
+                raw = pl.read_parquet(run_dir / "output" / "inferred_report.parquet")
+                batch_idx = head.index("batch_index")
+                assert [r[batch_idx] for r in records] == raw["batch_index"].to_list()
+                previous = pl.read_excel(sorted(history.glob("2026_08_*.xlsx"))[-1], infer_schema_length=0)
+                # The selected file contains July's report date; filenames are
+                # not the source of truth for the previous report month.
+                assert str(previous["report_date"][0])[:7] == "2026-07"
+                plan = "action_plan" if "action_plan" in previous.columns else "action_plan_remarks"
+                status = "mitigation_status" if "mitigation_status" in previous.columns else "mitigation_status_category"
+                labels = {r["batch_index"]: (r[plan], r[status]) for r in previous.to_dicts()}
+                for record in records:
+                    assert record[-4:-2] == labels.get(record[batch_idx], (None, None))
+                    assert record[-2:] == (None, None)
+                print(f"Excel verified: {len(records)} rows; exact previous-month join; {expected_name}", flush=True)
                 print(f"E2E PASSED {run_id}: {summary['batches']} batches, "
                       f"{summary['mitigation_carried_batches']} carried, "
                       f"{summary['mitigation_unlabelled_batches']} unlabelled", flush=True)
