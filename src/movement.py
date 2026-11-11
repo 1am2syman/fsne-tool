@@ -215,12 +215,13 @@ def transform_series(
 ) -> pl.DataFrame:
     """Every month-to-month movement in one columnar pass (no per-pair loop).
 
-    ``month`` is the CM report date; its LM is the previous saved report. Only
-    reports that carry an Actionable status can take part (the earliest report
-    has no status column values), so the window is the last ``months`` + 1 of them.
+    ``month`` is the CM report date; its LM is the previous saved report.
+    The window uses the last ``months`` + 1 saved dates after labels first appear,
+    including later snapshots whose Actionable cohort is empty.
     Statuses are matched by prefix because early months split Actionable into
-    sub-categories ("Actionable - rotation", ...). Each month also gets a
-    ``Grand Total`` row.
+    sub-categories ("Actionable - rotation", ...). The calendar starts at the
+    first labelled report and includes later unlabelled snapshots, so an empty
+    returned plan still has a current month. Each month gets a Grand Total row.
 
     ``keys`` may add ``rsl_group`` after the brand. A batch is then counted in the
     RSL group it has in the *later* month of each pair: CM rows use their own
@@ -234,11 +235,11 @@ def transform_series(
         .filter(pl.col("status").str.starts_with(prefix))
         .with_columns(batch_key())
     )
-    dates = (
-        h.select("report_date").unique().sort("report_date").collect().to_series()
-    )[-(months + 1) :]
-    if dates.len() < 2:
-        raise ValueError("Need at least two reports with an Actionable status")
+    first_labelled = h.select(pl.col("report_date").min()).collect().item()
+    dates = history["report_date"].drop_nulls().unique().sort()
+    if first_labelled is not None:
+        dates = dates.filter(dates >= first_labelled)
+    dates = dates[-(months + 1):]
     h = h.filter(pl.col("report_date").is_in(dates))
     calendar = pl.DataFrame(
         {"report_date": dates, "prev_date": dates.shift(1), "next_date": dates.shift(-1)}
@@ -309,6 +310,15 @@ def transform_series(
             "reduction_pct"
         ),
         pl.lit(None, dtype=pl.String).alias("remarks"),
+    ).select(*SERIES_OUTPUT, *keys[1:])
+    # Include a zero cohort for months/RSL groups with no Actionable entries.
+    # Otherwise a blank plan silently makes the dashboard show an older month.
+    calendar_months = pl.DataFrame({"month": dates[1:] if len(dates) > 1 else dates}).lazy()
+    if keys[1:]:
+        calendar_months = calendar_months.join(history.select(*keys[1:]).unique().lazy(), how="cross")
+    totals = calendar_months.join(totals, on=["month", *keys[1:]], how="left").with_columns(
+        pl.lit(TOTAL).alias("brand"),
+        *[pl.col(c).fill_null(0.0) for c in ("lm_stock_bdt", "cm_no_new_bdt", "cm_new_bdt", "reduced_bdt")],
     ).select(*SERIES_OUTPUT, *keys[1:])
     return (
         pl.concat([brands, totals])

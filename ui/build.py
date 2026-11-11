@@ -35,6 +35,7 @@ _ap.add_argument('--data-dir', type=pathlib.Path, default=d.parent / 'sample_inp
 _ap.add_argument('--history-dir', type=pathlib.Path, default=d.parent / 'history')
 _ap.add_argument('--output-dir', type=pathlib.Path, default=d.parent / 'output')
 _ap.add_argument('--html', type=pathlib.Path, default=d / 'index.html')
+_ap.add_argument('--frozen', action='store_true', help='reuse this run’s frozen report, rates and DOH data')
 _ap.add_argument('--payload', type=pathlib.Path, default=None, help='write run data instead of a full HTML page')
 _args = _ap.parse_args()
 DATA, HIST, OUT, HTML = (p.resolve() for p in (_args.data_dir, _args.history_dir, _args.output_dir, _args.html))
@@ -84,27 +85,43 @@ series = {'labels': [m.strftime('%b') for m in months], 'start': start, 'year': 
           'brands': [{'b': b, 'm': [v.get(m) for m in months],
                       'p': [{'c': p['c'], 'd': p['d'], 'm': [p['by'].get(m) for m in months]} for p in par.get(b, {}).values()]}
                      for b, v in by.items()]}
-latest_saved = None
-for path in sorted(HIST.glob('*.xlsx'), reverse=True):
-    candidate = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
-    dates = candidate['report_date'].cast(pl.String).str.slice(0, 10).str.to_date()
-    if months[-1] in dates:
-        latest_saved = candidate
-        break
-if latest_saved is None:
-    raise ValueError('Latest movement snapshot is absent from saved reports')
-current, refreshed, doh, impact = build_current(DATA, latest_saved, months[-1], OUT)
-(OUT / 'run_rate_impact.json').write_text(json.dumps(impact, indent=2) + '\n')
-(OUT / 'current_measures.json').write_text(json.dumps(impact['measures_after'], indent=2) + '\n')
-series['doh'] = doh
-batch = current.sort('total_closing_stock_bdt', descending=True, nulls_last=True).head(400).to_dicts()
 # Match the movement report's month window, including its opening snapshot.
 opening = (months[0].replace(day=1) - dt.timedelta(days=1)).replace(day=1)
-status = build_payload(HIST, [opening, *[m.replace(day=1) for m in months]], current=refreshed)
-transfer = transfer_payload(current, DATA, OUT)
-sales_push = sales_push_payload(DATA, current)
-payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
-           'MEASURES': impact['measures_after'], 'STATUS': status}
+status_months = [opening, *[m.replace(day=1) for m in months]]
+if _args.frozen:
+    if _args.payload is None:
+        raise ValueError('--frozen requires an existing --payload')
+    try:
+        existing = json.loads(_args.payload.read_text())
+        series['doh'] = existing['SERIES']['doh']
+        status = existing['STATUS']
+    except (OSError, ValueError, KeyError) as exc:
+        raise SystemExit('Frozen dashboard data could not be read; accepted results are unchanged') from exc
+    # These views depend on frozen stock/rates, never on manual plan entries.
+    # Only a changed movement window needs the all-stock status data re-windowed.
+    if status['labels'] != [m.strftime('%b %Y') for m in status_months]:
+        status = build_payload(HIST, status_months)
+    payload = {**existing, 'SERIES': series, 'STATUS': status}
+else:
+    latest_saved = None
+    for path in sorted(HIST.glob('*.xlsx'), reverse=True):
+        candidate = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
+        dates = candidate['report_date'].cast(pl.String).str.slice(0, 10).str.to_date()
+        if months[-1] in dates:
+            latest_saved = candidate
+            break
+    if latest_saved is None:
+        raise ValueError('Latest movement snapshot is absent from saved reports')
+    current, refreshed, doh, impact = build_current(DATA, latest_saved, months[-1], OUT)
+    (OUT / 'run_rate_impact.json').write_text(json.dumps(impact, indent=2) + '\n')
+    (OUT / 'current_measures.json').write_text(json.dumps(impact['measures_after'], indent=2) + '\n')
+    series['doh'] = doh
+    batch = current.sort('total_closing_stock_bdt', descending=True, nulls_last=True).head(400).to_dicts()
+    status = build_payload(HIST, status_months, current=refreshed)
+    transfer = transfer_payload(current, DATA, OUT)
+    sales_push = sales_push_payload(DATA, current)
+    payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
+               'MEASURES': impact['measures_after'], 'STATUS': status}
 if _args.payload:
     _args.payload.write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False, default=str))
 else:

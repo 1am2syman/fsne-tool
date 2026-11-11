@@ -22,7 +22,7 @@
   };
   const formats = {config: ['XLSX', '#1E7A4C'], secondary: ['XLSB', '#1E7A4C'], hierarchy: ['XLSX', '#1E7A4C'], shelflife: ['CSV', '#3D5A99']};
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
+  let online = false, busy = false, runs = [], polling = false, reloadingReport = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
   // The ticket stamp spells the month out so 08/09 can never be read the wrong way round.
   const stampText = value => value ? value.slice(8, 10) + ' ' + MONTHS[Number(value.slice(5, 7)) - 1] + ' ' + value.slice(0, 4) : 'DD MMM YYYY';
   const sizeText = bytes => bytes < 1024 ** 2 ? Math.max(1, Math.ceil(bytes / 1024)).toLocaleString('en-GB') + ' KB' : (bytes / 1024 ** 2).toLocaleString('en-GB', {maximumFractionDigits: 1}) + ' MB';
@@ -36,7 +36,11 @@
   async function api(path, options = {}) {
     const response = await fetch(apiUrl(path), {cache: 'no-store', signal: AbortSignal.timeout(300000), ...options});
     const data = await response.json().catch(() => ({error: 'The run service returned an unreadable response'}));
-    if (!response.ok) throw new Error(data.error || 'The request failed');
+    if (!response.ok) {
+      const failure = new Error(data.error || 'The request failed');
+      failure.previousUnsettled = response.status === 400 && failure.message.startsWith('Previous month ');
+      throw failure;
+    }
     return data;
   }
   const post = (path, body = {}) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
@@ -214,13 +218,82 @@
     return basePath + '?run=' + encodeURIComponent(id) + '#results';
   }
   function actions(r) {
-    return '<div class="run-actions">' + (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">Open results</a> <a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Excel</a> ` : '') +
+    const settled = r.plan_state === 'settled';
+    return '<div class="run-actions">' + (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">${esc(r.view_label)}</a><a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Action plan input file</a>` +
+      (settled ? `<button class="btn sm" data-reopen="${r.id}">Reopen</button>` : r.out_of_date ? '' : `<button class="btn sm" data-plan="${r.id}">Upload action plan</button><button class="btn sm" data-settle="${r.id}">Settle month</button>`) : '') +
       `<button class="btn sm ghost" data-log="${r.id}">Log</button> ` +
       (['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-cancel="${r.id}">Cancel</button>` : `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>`) +
-      (['ok','bad','cancelled'].includes(r.status) ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '') + '</div>';
+      (['ok','bad','cancelled'].includes(r.status) && !settled ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '') + '</div>';
+  }
+  function cycleDialog(title, content, label, action) {
+    const dialog = $('#planDialog');
+    $('#planTitle').textContent = title;
+    $('#planBody').html = content;
+    $('#planDialogError').hidden = true;
+    $('#planConfirm').textContent = label;
+    $('#planConfirm').disabled = false;
+    $('#planCancel').disabled = false;
+    $('#planCancel').onclick = () => dialog.close();
+    dialog.oncancel = e => {if ($('#planCancel').disabled) e.preventDefault();};
+    $('#planConfirm').onclick = async () => {
+      $('#planConfirm').disabled = true;
+      $('#planCancel').disabled = true;
+      $('#planDialogError').hidden = true;
+      try {await action();}
+      catch (e) {
+        $('#planDialogError').textContent = e.message;
+        $('#planDialogError').hidden = false;
+      } finally {
+        $('#planConfirm').disabled = false;
+        $('#planCancel').disabled = false;
+      }
+    };
+    if (!dialog.open) dialog.showModal();
+  }
+  function reloadReport() {
+    if (reloadingReport) return;
+    reloadingReport = true;
+    location.reload();
+  }
+  async function cycleDone(meta, message) {
+    $('#planDialog').close();
+    $('#appNotice').textContent = message + (meta.plan_state === 'settled' && !meta.settlement.commit.ok ? ' · settled, not committed' : '');
+    if (loadedRun?.id === meta.id) reloadReport();
+    else await refresh();
+  }
+  function uploadPlan(id) {
+    cycleDialog('Upload action plan', '<p>Choose the file returned by sales, including its lm_ columns. Only action_plan and mitigation_status will be applied to this run’s batches.</p><input id="returnedPlan" type="file" accept=".xlsx" aria-label="Returned action plan">', 'Check file', async () => {
+      const file = $('#returnedPlan').files[0];
+      if (!file) throw new Error('Choose the returned Excel file.');
+      const check = await api('runs/' + id + '/action-plan/check', {method:'PUT', headers:{'X-Filename':encodeURIComponent(file.name)}, body:file});
+      cycleDialog('Check returned plan', `<p>${esc(file.name)}</p><dl class="plan-checks"><dt>Batches matched</dt><dd>${f(check.batches_matched)}</dd><dt>Blank action plan remarks</dt><dd>${f(check.blank_remarks)}</dd><dt>Blank statuses</dt><dd>${f(check.blank_statuses)}</dd><dt>Unrecognised statuses</dt><dd>${f(check.unrecognised_statuses)}</dd></dl>${check.unrecognised_values.length ? '<p class="plan-warning">Unrecognised values: ' + esc(check.unrecognised_values.join(', ')) + '</p>' : ''}<p>Blank remarks, blank statuses and unrecognised values are warnings. Accepting replaces the previous plan and rebuilds the view.</p>`, 'Accept action plan', async () => {
+        const meta = await post('runs/' + id + '/action-plan/accept', {token:check.token});
+        await cycleDone(meta, id + ' · Action plan view (not settled)');
+      });
+    });
+  }
+  async function settleMonth(id) {
+    try {
+      const check = await api('runs/' + id + '/settlement-check');
+      cycleDialog('Settle month', `<p><b>${esc(check.month)}</b> · ${f(check.batches)} batches · ${f(check.without_status)} without a status.</p><p>This publishes the frozen snapshot to history and archives other runs for this month.</p>${check.without_plan ? '<p class="plan-warning"><b>No action plan has been uploaded.</b> The final file will contain carried-over statuses.</p><label class="plan-confirmation"><input id="settleWithoutPlan" type="checkbox">I confirm settlement without a returned plan, using carried-over statuses.</label>' : ''}`, check.without_plan ? 'Settle without a plan' : 'Confirm settlement', async () => {
+        if (check.without_plan && !$('#settleWithoutPlan').checked) throw new Error('Confirm settlement without a returned plan.');
+        const meta = await post('runs/' + id + '/settle', {confirm:true, snapshot:check.snapshot, confirm_without_plan:check.without_plan});
+        await cycleDone(meta, id + ' · Final view');
+      });
+      if (check.without_plan) {
+        $('#planConfirm').disabled = true;
+        $('#settleWithoutPlan').onchange = e => $('#planConfirm').disabled = !e.target.checked;
+      }
+    } catch (e) {error(e.message);}
+  }
+  function reopenMonth(id) {
+    cycleDialog('Reopen month', '<p>Remove this month’s settled history in a new local commit and return to the earlier view. Later runs that used this month will be marked out of date.</p>', 'Confirm reopen', async () => {
+      const meta = await post('runs/' + id + '/reopen', {confirm:true});
+      await cycleDone(meta, id + ' reopened' + (!meta.reopened.commit.ok ? ' · history removal not committed' : ''));
+    });
   }
   function progress(r) {
-    if (r.status === 'ok') return 'Done — open results';
+    if (r.status === 'ok') return r.plan_state === 'settled' && !r.settlement?.commit?.ok ? 'settled, not committed' : r.view_label;
     if (r.status !== 'running') return r.step || status[r.status][1];
     const elapsed = r.started ? Math.max(0, Math.floor((Date.now() - Date.parse(r.started)) / 1000)) : 0;
     const median = medianSeconds();
@@ -239,7 +312,7 @@
     {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
     {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
     {k:'summary',h:'Summary',r:summary},
-    {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
+    {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.out_of_date ? `<div class="plan-stale">Out of date · ${esc(r.out_of_date.month)} reopened</div>` : ''}${r.reopened && !r.reopened.commit.ok ? '<div class="plan-stale">History removal not committed</div>' : ''}${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
     {k:'actions',h:'Results and actions',r:actions},
   ];
   function drawRuns() {
@@ -249,13 +322,16 @@
     }
     const openSummaries = new Set($$('[data-summary][open]').map(el => el.dataset.summary));
     renderList('#runsT', active, 'No runs yet. Set a report date, upload three source files and choose Start run.');
-    renderList('#archiveT', archived, 'Archived runs appear here. Their data still feeds later history.');
+    renderList('#archiveT', archived, 'Archived runs appear here. Only settled snapshots feed later history.');
     $$('[data-summary]').forEach(el => {el.open = openSummaries.has(el.dataset.summary);});
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
     const newest = runs.find(r => r.status !== 'draft');
     document.title = running ? 'Running · FSNE' : newest?.status === 'ok' ? 'Done · FSNE' : 'FSNE';
+    $$('[data-plan]').forEach(b => b.onclick = () => uploadPlan(b.dataset.plan));
+    $$('[data-settle]').forEach(b => b.onclick = () => settleMonth(b.dataset.settle));
+    $$('[data-reopen]').forEach(b => b.onclick = () => reopenMonth(b.dataset.reopen));
     $$('[data-archive]').forEach(b => b.onclick = async () => {
       b.disabled = true;
       try {await post('runs/' + b.dataset.archive + '/' + (b.dataset.value === 'true' ? 'archive' : 'restore')); await refresh();}
@@ -286,18 +362,25 @@
   }
   $('#closeRunLog').onclick = () => $('#runLogPanel').hidden = true;
   async function refresh() {
+    if (reloadingReport) return;
     runs = await api('runs'); drawRuns();
+    const current = runs.find(r => r.id === loadedRun?.id);
+    const version = r => JSON.stringify([r?.plan_state, r?.plan_upload?.revision, r?.out_of_date, r?.settlement?.commit, r?.reopened]);
+    if (current && version(current) !== version(loadedRun)) {reloadReport(); return;}
     const run = runs.find(r => r.id === trackedRun);
     if (run && !busy && !draft && ['ok', 'bad', 'cancelled'].includes(run.status)) {
       $('#appNotice').textContent = run.id + (run.status === 'ok' ? ' completed. Open results in Runs.' : run.status === 'bad' ? ' failed. See Runs for details.' : ' was cancelled.');
     }
   }
   async function poll() {
-    if (polling) return;
+    if (polling || reloadingReport) return;
     polling = true;
     try {await refresh();}
     catch (e) {error('Could not refresh runs: ' + e.message);}
-    finally {polling = false; setTimeout(poll, 2500);}
+    finally {
+      polling = false;
+      if (!reloadingReport) setTimeout(poll, 2500);
+    }
   }
   $('#discardDraft').onclick = async () => {
     await pendingSettings;
@@ -311,12 +394,18 @@
     await pendingSettings;
     if (busy || !online || !draft || invalidSlot || !$('#sDate').value || requiredSlots.some(([slot]) => !selected.has(slot))) return;
     const previous = runs.find(r => r.status === 'ok' && r.report_date === $('#sDate').value);
-    if (previous && !confirm('A completed run already exists for this report date (' + previous.id + '). Start a replacement? It will replace that month in later history.')) return;
+    if (previous && !confirm('A completed run already exists for this report date (' + previous.id + '). Start another run? History changes only when you settle it.')) return;
     busy = true; error(''); controls();
     try {
       await persistSettings();
       const id = draft.id;
-      await post('runs/' + id + '/start', {label: $('#sLabel').value});
+      try {
+        await post('runs/' + id + '/start', {label: $('#sLabel').value});
+      } catch (e) {
+        if (!e.previousUnsettled) throw e;
+        if (!confirm(e.message + '\n\nStart anyway? Last-month entry columns will be empty and no statuses will carry over.')) return;
+        await post('runs/' + id + '/start', {label: $('#sLabel').value, override_unsettled:true});
+      }
       trackedRun = id;
       showDraft(null); $('#sLabel').value = '';
       $('#appNotice').textContent = id + ' accepted. Follow its progress in Runs.';

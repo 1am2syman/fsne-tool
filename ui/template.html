@@ -227,6 +227,7 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 
 .runs-scroll{overflow:auto}.runs-table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1160px;background:var(--surface)}.runs-table th,.runs-table td{position:static;text-align:left;vertical-align:top;padding:8px 6px;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}.runs-table th:nth-child(1){width:90px}.runs-table th:nth-child(2){width:auto}.runs-table th:nth-child(3){width:125px}.runs-table th:nth-child(4){width:85px}.runs-table th:nth-child(5){width:140px}.runs-table th:nth-child(6){width:170px}.runs-table th:nth-child(7){width:370px}.runs-table th:nth-child(2),.runs-table td:nth-child(2){position:static;left:auto;z-index:auto}.run-actions{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}.run-actions>.btn{flex:none;margin:0}.run-secondary{color:var(--ink3);font-size:12px;margin-top:4px}
+.run-actions{flex-wrap:wrap;white-space:normal;row-gap:6px}.run-actions a[data-open]{width:100%;justify-content:flex-start;white-space:normal}.plan-flag{padding:10px 14px;border:1px solid #d8c8a2;border-left:3px solid #ad792b;border-radius:6px;background:#faf4e5;color:#695224;font-size:12px;line-height:1.5;margin:-4px 0 16px}.plan-flag[data-state="settled"]{border-color:#b1c9bc;border-left-color:#438265;background:#edf5ef;color:#315d49}.plan-flag[hidden]{display:none}.cycle-dialog{border:1px solid var(--line);border-radius:12px;padding:24px;width:560px;max-width:90vw;background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}.cycle-dialog::backdrop{background:#17251d66}.cycle-dialog h2{font:400 26px var(--serif);margin:0 0 14px}.cycle-dialog p{font-size:13px;line-height:1.6;margin:10px 0}.cycle-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.cycle-dialog input[type="file"]{display:block;width:100%;margin-top:14px}.plan-checks{display:grid;grid-template-columns:1fr auto;gap:10px 16px;padding:16px;background:var(--bg);border-radius:6px;font-size:13px}.plan-checks dt,.plan-checks dd{margin:0}.plan-checks dd{font-weight:600}.plan-warning{color:#8a5e1e}.plan-confirmation{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;margin-top:16px}.plan-stale{color:var(--bad);font-size:12px;margin-top:5px}
 
 .form{padding:6px 18px 14px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
@@ -676,7 +677,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </div>
 
   <div id="ob-runs" hidden><div id="runsT"></div></div>
-  <div id="ob-archive" hidden><p>Archiving hides a run from the active list; its data still feeds history.</p><div id="archiveT"></div></div>
+  <div id="ob-archive" hidden><p>Archived runs keep their results. Only settled snapshots feed later history.</p><div id="archiveT"></div></div>
   <div id="runLogPanel" class="panel" hidden>
     <div class="panel-h"><h2 id="runLogTitle">Run log</h2><button class="btn sm" id="closeRunLog">Close</button></div>
     <pre id="runLogSummary" style="white-space:pre-wrap;padding:18px"></pre>
@@ -685,6 +686,12 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 </section>
 
 <!-- REPORTS -->
+<dialog id="planDialog" class="cycle-dialog" aria-labelledby="planTitle">
+  <h2 id="planTitle"></h2>
+  <div id="planBody"></div>
+  <p id="planDialogError" role="alert" class="badc" hidden></p>
+  <div class="dialog-actions"><button class="btn" id="planCancel">Cancel</button><button class="btn primary" id="planConfirm">Continue</button></div>
+</dialog>
 <section class="view" id="v-reports">
   <div class="head">
     <div><h1 id="repName">total-batch-wise</h1><p class="lede"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></p></div>
@@ -715,6 +722,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
   </div>
 
+  <div id="planFlag" class="plan-flag" data-state="<!--PLAN_STATE-->" role="status"><!--PLAN_FLAG--></div>
   <div id="r-overview" hidden>
     <div class="panel overview-panel">
       <div class="panel-h"><div><div class="overview-heading"><h2>Stock by remaining shelf life</h2><details class="overview-info"><summary aria-label="About the overview charts">i</summary><p>Latest saved snapshot each month; gaps mean missing snapshots. The two charts share the available height equally and use separate, fixed scales: shorter RSL is stacked; risk overlaps from zero, never stacks. Qty shows amounts in the selected unit. % shows shorter-RSL stock divided by total stock and Exposure/LND divided by &gt;10M stock, using that month's selected-unit values. A zero or missing denominator leaves a gap. All four RSL percentages in the summary sum to 100% of total stock. Exposure/LND belong to &gt;10M and show both % of total and % of &gt;10M; do not add them to the RSL shares. Value tags inside each chart follow the inspected month; full category names and total stock are in the summary below. Hover or select a month to inspect it.</p></details></div><p id="overviewRange"></p></div><div class="overview-total" id="overviewTotal" aria-live="polite"></div></div>

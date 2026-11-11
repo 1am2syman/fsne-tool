@@ -3,7 +3,7 @@
 Each run lives in ``runs/RUN-0001/``::
 
     input/     the uploaded files under the names the queries look for
-    history/   symlinks to the shared history/ plus this run's own snapshot
+    history/   private copies of settled history plus this run's own snapshot
     output/    pipeline outputs
     data.json  dashboard data rendered with the shared current template
     meta.json  status, timings, detected report date
@@ -29,7 +29,12 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from openpyxl import Workbook
+from openpyxl.styles import Protection
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
+
+from .action_plans import STATUSES, ActionPlanCycle, decorate, previous_month
+from .errors import RunError
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNS_DIR = Path(os.environ.get("FSNE_RUNS_DIR", ROOT / "runs"))
@@ -47,10 +52,6 @@ SLOTS: dict[str, tuple[str, str, tuple[str, ...]]] = {
 MAX_UPLOAD = 1 << 30  # 1 GiB
 
 
-class RunError(Exception):
-    """A user-correctable problem, shown verbatim in the UI."""
-
-
 def _now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
 
@@ -63,6 +64,7 @@ class Store:
         self.history_dir = history_dir.resolve()
         self.dir.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
+        self.cycle = ActionPlanCycle(self)
         self.jobs: queue.Queue[str | None] = queue.Queue()
         self.process: subprocess.Popen | None = None
         self.process_run: str | None = None
@@ -70,6 +72,8 @@ class Store:
             if meta["status"] in {"queued", "running"}:
                 meta.update(status="bad", error="Interrupted: the server restarted during this run")
                 self._write(meta)
+            elif meta["status"] == "ok":
+                self._backfill_label_counts(meta)
         self.worker = threading.Thread(target=self._worker, daemon=True, name="fsne-runs")
         if start_worker:
             self.worker.start()
@@ -90,12 +94,27 @@ class Store:
         with self.lock:
             target = self.path(meta["id"]) / "meta.json"
             tmp = target.with_suffix(".tmp")
-            tmp.write_text(json.dumps(meta, indent=1))
+            record = {key: value for key, value in meta.items() if key not in {"view_label", "view_flag"}}
+            tmp.write_text(json.dumps(record, indent=1))
             tmp.replace(target)
+
+    def _backfill_label_counts(self, meta: dict) -> None:
+        summary = meta.get("summary") or {}
+        if {"mitigation_carried_batches", "mitigation_unlabelled_batches"} <= summary.keys():
+            return
+        snapshot = self.path(meta["id"]) / "history/snapshot.xlsx"
+        if not snapshot.is_file():
+            return
+        import polars as pl
+
+        statuses = pl.read_excel(snapshot, columns=["batch_index", "mitigation_status"], infer_schema_length=0)["mitigation_status"]
+        labelled = int(statuses.is_not_null().sum())
+        self.update(meta["id"], summary={**summary, "mitigation_carried_batches": labelled,
+                                        "mitigation_unlabelled_batches": len(statuses) - labelled})
 
     def get(self, run_id: str) -> dict:
         try:
-            return json.loads((self.path(run_id) / "meta.json").read_text())
+            return decorate(json.loads((self.path(run_id) / "meta.json").read_text()))
         except FileNotFoundError:
             raise RunError("Unknown run") from None
 
@@ -104,13 +123,13 @@ class Store:
             meta = self.get(run_id)
             meta.update(fields)
             self._write(meta)
-            return meta
+            return decorate(meta)
 
     def list(self) -> list[dict]:
         metas = []
         for p in sorted(self.dir.glob("RUN-*/meta.json"), reverse=True):
             try:
-                metas.append(json.loads(p.read_text()))
+                metas.append(decorate(json.loads(p.read_text())))
             except (OSError, ValueError):
                 continue
         return sorted(metas, key=lambda m: int(m["id"][4:]), reverse=True)
@@ -128,6 +147,7 @@ class Store:
                 "id": run_id,
                 "label": label.strip()[:80] or "Untitled run",
                 "status": "draft",
+                "plan_state": "provisional",
                 "step": None,
                 "created": _now(),
                 "started_by": started_by[:255] or "local",
@@ -228,7 +248,9 @@ class Store:
             self._write(meta)
             return meta
 
-    def start(self, run_id: str, label: str | None = None, started_by: str | None = None) -> dict:
+    def start(
+        self, run_id: str, label: str | None = None, started_by: str | None = None, *, override_unsettled: bool = False,
+    ) -> dict:
         with self.lock:
             meta = self.get(run_id)
             if meta["status"] != "draft":
@@ -238,6 +260,25 @@ class Store:
                 raise RunError("Missing files: " + ", ".join(missing))
             if not meta.get("report_date") or "config" not in meta["files"]:
                 raise RunError("Choose a report date or import a configuration workbook.")
+            by_date = history_by_date(self.history_paths())
+            prior_month = previous_month(meta["report_date"])
+            has_previous = any(dt[:7] == prior_month for dt in by_date)
+            if not has_previous and not override_unsettled:
+                raise RunError(f"Previous month {prior_month} has no settled history. Settle it first, or explicitly start without carried statuses.")
+            meta["history_override"] = not has_previous and override_unsettled
+            # Freeze the chosen sources at acceptance, before a queued run can
+            # race a settlement/reopen. Later changes flag this dependency.
+            sources = self.path(run_id) / "history-source"
+            sources.mkdir(exist_ok=True)
+            for old in sources.glob("*.xlsx"):
+                old.unlink()
+            dependencies = []
+            for dt, source in sorted(by_date.items()):
+                if dt[:7] >= meta["report_date"][:7]:
+                    continue
+                shutil.copyfile(source, sources / (dt + ".xlsx"))
+                dependencies.append({"report_date": dt, "source": str(source)})
+            meta["history_dependencies"] = dependencies
             if label is not None:
                 meta["label"] = label.strip()[:80] or "Untitled run"
             if started_by is not None:
@@ -271,6 +312,8 @@ class Store:
             if self.get(run_id)["status"] not in {"ok", "bad", "cancelled"}:
                 raise RunError("Only completed, failed or cancelled runs can be deleted")
             meta = self.get(run_id)
+            if meta["plan_state"] == "settled":
+                raise RunError("Reopen this settled month before deleting its run")
             try:
                 # Later runs must keep their own history after this source is deleted.
                 self._detach_history(run_id)
@@ -295,8 +338,20 @@ class Store:
                         shutil.copyfile(link, copy)
                         copy.replace(link)
 
+    def freeze_history_links(self, sources: list[Path]) -> None:
+        """Keep older runs readable when a shared export is replaced or removed."""
+        targets = {p.resolve() for p in sources}
+        for meta in self.list():
+            for folder in ("history", "history-source"):
+                for link in (self.path(meta["id"]) / folder).glob("*.xlsx"):
+                    if link.is_symlink() and link.resolve() in targets:
+                        with tempfile.TemporaryDirectory(dir=link.parent) as staging:
+                            copy = Path(staging) / link.name
+                            shutil.copyfile(link, copy)
+                            copy.replace(link)
+
     def action_plan_path(self, run_id: str) -> Path:
-        """Build older runs' export from their frozen private history, once."""
+        """Build or upgrade an older export from its frozen private history."""
         with self.lock:
             meta = self.get(run_id)
             if meta["status"] != "ok":
@@ -306,14 +361,16 @@ class Store:
                 self.update(run_id, run_date=started.astimezone().date().isoformat())
             run = self.path(run_id)
             target = run / "output" / "action_plan.xlsx"
-            if not target.exists():
+            if not target.exists() or meta.get("action_plan_format") != 2:
                 import polars as pl
 
                 parquet = run / "output" / "inferred_report.parquet"
                 if not parquet.is_file():
                     raise RunError("This run's source report is missing; calculate it again to export an action plan.")
                 paths = sorted((run / "history").glob("saved-*.xlsx"))
-                write_action_plan(pl.read_parquet(parquet), meta["report_date"], target, history_by_date(paths))
+                write_action_plan(pl.read_parquet(parquet), meta["report_date"], target,
+                                  {} if meta.get("history_override") else history_by_date(paths))
+                self.update(run_id, action_plan_format=2)
             return target
 
     def discard(self, run_id: str) -> None:
@@ -360,11 +417,6 @@ class Store:
                 with self.lock:
                     self._check_cancel(run_id)
                     self.update(run_id, status="ok", step=None, rows=rows, seconds=round(time.monotonic() - began))
-                    report_date = self.get(run_id)["report_date"]
-                    for other in self.list():
-                        if (other["id"] != run_id and other["status"] == "ok" and not other["archived"]
-                                and other.get("report_date") == report_date):
-                            self.update(other["id"], archived=_now())
             except Exception as exc:  # noqa: BLE001 - persist any pipeline failure and keep the worker alive
                 with self.lock:
                     meta = self.get(run_id)
@@ -429,14 +481,15 @@ class Store:
 
         self._step(run_id, 3, total, "saving this report as a snapshot")
         label_counts: dict[str, int] = {}
-        # Do not let a concurrent deletion remove a source between selecting
-        # the history files and installing this run's private history links.
+        # Snapshot construction and lifecycle changes share the lock; the
+        # sources themselves were frozen when Start run was accepted.
         with self.lock:
             rows = snapshot(
-                out / "inferred_report.parquet", report_date, hist, out / "action_plan.xlsx", self.history_paths(),
-                label_counts=label_counts,
+                out / "inferred_report.parquet", report_date, hist, out / "action_plan.xlsx",
+                sorted((run / "history-source").glob("*.xlsx")),
+                label_counts=label_counts, carry_labels=not self.get(run_id).get("history_override", False),
             )
-        self.update(run_id, summary={**self.get(run_id).get("summary", {}), **label_counts})
+        self.update(run_id, action_plan_format=2, summary={**self.get(run_id).get("summary", {}), **label_counts})
 
         self._step(run_id, 4, total, "building the stock-movement history")
         for query, name in (("movement_series", "movement_series"), ("movement_parents", "movement_parents")):
@@ -451,11 +504,11 @@ class Store:
         return rows
 
     def history_paths(self) -> list[Path]:
-        """Bundled history plus successful run snapshots, newest run wins on a repeated date."""
+        """Existing shared workbooks count as settled; only settled runs add history."""
         paths = sorted(self.history_dir.glob("*.xlsx"))
         paths.extend(
             self.path(m["id"]) / "history" / "snapshot.xlsx"
-            for m in reversed(self.list()) if m["status"] == "ok"
+            for m in reversed(self.list()) if m["status"] == "ok" and m["plan_state"] == "settled"
         )
         return paths
 
@@ -659,46 +712,61 @@ def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, 
     with tempfile.TemporaryDirectory(dir=target.parent) as staging:
         temporary = Path(staging) / target.name
         frame.write_excel(temporary, worksheet="Sheet1", float_precision=15)
+        # Excel protection is an editing aid. Uploads still discard every
+        # report column and validate identities independently.
+        from openpyxl import load_workbook
+        from openpyxl.utils import get_column_letter
+
+        workbook = load_workbook(temporary)
+        sheet = workbook.active
+        assert sheet is not None
+        for name in columns:
+            index = frame.columns.index(name) + 1
+            for row in sheet.iter_rows(min_row=2, min_col=index, max_col=index):
+                row[0].protection = Protection(locked=False)
+        status_column = get_column_letter(frame.columns.index("mitigation_status") + 1)
+        dropdown = DataValidation(type="list", formula1='"' + ','.join(STATUSES) + '"', allow_blank=True)
+        dropdown.errorTitle = "Choose a mitigation status"
+        dropdown.error = "Choose a value from the dropdown."
+        dropdown.showErrorMessage = True
+        dropdown.errorStyle = "stop"
+        sheet.add_data_validation(dropdown)
+        dropdown.add(f"{status_column}2:{status_column}{sheet.max_row}")
+        sheet.protection.sheet = True
+        sheet.protection.autoFilter = False
+        sheet.protection.selectLockedCells = False
+        sheet.protection.selectUnlockedCells = False
+        workbook.save(temporary)
+        workbook.close()
         temporary.replace(target)
 
 
 def snapshot(
     report_parquet: Path, report_date: str, hist_dir: Path, xlsx_out: Path, history_paths: list[Path],
-    *, label_counts: dict[str, int] | None = None,
+    *, label_counts: dict[str, int] | None = None, carry_labels: bool = True,
 ) -> int:
-    """Create a private as-of history and preserve matching manual labels.
+    """Freeze prior settled months and inherit only previous-calendar-month labels.
 
-    One saved snapshot per report date; later successful runs replace an earlier
-    version in this view. Future snapshots never leak into an older-period run.
-    Same-date labels match exact batches; new dates inherit the latest earlier
-    labels by movement batch key, without assigning a status to new batches.
+    The export uses exact batch identities; snapshot inheritance follows the
+    movement key. An explicit gap override leaves both kinds of labels empty.
     """
     import polars as pl
 
     frame = pl.read_parquet(report_parquet)
     if frame.is_empty():
         raise RunError("The uploaded files produced no stock rows")
-    by_date = {dt: path for dt, path in history_by_date(history_paths).items() if dt <= report_date}
-    write_action_plan(frame, report_date, xlsx_out, by_date)
+    by_date = {dt: path for dt, path in history_by_date(history_paths).items() if dt[:7] < report_date[:7]}
+    write_action_plan(frame, report_date, xlsx_out, by_date if carry_labels else {})
     epoch = pl.lit(date(1899, 12, 30))
     saved = frame.with_columns(
         (epoch + pl.duration(days=pl.col(c))).cast(pl.Date).alias(c) for c in ("report_date", "Expiry Date")
     )
     manual = {"mitigation_status": "mitigation_status_category", "action_plan": "action_plan_remarks"}
-    same_date = report_date in by_date
-    if same_date:
-        same = pl.read_excel(by_date.pop(report_date), sheet_id=1, infer_schema_length=0)
-        labels = same.select(
-            "batch_index", *[
-                pl.col(c if c in same.columns else legacy).cast(pl.String).alias(c)
-                for c, legacy in manual.items()
-            ]
-        )
-        saved = saved.join(labels, on="batch_index", how="left", validate="1:1", maintain_order="left")
-    elif by_date:
+    candidates = [dt for dt in by_date if dt[:7] == previous_month(report_date)] if carry_labels else []
+    if candidates:
         from src.movement import KEY, batch_key
 
-        previous = pl.read_excel(by_date[max(by_date)], sheet_id=1, infer_schema_length=0)
+        previous = pl.read_excel(by_date[max(candidates)], sheet_id=1, infer_schema_length=0)
         labels = previous.select(
             batch_key(), *[
                 pl.col(c if c in previous.columns else legacy).cast(pl.String).alias(c)
@@ -713,13 +781,13 @@ def snapshot(
     if label_counts is not None:
         labelled = saved["mitigation_status"].is_not_null().sum()
         label_counts.update(
-            mitigation_carried_batches=int(labelled) if not same_date else 0,
+            mitigation_carried_batches=int(labelled),
             mitigation_unlabelled_batches=saved.height - int(labelled),
         )
     hist_dir.mkdir(parents=True, exist_ok=True)
     for old in hist_dir.iterdir():
         old.unlink()
     for i, (_, path) in enumerate(sorted(by_date.items())):
-        link_history(hist_dir / f"saved-{i:04d}.xlsx", path.resolve())
+        shutil.copyfile(path, hist_dir / f"saved-{i:04d}.xlsx")
     saved.write_excel(hist_dir / "snapshot.xlsx", worksheet="Sheet1", float_precision=15)
     return frame.height

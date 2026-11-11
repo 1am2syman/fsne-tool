@@ -8,10 +8,15 @@ Every URL is relative to the page, so the app works under a path prefix such as
     POST   api/runs                   {"label", "archive_previous"} -> new draft run
     PUT    api/runs/<id>/files/<slot> raw body, X-Filename header
     POST   api/runs/<id>/config       {"report_date", "label"?} -> saved form configuration
-    POST   api/runs/<id>/start        queue the run
+    POST   api/runs/<id>/start        queue the run; explicit override_unsettled for a history gap
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
-    GET    api/runs/<id>/report.xlsx  the report with four action-plan columns
+    GET    api/runs/<id>/report.xlsx  protected action plan input workbook
+    PUT    api/runs/<id>/action-plan/check  returned workbook -> counts + acceptance token
+    POST   api/runs/<id>/action-plan/accept  {"token"} -> rebuild downstream view
+    GET    api/runs/<id>/settlement-check   month, batches and blank statuses
+    POST   api/runs/<id>/settle       confirmed local history export + commit
+    POST   api/runs/<id>/reopen       confirmed export removal + dependent invalidation
     POST   api/runs/<id>/discard      delete an unstarted run (failed upload)
     POST   api/runs/<id>/archive      /restore
     GET    api/slots                  the file slots
@@ -145,6 +150,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             payload = run / "data.json"
             legacy = run / "index.html"
             with store.lock:
+                meta = store.get(run_id)
                 if not payload.exists() and legacy.exists():
                     try:
                         data = extract_legacy(legacy.read_text())
@@ -187,7 +193,24 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     run_id, str(body.get("report_date", "")), str(body["label"]) if "label" in body else None,
                 ))
             if rest == "start" and method == "POST":
-                return self._json(store.start(run_id, str(body["label"]) if "label" in body else None, self._user()))
+                return self._json(store.start(
+                    run_id, str(body["label"]) if "label" in body else None, self._user(),
+                    override_unsettled=body.get("override_unsettled") is True,
+                ))
+            if rest == "action-plan/check" and method == "PUT":
+                return self._json(store.cycle.check(
+                    run_id, unquote(self.headers.get("X-Filename", "")), self.rfile,
+                    _length(self.headers.get("Content-Length")),
+                ))
+            if rest == "action-plan/accept" and method == "POST":
+                return self._json(store.cycle.accept(run_id, str(body.get("token", "")), self._user()))
+            if rest == "settlement-check" and method == "GET":
+                with store.lock:
+                    return self._json(store.cycle.settlement_check(run_id))
+            if rest == "settle" and method == "POST":
+                return self._json(store.cycle.settle(run_id, body, self._user()))
+            if rest == "reopen" and method == "POST":
+                return self._json(store.cycle.reopen(run_id, body.get("confirm") is True, self._user()))
             if rest == "cancel" and method == "POST":
                 return self._json(store.cancel(run_id))
             if rest == "delete" and method == "POST":
