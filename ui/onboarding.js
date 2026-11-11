@@ -212,18 +212,215 @@
     el.ondragleave = () => el.classList.remove('over');
     el.ondrop = e => {e.preventDefault(); el.classList.remove('over'); choose(e.dataTransfer.files[0]);};
   });
-  const status = {draft: ['s-idle', 'Incomplete upload'], queued: ['s-idle', 'Queued'], running: ['s-run', 'Running'], ok: ['s-ok', 'Completed'], bad: ['s-bad', 'Failed'], cancelled: ['s-idle', 'Cancelled']};
+  /* ---- Runs and archive: each run renders as the stub of the ticket issued in Setup. ---- */
+  const ICON = {
+    open: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>',
+    download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14"/></svg>',
+    upload: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19h14"/></svg>',
+    settle: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    reopen: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>',
+    log: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4v13H7zM14 3.5v4h4M10 12h5m-5 4h5"/></svg>',
+    archive: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="4.5" rx="1"/><path d="M5.5 9v10.5h13V9M10 13h4"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M10 7V4.5h4V7M6.5 7l1 13h9l1-13"/></svg>',
+    stop: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17v.2"/></svg>',
+  };
+  /** Local day of an ISO timestamp, with the year only when it is not the current one. */
+  const shortDate = value => {
+    const day = new Date(value);
+    return day.toLocaleDateString('en-GB', {day: 'numeric', month: 'short', ...(day.getFullYear() === new Date().getFullYear() ? {} : {year: 'numeric'})});
+  };
+  const stamp = value => new Date(value).toLocaleString('en-GB', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'});
+  const monthText = month => new Date(month + '-01T00:00:00Z').toLocaleDateString('en-GB', {month: 'long', year: 'numeric', timeZone: 'UTC'});
+  const duration = seconds => seconds < 60 ? seconds + ' s' : Math.floor(seconds / 60) + ' min' + (seconds % 60 ? ' ' + seconds % 60 + ' s' : '');
+  const elapsed = iso => duration(Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000)));
+  const plural = (n, one, many = one + 's') => f(n) + ' ' + (n === 1 ? one : many);
+  const millions = n => Math.abs(n / 1e6).toLocaleString('en-GB', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M';
+  const sentence = text => text ? text[0].toUpperCase() + text.slice(1) : '';
 
   function resultsUrl(id) {
     return basePath + '?run=' + encodeURIComponent(id) + '#results';
   }
-  function actions(r) {
-    const settled = r.plan_state === 'settled';
-    return '<div class="run-actions">' + (r.status === 'ok' ? `<a class="btn sm" data-open="${r.id}" href="${esc(resultsUrl(r.id))}">${esc(r.view_label)}</a><a class="btn sm ghost" href="${apiUrl('runs/' + r.id + '/report.xlsx')}" download>Action plan input file</a>` +
-      (settled ? `<button class="btn sm" data-reopen="${r.id}">Reopen</button>` : r.out_of_date ? '' : `<button class="btn sm" data-plan="${r.id}">Upload action plan</button><button class="btn sm" data-settle="${r.id}">Settle month</button>`) : '') +
-      `<button class="btn sm ghost" data-log="${r.id}">Log</button> ` +
-      (['running', 'queued'].includes(r.status) ? `<button class="btn sm ghost" data-cancel="${r.id}">Cancel</button>` : `<button class="btn sm ghost" data-archive="${r.id}" data-value="${!r.archived}">${r.archived ? 'Restore' : 'Archive'}</button>`) +
-      (['ok','bad','cancelled'].includes(r.status) && !settled ? ` <button class="btn sm ghost" data-delete="${r.id}">Delete</button>` : '') + '</div>';
+  /** Row and pane status for one run, from its stored lifecycle facts: [badge class, text]. */
+  function runState(r) {
+    switch (r.status) {
+      case 'draft': return ['', 'Draft'];
+      case 'queued': return ['', 'Queued'];
+      case 'running': {
+        const step = /^Step (\d+) of (\d+)/.exec(r.step || '');
+        return ['is-run', step ? `Step ${step[1]} of ${step[2]}` : 'Running'];
+      }
+      case 'bad': return ['is-bad', 'Failed'];
+      case 'cancelled': return ['', 'Cancelled'];
+    }
+    if (r.plan_state === 'settled') return r.settlement?.commit?.ok ? ['is-ok', 'Settled'] : ['is-warn', 'Not committed'];
+    if (r.superseded_by) return ['', 'Replaced by ' + r.superseded_by];
+    if (r.out_of_date) return ['is-warn', 'Out of date'];
+    // Archived runs are set aside: describe them, do not nudge.
+    if (r.archived) return ['', r.plan_upload ? 'Plan returned' : 'Pre-action plan'];
+    return r.plan_upload ? ['is-next', 'Ready to settle'] : ['', 'Awaiting plan'];
+  }
+  /** A report month's headline from all of its runs, active and archived: [node, badge class, badge, note HTML].
+   *  The archive only reports whether the month is in history; next steps belong to the Runs tab. */
+  function monthState(month, monthRuns, tab) {
+    const id = run => `<span class="run-id-text">${esc(run.id)}</span>`;
+    if (!month) return ['todo', '', 'No report date', 'Drafts without a report date yet.'];
+    const settled = monthRuns.find(r => r.plan_state === 'settled');
+    if (settled) {
+      return settled.settlement?.commit?.ok ? ['done', 'is-ok', 'Settled', `In history from ${id(settled)}.`]
+        : ['warn', 'is-warn', 'Not committed', `Settled from ${id(settled)}, but the local history commit failed.`];
+    }
+    if (tab === 'archive') return ['todo', '', 'Not settled', 'Not in history yet.'];
+    const current = monthRuns.filter(r => r.status === 'ok' && !r.out_of_date && !r.archived);
+    const others = current.length > 1 ? ' Settling archives the month’s other runs.' : '';
+    const planned = current.find(r => r.plan_upload);
+    if (planned) return ['current', 'is-next', 'Ready to settle', `Settle ${id(planned)} to put this month in history.` + others];
+    if (current.length) return ['current', '', 'Awaiting plan', `Send ${id(current[0])}’s input file to sales, then upload what they return.` + others];
+    if (monthRuns.some(r => ['queued', 'running'].includes(r.status))) return ['todo', 'is-run', 'Calculating', 'Not in history yet.'];
+    return ['todo', '', 'Not settled', 'No completed run for this month yet.'];
+  }
+  /** One step of the action plan cycle in the pane. `meta` holds escaped HTML lines. */
+  function runStep(state, name, meta, actions = '') {
+    const spoken = {done: 'done', current: 'next step', todo: 'not started', warn: 'needs attention', skipped: 'skipped', locked: 'locked'}[state];
+    return `<li class="is-${state}"><span class="run-node" aria-hidden="true"></span><div><b>${name}</b>${state === 'current' ? '<em aria-hidden="true">Next</em>' : ''}<span class="sr-only">, ${spoken}</span>`
+      + `${meta.filter(Boolean).map(line => `<p>${line}</p>`).join('')}${actions ? `<div class="run-step-actions">${actions}</div>` : ''}</div></li>`;
+  }
+  /** Calculated → action plan returned → month settled, with each action on the step it advances. */
+  function runSteps(r) {
+    const id = esc(r.id), plan = r.plan_upload, settlement = r.settlement || {};
+    const settled = r.plan_state === 'settled', locked = !!r.out_of_date && !settled;
+    const inputFile = `<a class="btn run-btn" href="${esc(apiUrl('runs/' + r.id + '/report.xlsx'))}" download>${ICON.download}Action plan input file</a>`;
+    const upload = settled || locked ? '' : `<button type="button" class="btn run-btn" data-plan="${id}"${plan ? ' title="Uploading again replaces the earlier plan"' : ''}>${ICON.upload}${plan ? 'Replace plan' : 'Upload action plan'}</button>`;
+    const calculated = runStep('done', 'Calculated', [esc(shortDate(r.started || r.created)) + (r.seconds == null ? '' : ' · took ' + duration(r.seconds))]);
+    let returned;
+    if (plan) returned = runStep('done', 'Action plan returned', [`${esc(shortDate(plan.time))} · ${esc(plan.uploader || 'local')}`, `<span class="run-file" title="${esc(plan.filename)}">${esc(plan.filename)}</span>`], inputFile + upload);
+    else if (settled) returned = runStep('skipped', 'Action plan returned', ['Skipped: settled with carried-over statuses'], inputFile);
+    else if (locked) returned = runStep('locked', 'Action plan returned', ['Locked while this run is out of date'], inputFile);
+    else returned = runStep('current', 'Action plan returned', ['Send the input file to sales, then upload the file they return.'], inputFile + upload);
+    let close;
+    if (settled) {
+      const committed = settlement.commit?.ok;
+      close = runStep(committed ? 'done' : 'warn', 'Month settled', [
+        `${esc(shortDate(settlement.time))} · history/${esc(settlement.history_file)}`,
+        committed ? 'Committed locally' : `<span class="run-warn" title="${esc(settlement.commit?.error || '')}">Settled, not committed</span>`,
+      ], `<button type="button" class="btn run-btn" data-reopen="${id}">${ICON.reopen}Reopen</button>`);
+    } else if (locked) {
+      close = runStep('locked', 'Month settled', ['Calculate a new run to settle this month.']);
+    } else {
+      const reopened = r.reopened ? `Reopened ${esc(shortDate(r.reopened.time))}` + (r.reopened.commit?.ok ? '' : ` · <span class="run-warn" title="${esc(r.reopened.commit?.error || '')}">history removal not committed</span>`) : '';
+      close = runStep(plan ? 'current' : 'todo', 'Month settled', [reopened, plan ? 'Publishes this snapshot to history.' : 'Settling without a returned plan keeps carried-over statuses.'],
+        `<button type="button" class="btn run-btn" data-settle="${id}">${ICON.settle}Settle month</button>`);
+    }
+    return `<ol class="run-steps" aria-label="Action plan cycle for ${id}">${calculated}${returned}${close}</ol>`;
+  }
+  /** The figures a completed run produced. Older runs show only what they recorded. */
+  function runFacts(r) {
+    const s = r.summary || {}, checks = r.plan_upload?.checks;
+    const missing = '<dd class="is-missing" title="Not recorded for this run">—</dd>';
+    const fact = (label, dd, help = '') => `<dt${help ? ` title="${esc(help)}"` : ''}>${label}</dt>${dd ?? missing}`;
+    const change = n => {
+      if (n == null || !s.previous_report_date) return '';
+      return `<small class="${n > 0 ? 'up' : n < 0 ? 'down' : ''}">${n > 0 ? '+' : n < 0 ? '−' : '±'}${millions(n)}</small>`;
+    };
+    const money = (value, delta) => value == null ? null : `<dd>${millions(value)} BDT${change(delta)}</dd>`;
+    let statuses = null;
+    if (checks) statuses = `<dd>${f(checks.batches_matched - checks.blank_statuses)} filled<span>${f(checks.blank_statuses)} blank · ${f(checks.unrecognised_statuses)} unrecognised</span></dd>`;
+    else if (s.mitigation_carried_batches != null) statuses = `<dd>${f(s.mitigation_carried_batches)} carried<span>${f(s.mitigation_unlabelled_batches)} new, unlabelled</span></dd>`;
+    let gaps = null;
+    if (s.materials_missing_hierarchy != null) {
+      const found = [s.materials_missing_hierarchy ? plural(s.materials_missing_hierarchy, 'unmapped material') : '', s.batches_missing_value ? plural(s.batches_missing_value, 'unvalued batch', 'unvalued batches') : ''].filter(Boolean);
+      gaps = `<dd class="is-text">${found.join(' · ') || 'None found'}${s.winsorized_months == null ? '' : `<span>${plural(s.winsorized_months, 'sales month')} capped</span>`}</dd>`;
+    }
+    const note = s.previous_report_date && (s.stock_change_bdt != null || s.exposure_change_bdt != null) ? `<p class="run-facts-note">Changes are against the ${esc(dateText(s.previous_report_date))} report.</p>` : '';
+    return `<dl class="run-facts">${fact('Batches', r.rows == null ? null : `<dd>${f(r.rows)}</dd>`)}${fact('Closing stock', money(s.total_closing_stock_bdt, s.stock_change_bdt))}`
+      + `${fact('Exposure', money(s.exposure_bdt, s.exposure_change_bdt))}${fact(checks ? 'Returned statuses' : 'Statuses', statuses)}`
+      + `${fact('Data gaps', gaps, 'Materials missing from the product hierarchy, batches without a DB Landing value, and sales months capped as outliers')}</dl>${note}`;
+  }
+  function runProgress(r) {
+    const step = /^Step (\d+) of (\d+): (.*)$/.exec(r.step || '');
+    const [n, total, text] = step ? [Number(step[1]), Number(step[2]), step[3]] : [0, 5, r.step || runState(r)[1]];
+    const done = r.status === 'running' ? n - 1 : 0, median = medianSeconds();
+    const segments = Array.from({length: total}, (_, i) => `<i class="${i < done ? 'on' : i === done && step && r.status === 'running' ? 'now' : ''}"></i>`).join('');
+    return `<div class="run-progress"><div class="run-progress-line">${step ? `<b>Step ${n} of ${total}</b>` : ''}<span>${esc(sentence(text))}</span>`
+      + `${r.status === 'running' && r.started ? `<span class="run-elapsed"><span data-since="${esc(r.started)}">${elapsed(r.started)}</span> elapsed</span>` : ''}</div>`
+      + `<div class="run-segs" role="progressbar" aria-label="Pipeline steps finished" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${Math.max(0, done)}">${segments}</div>`
+      + `${median == null ? '' : `<p>A run usually takes about ${Math.max(1, Math.round(median / 60))} min.</p>`}</div>`;
+  }
+  function runDraft(r) {
+    const have = requiredSlots.filter(([slot]) => r.files?.[slot]).length;
+    return `<div class="run-progress"><div class="run-progress-line"><b>${have} of ${requiredSlots.length} source files</b><span>${r.report_date ? 'Report date set' : 'No report date yet'}</span></div>`
+      + `<div class="run-segs" aria-hidden="true">${requiredSlots.map(([slot]) => `<i class="${r.files?.[slot] ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  }
+  function runNotices(r) {
+    const notes = [];
+    if (r.out_of_date && r.plan_state !== 'settled') notes.push(['warn', monthText(r.out_of_date.month) + ' was reopened after this run used it. Calculate a new run for current figures.']);
+    if (r.history_override) notes.push(['info', 'Started without last month’s settled history: last-month columns are empty and no statuses carried over.']);
+    return notes.map(([kind, text]) => `<p class="run-notice is-${kind}">${ICON.alert}<span>${esc(text)}</span></p>`).join('');
+  }
+  function runBody(r) {
+    switch (r.status) {
+      case 'ok': return runSteps(r) + runFacts(r);
+      case 'bad': return `<div class="run-failure">${ICON.alert}<div><b>Run failed</b><p>${esc(r.error || 'The run stopped without an error message. Its log has the details.')}</p></div></div>`;
+      case 'cancelled': return '<p class="run-quiet">Cancelled before it finished.</p>';
+      case 'draft': return runDraft(r);
+      default: return runProgress(r);
+    }
+  }
+  /** The pane's one way into the run, then housekeeping. Each data-* hook appears once. */
+  function runPaneActions(r) {
+    const id = esc(r.id), live = ['running', 'queued'].includes(r.status);
+    let lead = '';
+    if (r.status === 'ok') lead = `<a class="btn run-open" data-open="${id}" href="${esc(resultsUrl(r.id))}">${esc(r.view_label)}${ICON.open}</a>`;
+    else if (r.status === 'bad') lead = `<button type="button" class="btn run-open is-outline" data-log="${id}">${ICON.log}View log</button>`;
+    else if (live) lead = `<button type="button" class="btn run-open is-outline is-stop" data-cancel="${id}"${r.cancel_requested ? ' disabled' : ''}>${ICON.stop}Cancel run</button>`;
+    else if (r.status === 'draft' && !r.archived && draft?.id === r.id) lead = `<button type="button" class="btn run-open is-outline" data-resume>Continue in Setup${ICON.open}</button>`;
+    const house = [
+      r.status === 'bad' ? '' : `<button type="button" class="btn" data-log="${id}">${ICON.log}Log</button>`,
+      live ? '' : `<button type="button" class="btn" data-archive="${id}" data-value="${!r.archived}">${ICON.archive}${r.archived ? 'Restore' : 'Archive'}</button>`,
+      ['ok', 'bad', 'cancelled'].includes(r.status) && r.plan_state !== 'settled' ? `<button type="button" class="btn is-danger" data-delete="${id}">${ICON.trash}Delete</button>` : '',
+    ].join('');
+    return [lead, house ? `<div class="run-house">${house}</div>` : ''];
+  }
+  function runPane(r, paneId) {
+    const [badgeClass, badge] = runState(r), [lead, house] = runPaneActions(r);
+    const by = esc(r.started_by || 'local') + ' · ' + (r.status === 'draft' ? 'draft created ' + esc(stamp(r.created)) : 'started ' + esc(stamp(r.started || r.created)))
+      + (r.archived ? ' · archived ' + esc(shortDate(r.archived)) : '');
+    return `<section class="run-pane${r.archived ? ' is-archived' : ''}" id="${paneId}" aria-label="Selected run ${esc(r.id)}"><div class="run-pane-top">`
+      + `<p class="run-pane-date${r.report_date ? '' : ' empty'}"><span class="sr-only">Stock snapshot date </span>${esc(stampText(r.report_date))}</p><p class="run-pane-eyebrow">${esc(r.id)}</p></div>`
+      + `<h2>${esc(r.label)}</h2><p class="run-pane-by">${by}</p>${r.status === 'ok' ? '' : `<p style="margin-top:12px"><span class="run-badge ${badgeClass}">${esc(badge)}</span></p>`}`
+      + `${lead}${runNotices(r)}${runBody(r)}${house}</section>`;
+  }
+  function runRow(r, selectedId, paneId, fresh) {
+    const [badgeClass, badge] = runState(r), s = r.summary || {};
+    let figure = '';
+    if (s.total_closing_stock_bdt != null) figure = `${millions(s.total_closing_stock_bdt)} BDT<small>closing stock</small>`;
+    else if (r.rows != null) figure = `${f(r.rows)}<small>batches</small>`;
+    const quiet = r.superseded_by || ['cancelled', 'draft'].includes(r.status);
+    return `<button type="button" class="run-row${quiet ? ' is-quiet' : ''}${fresh ? ' is-new' : ''}" data-select="${esc(r.id)}" aria-current="${r.id === selectedId}" aria-controls="${paneId}">`
+      + `<span><b>${esc(r.label)}</b><span class="run-row-by"><span>${esc(r.id)}</span> · ${esc(r.started_by || 'local')} · ${r.status === 'draft' ? 'draft' : 'started'} ${esc(shortDate(r.started || r.created))}</span></span>`
+      + `<span class="run-badge ${badgeClass}">${esc(badge)}</span><span class="run-row-fig">${figure}</span></button>`;
+  }
+  /** Report months newest first, with undated drafts on top; runs keep their newest-first order. */
+  function byMonth(list) {
+    const months = new Map();
+    for (const r of list) {
+      const month = r.report_date?.slice(0, 7) || '';
+      if (!months.has(month)) months.set(month, []);
+      months.get(month).push(r);
+    }
+    return [...months].sort(([a], [b]) => (a === '' ? -1 : b === '' ? 1 : b.localeCompare(a)));
+  }
+  function runLedger(list, tab, fresh) {
+    const paneId = 'runPane-' + tab, selectedId = selectedRun[tab];
+    const months = byMonth(list).map(([month, monthRuns]) => {
+      const [node, badgeClass, badge, note] = monthState(month, runs.filter(r => (r.report_date?.slice(0, 7) || '') === month), tab);
+      const title = month ? `${MONTHS[Number(month.slice(5, 7)) - 1][0]}${MONTHS[Number(month.slice(5, 7)) - 1].slice(1).toLowerCase()}<small>${month.slice(0, 4)}</small>` : '—<small>NO DATE</small>';
+      return `<section class="run-month is-${node}" aria-label="${month ? esc(monthText(month)) : 'No report date'}"><div class="run-gutter is-${node}"><span class="run-node" aria-hidden="true"></span><h3>${title}</h3>`
+        + `<span class="run-badge ${badgeClass}">${esc(badge)}</span><p>${note}</p></div>`
+        + `<div class="run-rows">${monthRuns.map(r => runRow(r, selectedId, paneId, fresh.has(r.id))).join('')}</div></section>`;
+    }).join('');
+    const selected = list.find(r => r.id === selectedId);
+    return `<div class="run-ledger"><div class="run-months">${months}</div>${selected ? runPane(selected, paneId) : ''}</div>`;
   }
   function cycleDialog(title, content, label, action) {
     const dialog = $('#planDialog');
@@ -292,43 +489,82 @@
       await cycleDone(meta, id + ' reopened' + (!meta.reopened.commit.ok ? ' · history removal not committed' : ''));
     });
   }
-  function progress(r) {
-    if (r.status === 'ok') return r.plan_state === 'settled' && !r.settlement?.commit?.ok ? 'settled, not committed' : r.view_label;
-    if (r.status !== 'running') return r.step || status[r.status][1];
-    const elapsed = r.started ? Math.max(0, Math.floor((Date.now() - Date.parse(r.started)) / 1000)) : 0;
-    const median = medianSeconds();
-    return (r.step || 'Running') + ' · ' + elapsed + ' s elapsed' + (median == null ? '' : ' · typical ' + median + ' s');
+  /** Log drawer steps, read from the pipeline's own step markers. A failure is attached to the step it stopped at. */
+  function logSteps(raw, run) {
+    const steps = [...raw.matchAll(/^=== Step (\d+) of (\d+): (.*?) ===$/gm)];
+    const failed = run?.status === 'bad', items = steps.map((m, i) => {
+      const last = i === steps.length - 1;
+      const state = !last || run?.status === 'ok' ? 'done' : failed ? 'bad' : run?.status === 'running' ? 'current' : 'skipped';
+      return `<li class="is-${state}"><span class="run-node" aria-hidden="true"></span><div><b>Step ${m[1]} of ${m[2]}</b><p>${esc(sentence(m[3]))}</p>${last && failed && run.error ? `<p>${esc(run.error)}</p>` : ''}</div></li>`;
+    });
+    if (!steps.length && run?.error) items.push(`<li class="is-bad"><span class="run-node" aria-hidden="true"></span><div><b>Error</b><p>${esc(run.error)}</p></div></li>`);
+    return items.join('') || '<li class="run-log-empty">No pipeline steps have run yet.</li>';
   }
-  function summary(r) {
-    const s = r.summary;
-    if (!s || s.total_closing_stock_bdt == null) return '—';
-    const money = n => n == null ? '—' : (n < 0 ? '−' : '') + Math.abs(n / 1e6).toLocaleString('en-GB', {minimumFractionDigits: 1, maximumFractionDigits: 1}) + 'M BDT';
-    const val = n => n == null ? '—' : Number(n).toLocaleString('en-GB');
-    return `<details data-summary="${r.id}"><summary>View summary</summary><div>Stock: ${money(s.total_closing_stock_bdt)} · exposure: ${money(s.exposure_bdt)}<br>Previous report: ${esc(dateText(s.previous_report_date))}<br>Stock change: ${money(s.stock_change_bdt)} · exposure change: ${money(s.exposure_change_bdt)}<br>Materials missing hierarchy: ${val(s.materials_missing_hierarchy)} · batches missing a stock value: ${val(s.batches_missing_value)}<br>Sales months capped: ${val(s.winsorized_months)} · carried labels: ${val(s.mitigation_carried_batches)} · unlabelled batches: ${val(s.mitigation_unlabelled_batches)}</div></details>`;
+  async function openLog(button) {
+    const id = button.dataset.log;
+    try {
+      const response = await fetch(apiUrl('runs/' + id + '/log'), {cache:'no-store'});
+      if (!response.ok) throw new Error('Could not load the run log');
+      const raw = await response.text();
+      const run = runs.find(r => r.id === id);
+      $('#runLogRun').textContent = id + (run ? ' · ' + run.label : '');
+      $('#runLogSummary').html = logSteps(raw, run);
+      $('#runLog').textContent = raw || 'No technical details yet.';
+      if (!$('#runLogPanel').open) $('#runLogPanel').showModal();
+    } catch (e) {error(e.message);}
   }
-  const columns = [
-    {k:'id',h:'Run',r:r=>r.id,cls:'mono'},
-    {k:'label',h:'Label',r:r=>`${esc(r.label)}<div class="run-secondary">${esc(r.started_by || 'local')}${r.seconds == null ? '' : ' · ' + r.seconds + ' s'}</div>`,cls:'name'},
-    {k:'report_date',h:'Report date',r:r=>dateText(r.report_date),cls:'dim'},
-    {k:'rows',h:'Batches',num:1,r:r=>r.rows == null ? '—' : f(r.rows)},
-    {k:'summary',h:'Summary',r:summary},
-    {k:'status',h:'Status',r:r=>`<span class="dot ${status[r.status][0]}">${esc(progress(r))}</span>${r.out_of_date ? `<div class="plan-stale">Out of date · ${esc(r.out_of_date.month)} reopened</div>` : ''}${r.reopened && !r.reopened.commit.ok ? '<div class="plan-stale">History removal not committed</div>' : ''}${r.error ? `<div class="badc">${esc(r.error)}</div>` : ''}`},
-    {k:'actions',h:'Results and actions',r:actions},
-  ];
+  $('#closeRunLog').onclick = () => $('#runLogPanel').close();
+  $('#runLogPanel').addEventListener('click', e => {if (e.target === e.currentTarget) e.currentTarget.close();});
+
+  // Polling redraws only when a run or the selection changed, so focus and scroll survive.
+  let drawnKey = '', drawnIds = null;
+  const selectedRun = {runs: null, archive: null};
+  const FOCUS_KEYS = ['select', 'open', 'plan', 'settle', 'reopen', 'log', 'archive', 'delete', 'cancel'];
+  /** Selector that finds the focused run control again after a redraw, or null. */
+  function focusTarget(el) {
+    const list = el?.closest?.('#runsT, #archiveT');
+    if (!list) return null;
+    const name = FOCUS_KEYS.find(k => el.dataset[k] != null);
+    return name ? `#${list.id} [data-${name}="${CSS.escape(el.dataset[name])}"]` : null;
+  }
+  /** Keep each tab's selection. A run that just appeared is selected so its progress is in view;
+   *  otherwise start on a run in flight, then one waiting for its action plan or settlement. */
+  function keepSelection(tab, list, fresh) {
+    const arrived = list.find(r => fresh.has(r.id));
+    if (arrived) {selectedRun[tab] = arrived.id; return;}
+    if (list.some(r => r.id === selectedRun[tab])) return;
+    const pending = list.find(r => ['running', 'queued'].includes(r.status))
+      || list.find(r => r.status === 'ok' && r.plan_state !== 'settled' && !r.out_of_date && !r.superseded_by);
+    selectedRun[tab] = (pending || list[0])?.id ?? null;
+  }
   function drawRuns() {
     const active = runs.filter(r => !r.archived), archived = runs.filter(r => r.archived);
-    function renderList(target, rows, empty) {
-      $(target).html = rows.length ? `<div class="runs-scroll"><table class="runs-table"><thead><tr>${columns.map(c=>`<th scope="col">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${columns.map(c=>`<td>${c.r(r)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : `<p>${empty}</p>`;
-    }
-    const openSummaries = new Set($$('[data-summary][open]').map(el => el.dataset.summary));
-    renderList('#runsT', active, 'No runs yet. Set a report date, upload three source files and choose Start run.');
-    renderList('#archiveT', archived, 'Archived runs appear here. Only settled snapshots feed later history.');
-    $$('[data-summary]').forEach(el => {el.open = openSummaries.has(el.dataset.summary);});
+    const fresh = new Set(drawnIds ? runs.filter(r => !drawnIds.has(r.id)).map(r => r.id) : []);
+    keepSelection('runs', active, fresh);
+    keepSelection('archive', archived, fresh);
+    const key = JSON.stringify([online, draft?.id ?? null, runs, selectedRun]);
+    if (key === drawnKey) return;
+    drawnKey = key;
+    drawnIds = new Set(runs.map(r => r.id));
+    const refocus = focusTarget(document.activeElement);
+    const empty = (title, text, action = '') => `<div class="runs-empty"><span class="runs-empty-stub" aria-hidden="true"><b>DD</b><b>MMM</b><small>YYYY</small></span><div><b>${title}</b><p>${text}</p>${action}</div></div>`;
+    $('#runsT').html = active.length ? runLedger(active, 'runs', fresh) : online
+      ? empty('No runs yet', 'Set a report date, upload three source files and choose Start run.', `<button type="button" class="btn run-btn" data-goto-setup>Go to Setup${ICON.open}</button>`)
+      : empty('Runs live in the app', 'Open the live app to see each run and move it through the month.');
+    $('#archiveT').html = archived.length ? runLedger(archived, 'archive', fresh)
+      : empty('Nothing archived', 'Archive a run from its panel to set it aside. It keeps its results.');
+    if (refocus) $(refocus)?.focus({preventScroll: true});
     $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
     const newest = runs.find(r => r.status !== 'draft');
     document.title = running ? 'Running · FSNE' : newest?.status === 'ok' ? 'Done · FSNE' : 'FSNE';
+    $$('[data-select]').forEach(b => b.onclick = () => {
+      const tab = b.closest('#archiveT') ? 'archive' : 'runs', id = b.dataset.select;
+      selectedRun[tab] = id;
+      drawRuns();
+      $(`#${tab === 'runs' ? 'runsT' : 'archiveT'} [data-select="${CSS.escape(id)}"]`)?.focus({preventScroll: true});
+    });
     $$('[data-plan]').forEach(b => b.onclick = () => uploadPlan(b.dataset.plan));
     $$('[data-settle]').forEach(b => b.onclick = () => settleMonth(b.dataset.settle));
     $$('[data-reopen]').forEach(b => b.onclick = () => reopenMonth(b.dataset.reopen));
@@ -345,22 +581,23 @@
       if (!confirm('Delete this run and its files? Later runs may have used it as history.')) return;
       try {await post('runs/' + b.dataset.delete + '/delete'); await refresh();} catch (e) {error(e.message);}
     });
-    $$('[data-log]').forEach(b => b.onclick = async () => {
-      try {
-        const response = await fetch(apiUrl('runs/' + b.dataset.log + '/log'), {cache:'no-store'});
-        if (!response.ok) throw new Error('Could not load the run log');
-        const raw = await response.text();
-        const run = runs.find(r => r.id === b.dataset.log);
-        const steps = raw.split('\n').filter(line => line.startsWith('=== Step'));
-        $('#runLogSummary').textContent = [...steps, ...(run?.error ? ['Error: ' + run.error] : [])].join('\n') || 'No pipeline steps have run yet.';
-        $('#runLog').textContent = raw || 'No technical details yet.';
-        $('#runLogTitle').textContent = b.dataset.log + ' log';
-        $('#runLogPanel').hidden = false;
-        $('#runLogPanel').scrollIntoView({behavior:'smooth',block:'nearest'});
-      } catch (e) {error(e.message);}
+    $$('[data-log]').forEach(b => b.onclick = () => openLog(b));
+    $$('[data-goto-setup], [data-resume]').forEach(b => b.onclick = () => $('#obTabs [data-t="setup"]').click());
+  }
+  // Up and down arrows move the selection through a ledger's runs.
+  for (const list of ['#runsT', '#archiveT']) {
+    $(list).addEventListener('keydown', e => {
+      const row = e.target.closest('.run-row'), step = {ArrowDown: 1, ArrowUp: -1}[e.key];
+      if (!row || !step) return;
+      e.preventDefault();
+      const rows = $$(list + ' .run-row');
+      rows[Math.max(0, Math.min(rows.length - 1, rows.indexOf(row) + step))].click();
     });
   }
-  $('#closeRunLog').onclick = () => $('#runLogPanel').hidden = true;
+  // Running runs count their elapsed time between polls.
+  setInterval(() => $$('[data-since]').forEach(el => {el.textContent = elapsed(el.dataset.since);}), 1000);
+  const ledes = {setup: $('#v-onboarding>.head .lede').textContent, runs: 'Each report month, its runs, and whether it feeds history.', archive: 'Archived runs keep their results. Only settled months feed later history.'};
+  $$('#obTabs .tab').forEach(tab => tab.addEventListener('click', () => {$('#v-onboarding>.head .lede').textContent = ledes[tab.dataset.t];}));
   async function refresh() {
     if (reloadingReport) return;
     runs = await api('runs'); drawRuns();
