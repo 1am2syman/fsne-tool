@@ -1,9 +1,11 @@
-"""New action plans noted in the rescue meeting, by brand, SKU or town.
+"""New action plans noted in the action plan meetings, by brand, SKU or town.
 
-A plan is set on a scope: a brand, one SKU of a brand, or one town of that SKU. It
-covers the scope's *uncovered* 3M–6M batches (no last-month plan), as listed by
-the run's ``output/rescue_batches.parquet``. The nearest scope wins for a batch:
-town over SKU over brand, replacing the wider plan rather than merging with it.
+A plan is set on a page (rescue 3M–6M, rebalance 6M–10M or loading-watch >10M) and a
+scope: a brand, one SKU of a brand, or one town of that SKU. It covers the scope's
+*uncovered* batches (no last-month plan) of that page's band only, as listed by the
+page's batch file in the run's ``output/`` (``src.rescue.Page.batches_file``). A brand
+plan on one page never reaches the same brand's batches on another. The nearest scope
+wins for a batch: town over SKU over brand, replacing the wider plan rather than merging.
 
 A plan is categories (``src.rescue.PLAN_CATEGORIES``, several allowed) plus free
 remarks. Its batches' ``action_plan`` cell reads like sales' own remarks
@@ -13,6 +15,7 @@ remarks. Its batches' ``action_plan`` cell reads like sales' own remarks
 Plans are drafts: they pre-fill the action plan input file only. The uploaded and
 accepted plan file stays the only way plans reach the snapshot and history.
 Stored as ``plan_notes.json`` in the run folder; frozen once the month is settled.
+Notes written before the pages existed carry no ``page`` and belong to rescue.
 """
 from __future__ import annotations
 
@@ -22,21 +25,22 @@ from pathlib import Path
 
 import polars as pl
 
-from src.rescue import PLAN_CATEGORIES, plan_status, plan_text
+from src.rescue import PAGES, PLAN_CATEGORIES, plan_status, plan_text
 
 from .action_plans import now
 from .errors import RunError
 
 FILE = "plan_notes.json"
-POPULATION = Path("output") / "rescue_batches.parquet"
+DEFAULT_PAGE = "rescue"
 SCOPES = ("brand", "sku", "town")
 LEVEL_KEYS = {"brand": ["brand"], "sku": ["brand", "material"], "town": ["brand", "material", "town"]}
 MAX_REMARKS = 300
-VERSION = 2
+VERSIONS = (2, 3)  # 2: before pages existed, every plan is rescue's
+VERSION = 3
 
 
-def key(scope: str, brand: str, material: str | None, town: str | None) -> str:
-    return json.dumps([scope, brand, material, town])
+def key(page: str, scope: str, brand: str, material: str | None, town: str | None) -> str:
+    return json.dumps([page, scope, brand, material, town])
 
 
 def read(run: Path) -> dict[str, dict]:
@@ -47,16 +51,23 @@ def read(run: Path) -> dict[str, dict]:
         data = json.loads(path.read_text())
     except ValueError as exc:
         raise RunError("This run's plan notes are unreadable") from exc
-    if not isinstance(data, dict) or data.get("version") != VERSION or not isinstance(data.get("plans"), dict):
+    if not isinstance(data, dict) or data.get("version") not in VERSIONS or not isinstance(data.get("plans"), dict):
         raise RunError("This run's plan notes are unreadable")
-    return data["plans"]
+    plans = {}
+    for plan in data["plans"].values():
+        page = plan.get("page", DEFAULT_PAGE)
+        if page not in PAGES:
+            raise RunError("This run's plan notes are unreadable")
+        plan = {**plan, "page": page}
+        plans[key(page, plan["scope"], plan["brand"], plan["material"], plan["town"])] = plan
+    return plans
 
 
-def population(run: Path) -> pl.DataFrame:
-    """Uncovered rescue batches: the only rows a plan note can reach."""
-    path = run / POPULATION
+def population(run: Path, page: str) -> pl.DataFrame:
+    """Uncovered batches of the page's band: the only rows one of its plan notes can reach."""
+    path = run / "output" / PAGES[page].batches_file
     if not path.is_file():
-        raise RunError("This run has no rescue data. Rebuild its dashboard to note plans.")
+        raise RunError(f"This run has no {page} data. Rebuild its dashboard to note plans.")
     return pl.read_parquet(path).filter(~pl.col("has_plan"))
 
 
@@ -68,11 +79,11 @@ def stamp(plans: dict[str, dict]) -> str:
     return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
 
 
-def resolve(batches: pl.DataFrame, plans: dict[str, dict]) -> pl.DataFrame:
-    """One row per uncovered batch reached by a plan: action_plan, mitigation_status, scope."""
+def resolve(batches: pl.DataFrame, plans: list[dict]) -> pl.DataFrame:
+    """One row per uncovered batch reached by a plan of this batch population's page: action_plan, mitigation_status, scope."""
     out = batches.select("batch_index", *LEVEL_KEYS["town"])
     for scope in SCOPES:
-        level = [v for v in plans.values() if v["scope"] == scope]
+        level = [v for v in plans if v["scope"] == scope]
         columns = dict.fromkeys([*LEVEL_KEYS[scope], f"{scope}_plan", f"{scope}_status"], pl.String)
         frame = pl.DataFrame(
             [{**{c: v[c] for c in LEVEL_KEYS[scope]}, f"{scope}_plan": plan_text(v["categories"], v["remarks"]),
@@ -92,10 +103,15 @@ def resolve(batches: pl.DataFrame, plans: dict[str, dict]) -> pl.DataFrame:
 
 
 def entries(run: Path, plans: dict[str, dict]) -> pl.DataFrame | None:
-    """Resolved plans as the input file's two entry columns, keyed by exact batch_index."""
+    """Resolved plans of every page as the input file's two entry columns, keyed by exact batch_index.
+
+    Batches are unique across bands, so each page's rows are disjoint.
+    """
     if not plans:
         return None
-    return resolve(population(run), plans).select("batch_index", "action_plan", "mitigation_status")
+    frames = [resolve(population(run, page), [v for v in plans.values() if v["page"] == page])
+              for page in PAGES if any(v["page"] == page for v in plans.values())]
+    return pl.concat(frames).select("batch_index", "action_plan", "mitigation_status")
 
 
 def _text(body: dict, name: str) -> str | None:
@@ -113,6 +129,9 @@ def save(run: Path, meta: dict, body: dict, user: str) -> dict[str, dict]:
         raise RunError("That run has no completed report")
     if meta.get("plan_state") == "settled":
         raise RunError("This month is settled. Reopen it to change plan notes.")
+    page = body.get("page", DEFAULT_PAGE)  # a page open from before the pages existed is rescue's
+    if page not in PAGES:
+        raise RunError("A plan needs a page: " + ", ".join(PAGES))
     scope = body.get("scope")
     if scope not in SCOPES:
         raise RunError("A plan needs a scope: brand, sku or town")
@@ -127,14 +146,14 @@ def save(run: Path, meta: dict, body: dict, user: str) -> dict[str, dict]:
     remarks = _text(body, "remarks")
     if remarks and len(remarks) > MAX_REMARKS:
         raise RunError(f"Remarks can hold at most {MAX_REMARKS} characters")
-    batches = population(run)
+    batches = population(run, page)
     reach = batches.filter(*[pl.col(c) == needed[c] for c in LEVEL_KEYS[scope]])
     if reach.is_empty():
-        raise RunError("That brand, SKU or town has no uncovered 3M–6M batches in this run")
+        raise RunError(f"That brand, SKU or town has no uncovered {PAGES[page].label} batches in this run")
     plans = read(run)
-    k = key(scope, brand or "", material if scope != "brand" else None, town if scope == "town" else None)
+    k = key(page, scope, brand or "", material if scope != "brand" else None, town if scope == "town" else None)
     if categories or remarks:
-        plans[k] = {"scope": scope, "brand": brand, "material": material if scope != "brand" else None,
+        plans[k] = {"page": page, "scope": scope, "brand": brand, "material": material if scope != "brand" else None,
                     "town": town if scope == "town" else None,
                     "categories": [c for c in names if c in categories], "remarks": remarks, "by": user, "at": now()}
     else:

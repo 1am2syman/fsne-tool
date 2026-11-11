@@ -1,4 +1,4 @@
-"""Rescue plan notes by brand / SKU / town: resolution, HTTP save/load, pre-filled input file."""
+"""Action plan page notes by brand / SKU / town: resolution, page scope, HTTP save/load, pre-filled input file."""
 import http.client
 import io
 import json
@@ -26,9 +26,14 @@ def population():
     return pl.DataFrame(BATCHES, schema=["batch_index", "brand", "material", "town", "has_plan"], orient="row")
 
 
-def plan(scope, brand, material=None, town=None, categories=(), remarks=None):
-    return {plan_notes.key(scope, brand, material, town): {"scope": scope, "brand": brand, "material": material, "town": town,
-                                                          "categories": list(categories), "remarks": remarks}}
+# the same brand on the other pages: batch, brand, material, town, has last-month plan
+REBALANCE = [("r1", "A", "1", "T1", False), ("r2", "A", "5", "T2", False), ("r3", "A", "5", "T1", True)]
+LOADING = [("l1", "A", "1", "T1", False), ("l2", "B", "3", "T1", False)]
+
+
+def plan(scope, brand, material=None, town=None, categories=(), remarks=None, page="rescue"):
+    return {plan_notes.key(page, scope, brand, material, town): {"page": page, "scope": scope, "brand": brand, "material": material,
+                                                                "town": town, "categories": list(categories), "remarks": remarks}}
 
 
 @contextmanager
@@ -61,10 +66,13 @@ def seed(store):
     folder = store.path(run["id"])
     (folder / "output").mkdir()
     (folder / "history").mkdir()
-    keys = [b[0] for b in BATCHES]
-    pl.DataFrame({"batch_index": keys, "report_date": [46264] * 5, "Expiry Date": [46400] * 5,
-                  "total_closing_stock_kl": [1.0] * 5}).write_parquet(folder / "output" / "inferred_report.parquet")
+    keys = [b[0] for b in BATCHES + REBALANCE + LOADING]
+    pl.DataFrame({"batch_index": keys, "report_date": [46264] * len(keys), "Expiry Date": [46400] * len(keys),
+                  "total_closing_stock_kl": [1.0] * len(keys)}).write_parquet(folder / "output" / "inferred_report.parquet")
     population().write_parquet(folder / "output" / "rescue_batches.parquet")
+    for name, rows in (("rebalance", REBALANCE), ("loading_watch", LOADING)):
+        pl.DataFrame(rows, schema=["batch_index", "brand", "material", "town", "has_plan"], orient="row").write_parquet(
+            folder / "output" / f"{name}_batches.parquet")
     pl.DataFrame({"report_date": [date(2026, 7, 31)], "batch_index": ["b4"], "action_plan": ["Sales Push"],
                   "mitigation_status": ["Actionable"]}).write_excel(folder / "history" / "saved-0000.xlsx")
     store.update(run["id"], status="ok", report_date="2026-08-30", started="2026-11-10T12:00:00+00:00")
@@ -95,7 +103,7 @@ class ResolutionTest(unittest.TestCase):
                  **plan("sku", "A", "2", categories=["Liquidation - E-Com"]),
                  **plan("town", "A", "1", "T2", categories=["L&D claim"])}
         got = {r["batch_index"]: (r["action_plan"], r["mitigation_status"], r["scope"])
-               for r in plan_notes.resolve(population().filter(~pl.col("has_plan")), plans).iter_rows(named=True)}
+               for r in plan_notes.resolve(population().filter(~pl.col("has_plan")), list(plans.values())).iter_rows(named=True)}
         self.assertEqual(got, {"b1": ("Sales push; 2 cases by 15 Sep", "Actionable", "brand"),
                                "b2": ("L&D claim", "Not actionable", "town"),
                                "b3": ("Liquidation - E-Com", "Actionable", "sku")})
@@ -106,6 +114,67 @@ class ResolutionTest(unittest.TestCase):
         self.assertIsNone(plan_status([]))
         self.assertEqual(plan_text(["Liquidation - E-Com", "Sales push"], "via Daraz"), "Sales push; Liquidation - E-Com; via Daraz")
         self.assertEqual(plan_text([], "call DB"), "call DB")
+
+
+class PageScopeTest(unittest.TestCase):
+    def test_a_brand_plan_on_one_page_never_reaches_another_pages_batches(self):
+        with app() as (store, port):
+            run_id = seed(store)
+            base = f"/api/runs/{run_id}/notes"
+            self.assertEqual(request(port, "POST", base, {"page": "rescue", "scope": "brand", "brand": "A", "categories": ["Sales push"]})[0], 200)
+            self.assertEqual(request(port, "POST", base, {"page": "rebalance", "scope": "sku", "brand": "A", "material": "5",
+                                                          "categories": ["Stock rotation"]})[0], 200)
+            self.assertEqual(request(port, "POST", base, {"page": "loading-watch", "scope": "town", "brand": "A", "material": "1",
+                                                          "town": "T1", "categories": ["Trade offer (TLO / QDD / 2+1)"], "remarks": "watch"})[0], 200)
+            plans = request(port, "GET", base)[1]["plans"]
+            self.assertEqual(sorted((p["page"], p["scope"]) for p in plans.values()),
+                             [("loading-watch", "town"), ("rebalance", "sku"), ("rescue", "brand")])
+            rows = workbook(port, run_id)
+            # rescue brand plan: rescue batches only; rebalance r1 (brand A, SKU 1) is not reached by it
+            self.assertEqual(rows["b1"], ("Sales push", "Actionable"))
+            self.assertEqual(rows["r1"], (None, None))
+            self.assertEqual(rows["r2"], ("Stock rotation", "Actionable"))
+            self.assertEqual(rows["r3"], (None, None))  # covered last month
+            self.assertEqual(rows["l1"], ("Trade offer (TLO / QDD / 2+1); watch", "Actionable"))
+            self.assertEqual(rows["l2"], (None, None))
+            # removing the rescue plan leaves the other pages' plans
+            request(port, "POST", base, {"page": "rescue", "scope": "brand", "brand": "A", "categories": []})
+            rows = workbook(port, run_id)
+            self.assertEqual((rows["b1"], rows["r2"], rows["l1"][0]), ((None, None), ("Stock rotation", "Actionable"), "Trade offer (TLO / QDD / 2+1); watch"))
+
+    def test_scope_must_exist_in_that_pages_band(self):
+        with app() as (store, port):
+            run_id = seed(store)
+            base = f"/api/runs/{run_id}/notes"
+            # brand B only has loading-watch batches; material 5 only rebalance ones
+            for body, message in [
+                ({"page": "rescue", "scope": "sku", "brand": "A", "material": "5", "categories": ["Sales push"]}, "no uncovered 3M–6M"),
+                ({"page": "rebalance", "scope": "brand", "brand": "B", "categories": ["Sales push"]}, "no uncovered 6M–10M"),
+                ({"page": "loading-watch", "scope": "sku", "brand": "A", "material": "5", "categories": ["Sales push"]}, "no uncovered >10M"),
+                ({"page": "nowhere", "scope": "brand", "brand": "A", "categories": ["Sales push"]}, "page"),
+            ]:
+                code, data = request(port, "POST", base, body)
+                self.assertEqual(code, 400, body)
+                self.assertIn(message, data["error"])
+
+    def test_legacy_notes_without_a_page_belong_to_rescue(self):
+        with app() as (store, port):
+            run_id = seed(store)
+            legacy = {"version": 2, "plans": {json.dumps(["brand", "A", None, None]): {
+                "scope": "brand", "brand": "A", "material": None, "town": None, "categories": ["Sales push"],
+                "remarks": None, "by": "sales", "at": "2026-11-01T10:00:00+00:00"}}}
+            (store.path(run_id) / "plan_notes.json").write_text(json.dumps(legacy))
+            base = f"/api/runs/{run_id}/notes"
+            plans = request(port, "GET", base)[1]["plans"]
+            self.assertEqual([(p["page"], p["by"]) for p in plans.values()], [("rescue", "sales")])
+            self.assertEqual(list(plans), [plan_notes.key("rescue", "brand", "A", None, None)])
+            rows = workbook(port, run_id)
+            self.assertEqual((rows["b1"], rows["r1"], rows["l1"]), (("Sales push", "Actionable"), (None, None), (None, None)))
+            # a post from a page opened before the pages existed also means rescue, and replaces the legacy plan
+            request(port, "POST", base, {"scope": "brand", "brand": "A", "categories": ["L&D claim"]})
+            plans = request(port, "GET", base)[1]["plans"]
+            self.assertEqual([(p["page"], p["categories"]) for p in plans.values()], [("rescue", ["L&D claim"])])
+            self.assertEqual(json.loads((store.path(run_id) / "plan_notes.json").read_text())["version"], 3)
 
 
 class PlanNotesHttpTest(unittest.TestCase):
@@ -119,7 +188,7 @@ class PlanNotesHttpTest(unittest.TestCase):
                                                           "remarks": " QDD in Sep "})[0], 200)
             self.assertEqual(request(port, "POST", base, {"scope": "sku", "brand": "A", "material": "2", "categories": ["Liquidation - Modern Trade"]})[0], 200)
             plans = request(port, "GET", base)[1]["plans"]
-            brand = plans[plan_notes.key("brand", "A", None, None)]
+            brand = plans[plan_notes.key("rescue", "brand", "A", None, None)]
             self.assertEqual((brand["remarks"], brand["by"]), ("QDD in Sep", "local"))
 
             rows = workbook(port, run_id)

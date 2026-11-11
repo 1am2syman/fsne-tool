@@ -1,4 +1,4 @@
-"""Serialize the rescue report (Action plans · 3M–6M) for the dashboard.
+"""Serialize the Action plans pages (rescue, rebalance, loading-watch) for the dashboard.
 
 Aggregation by brand / parent / town happens in the page from the batch rows, so
 every hierarchy order and search shows sums of the same facts.
@@ -11,7 +11,9 @@ import polars as pl
 from src import report
 from src.io import matching_files
 from src.rescue import (
+    PAGES,
     PLAN_CATEGORIES,
+    Page,
     batches,
     incumbent_trend,
     lots,
@@ -22,6 +24,7 @@ from src.rescue import (
 
 COLS = ['batch_index', 'brand', 'parent', 'pdesc', 'town', 'material', 'mdesc', 'batch', 'rsl',
         'exp_kl', 'exp_bdt', 'lnd_kl', 'lnd_bdt', 'cs', 'plan', 'status', 'has_plan']
+ROTATION = ['rot_kl', 'rot_bdt']  # loading-watch only: the report's rotation_req_*, after LND FC
 
 
 def shelf_life_facts(data_dir: Path | None) -> tuple[pl.DataFrame | None, pl.DataFrame | None]:
@@ -55,35 +58,41 @@ def _pair(kl, bdt) -> dict:
     return {'kl': float(kl), 'bdt': float(bdt)}
 
 
-BATCHES_FILE = 'rescue_batches.parquet'
-
-
-def build_payload(current: pl.DataFrame, history: list[pl.DataFrame], data_dir: Path | None = None,
-                  output_dir: Path | None = None) -> dict:
-    """Payload for the page; with ``output_dir`` also the batch population plan notes resolve against."""
+def build_pages(current: pl.DataFrame, history: list[pl.DataFrame], data_dir: Path | None = None,
+                output_dir: Path | None = None) -> dict[str, dict]:
+    """Payload per page key; with ``output_dir`` also each page's batch population plan notes resolve against."""
     snapshot = report.EXCEL_EPOCH + timedelta(days=current.item(0, 'report_date'))
     saved = pl.concat([saved_report(f) for f in history], how='vertical_relaxed')
     plans, lm_date = previous_month_plans(saved, snapshot)
     regions, cases = shelf_life_facts(data_dir)
-    rows = batches(current, plans)
+    if output_dir is not None:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    return {key: _page(page, current, saved, plans, snapshot, lm_date, regions, cases, output_dir)
+            for key, page in PAGES.items()}
+
+
+def _page(page: Page, current: pl.DataFrame, saved: pl.DataFrame, plans: pl.DataFrame, snapshot, lm_date,
+          regions: pl.DataFrame | None, cases: pl.DataFrame | None, output_dir: Path | None) -> dict:
+    rows = batches(current, plans, page)
     rows = rows.join(cases, on='batch_index', how='left', validate='m:1') if cases is not None \
         else rows.with_columns(pl.lit(None, dtype=pl.Float64).alias('cs'))
     if output_dir is not None:
-        output_dir.mkdir(parents=True, exist_ok=True)
         rows.select('batch_index', pl.col('Brand Name').alias('brand'), pl.col('Material Code').cast(pl.String).alias('material'),
-                    pl.col('Town').alias('town'), 'has_plan').write_parquet(output_dir / BATCHES_FILE)
-    trend = incumbent_trend(saved)
-    outcomes, window = remark_outcomes(saved)
+                    pl.col('Town').alias('town'), 'has_plan').write_parquet(output_dir / page.batches_file)
+    trend = incumbent_trend(saved, page)
+    outcomes, window = remark_outcomes(saved, page)
     return {
+        'page': page.meta,
         'date': snapshot.isoformat(),
         'lm_date': lm_date.isoformat() if lm_date else None,
         'lm_label': lm_date.strftime('%b %Y') if lm_date else 'Last month',
-        'cols': COLS,
+        'cols': COLS + (ROTATION if page.rotation else []),
         'rows': rows.select(
             'batch_index', 'Brand Name', pl.col('parent_material_code').cast(pl.String), 'parent_desc', 'Town',
             pl.col('Material Code').cast(pl.String), 'material_desc', 'Batch code', 'rsl_days',
             'exposure_kl', 'exposure_bdt', 'lnd_fc_kl', 'lnd_fc_bdt', 'cs',
             'lm_action_plan', 'lm_mitigation_status', 'has_plan',
+            *(['rotation_req_kl', 'rotation_req_bdt'] if page.rotation else []),
         ).rows(),
         'cases_missing': int(rows['cs'].null_count()),
         'categories': [{'c': c, 'status': st} for c, st in PLAN_CATEGORIES],

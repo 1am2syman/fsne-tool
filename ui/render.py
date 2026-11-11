@@ -8,12 +8,15 @@ from server.action_plans import decorate
 from ui.samples import downloads
 
 UI = Path(__file__).resolve().parent
-NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH", "RESCUE")
+NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH", "ACTIONPLANS")
 
 
 def render(payload: dict | None = None, run: dict | None = None) -> str:
     """Render reports when available, otherwise open the upload workspace."""
     has_report = payload is not None
+    if payload is not None and "ACTIONPLANS" not in payload and "RESCUE" in payload:
+        # Runs built before rebalance and loading-watch existed hold the rescue page alone.
+        payload = {**payload, "ACTIONPLANS": {"rescue": payload["RESCUE"]}}
     if payload is None:
         payload = {name: ([] if name == "BATCH" else {}) for name in NAMES}
     template = ((UI / "template.html").read_text(encoding="utf-8")

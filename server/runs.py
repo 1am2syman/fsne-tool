@@ -364,7 +364,7 @@ class Store:
             target = run / "output" / "action_plan.xlsx"
             plans = plan_notes.read(run)
             noted = plan_notes.stamp(plans)
-            # Rebuilt when the format is old or the rescue notes changed since the last export.
+            # Rebuilt when the format is old or the page notes changed since the last export.
             if not target.exists() or meta.get("action_plan_format") != 2 or meta.get("action_plan_notes", "") != noted:
                 import polars as pl
 
@@ -694,7 +694,7 @@ def history_by_date(paths: list[Path]) -> dict[str, Path]:
 
 def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, Path], entries=None) -> None:
     """Exact left join to the previous calendar month; current entry cells blank
-    unless ``entries`` (rescue plan notes, exact ``batch_index``) pre-fill them.
+    unless ``entries`` (action plan page notes, exact ``batch_index``) pre-fill them.
 
     Movement's shortened-key label inheritance stays in snapshot(), separately.
     Legacy history spellings are accepted at this input boundary.

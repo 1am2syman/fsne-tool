@@ -1,10 +1,14 @@
-"""rescue (Action plans · 3M–6M): established measures beside last month's plans.
+"""Action plan pages (rescue 3M–6M, rebalance 6M–10M, loading-watch >10M): established
+measures beside last month's plans. One implementation, parameterised by ``Page``.
 
 Every number is an existing fact; nothing here re-forecasts stock.
 
 - Current report (``src/report.py``): ``rsl_group``, ``exposure_*``, ``lnd_fc_*``.
-  At 3M–6M Exposure equals stock, so LND FC is the measure that separates stock
-  forecast to sell before 90 days RSL from stock that will not.
+  Up to 10M Exposure equals stock (the batch is already inside the 300-day line),
+  so LND FC is the measure that separates stock forecast to sell before 90 days
+  RSL from stock that will not. Above 10M Exposure is only the part of stock not
+  sold before 300 days RSL, and ``rotation_req_*`` is what remains at twice the
+  run rate.
 - Previous month's plan: the latest saved report in the previous calendar month,
   joined by exact ``batch_index``. This is the same join the action plan input
   file uses for its ``lm_`` columns, so coverage matches what sales saw.
@@ -13,13 +17,45 @@ Every number is an existing fact; nothing here re-forecasts stock.
   batch key, so new inclusions never count as reductions.
 """
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 
 import polars as pl
 
 from .movement import KEY, batch_key
 
-BAND = "3M - 6M"
+
+@dataclass(frozen=True)
+class Page:
+    """One Action plans page: a band of the report's ``rsl_group`` and what differs around it."""
+
+    key: str
+    band: str  # rsl_group value of the rows
+    label: str  # band as written in the UI
+    days: str  # RSL days of the band, for notes
+    soon_days: int  # LND with RSL <= this enters the next band in 30 days
+    soon_label: str  # the band it enters
+    outcome_bands: tuple[str, ...]  # bands of the remark panel's cohort
+    outcome_label: str
+    batches_file: str  # uncovered-batch list plan notes resolve against, in the run's output/
+    exposure_only: bool = False  # rows need exposure > 0: most >10M stock sells before the 300-day line
+    rotation: bool = False  # extra column rotation_req_*
+
+    @property
+    def meta(self) -> dict:
+        """What the page needs to word itself; the template holds no band literals."""
+        return {"key": self.key, "label": self.label, "days": self.days, "soon_days": self.soon_days,
+                "soon_label": self.soon_label, "outcome_label": self.outcome_label,
+                "exposure_only": self.exposure_only, "rotation": self.rotation}
+
+
+RESCUE = Page("rescue", "3M - 6M", "3M–6M", "91–180", 120, "<3M", ("3M - 6M", "6M - 10M"), "3M–10M",
+              "rescue_batches.parquet")
+REBALANCE = Page("rebalance", "6M - 10M", "6M–10M", "181–300", 210, "3M–6M", ("6M - 10M",), "6M–10M",
+                 "rebalance_batches.parquet")
+LOADING_WATCH = Page("loading-watch", "> 10M", ">10M", ">300", 330, "6M–10M", ("> 10M",), ">10M",
+                     "loading_watch_batches.parquet", exposure_only=True, rotation=True)
+PAGES = {p.key: p for p in (RESCUE, REBALANCE, LOADING_WATCH)}
 # Action plan categories with the mitigation status sales gave each kind of remark
 # in the saved reports (Feb–Aug 2026, 85 distinct remarks).
 PLAN_CATEGORIES = (
@@ -38,7 +74,6 @@ PLAN_CATEGORIES = (
     ("L&D claim", "Not actionable"),
 )
 STATUS_PRECEDENCE = ("Actionable", "Incorrect Stock", "Not actionable")
-OUTCOME_BANDS = ("3M - 6M", "6M - 10M")
 # Sales type this into action_plan for >10M stock; it is a label, not an action.
 NO_ACTION = "rsl>10m_good stock"
 PLAN_ALIASES = {"action_plan": "action_plan_remarks", "mitigation_status": "mitigation_status_category"}
@@ -105,10 +140,13 @@ def canonical_parents(current: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def batches(current: pl.DataFrame, plans: pl.DataFrame) -> pl.DataFrame:
-    """Current 3M–6M batches with last month's exact plan; new batches have none."""
+def batches(current: pl.DataFrame, plans: pl.DataFrame, page: Page = RESCUE) -> pl.DataFrame:
+    """The page's current batches with last month's exact plan; new batches have none."""
+    rows = current.filter(pl.col("rsl_group") == page.band)
+    if page.exposure_only:
+        rows = rows.filter(pl.col("exposure_kl") > 0)
     return (
-        current.filter(pl.col("rsl_group") == BAND)
+        rows
         .join(canonical_parents(current), on="parent_material_code", how="left", validate="m:1")
         .join(plans, on="batch_index", how="left", validate="m:1", maintain_order="left")
         .with_columns(
@@ -175,19 +213,19 @@ def _cohorts(saved: pl.DataFrame, bands: tuple[str, ...]) -> pl.DataFrame:
     )
 
 
-def incumbent_trend(saved: pl.DataFrame) -> pl.DataFrame:
-    """Per month: LM 3M–6M LND FC (LND > 0) and the same batches' LND this month."""
+def incumbent_trend(saved: pl.DataFrame, page: Page = RESCUE) -> pl.DataFrame:
+    """Per month: LM LND FC of the page's band (LND > 0) and the same batches' LND this month."""
     return (
-        _cohorts(saved, (BAND,))
+        _cohorts(saved, (page.band,))
         .group_by("cm_date")
         .agg(pl.col("lm_kl", "lm_bdt", "cm_kl", "cm_bdt").sum(), pl.len().alias("batches"))
         .sort("cm_date")
     )
 
 
-def remark_outcomes(saved: pl.DataFrame, transitions: int = 3) -> tuple[pl.DataFrame, list[date]]:
-    """LND FC change by last month's plan keyword, 3M–10M, over the latest ``transitions``."""
-    cohorts = _cohorts(saved, OUTCOME_BANDS)
+def remark_outcomes(saved: pl.DataFrame, page: Page = RESCUE, transitions: int = 3) -> tuple[pl.DataFrame, list[date]]:
+    """LND FC change by last month's plan keyword, over the page's bands and the latest ``transitions``."""
+    cohorts = _cohorts(saved, page.outcome_bands)
     window = cohorts["cm_date"].unique().sort().tail(transitions)
     out = (
         cohorts.filter(pl.col("cm_date").is_in(window.implode()))

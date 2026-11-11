@@ -11,9 +11,9 @@ Every URL is relative to the page, so the app works under a path prefix such as
     POST   api/runs/<id>/start        queue the run; explicit override_unsettled for a history gap
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
-    GET    api/runs/<id>/report.xlsx  protected action plan input workbook (rescue notes pre-filled)
-    GET    api/runs/<id>/notes        rescue plans by brand / SKU / town + whether they can change
-    POST   api/runs/<id>/notes        {"scope", "brand", "material"?, "town"?, "categories", "remarks"}; empty removes
+    GET    api/runs/<id>/report.xlsx  protected action plan input workbook (action plan page notes pre-filled)
+    GET    api/runs/<id>/notes        plans of all pages (each carries its "page") by brand / SKU / town + whether they can change
+    POST   api/runs/<id>/notes        {"page": rescue|rebalance|loading-watch (default rescue), "scope", "brand", "material"?, "town"?, "categories", "remarks"}; empty removes
     PUT    api/runs/<id>/action-plan/check  returned workbook -> counts + acceptance token
     POST   api/runs/<id>/action-plan/accept  {"token"} -> rebuild downstream view
     GET    api/runs/<id>/settlement-check   month, batches and blank statuses
