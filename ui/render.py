@@ -8,7 +8,7 @@ from server.action_plans import decorate
 from ui.samples import downloads
 
 UI = Path(__file__).resolve().parent
-NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH")
+NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH", "RESCUE")
 
 
 def render(payload: dict | None = None, run: dict | None = None) -> str:
@@ -20,7 +20,8 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
                 .replace("/*DOH_OVERLAY*/", (UI / "doh_overlay.js").read_text(encoding="utf-8"))
                 .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text(encoding="utf-8"))
                 .replace("/*SAMPLES*/{}", json.dumps(downloads(), separators=(",", ":")))
-                .replace("/*HAS_REPORT*/true", json.dumps(has_report)))
+                .replace("/*HAS_REPORT*/true", json.dumps(has_report))
+                .replace("/*RUN_ID*/null", json.dumps(run["id"] if run else None)))
     identity = f"{run['id']} · {run['label']}" if run else "Sample" if has_report else "No report yet"
     snapshot = f"{payload['STATUS']['labels'][-1]} snapshot" if has_report else ""
     flag = decorate(dict(run)) if run else {"plan_state": "provisional", "view_flag": "Sample report · Pre-action plan view"}
@@ -34,7 +35,8 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
                 .replace("<!--PLAN_FLAG-->", escape(flag["view_flag"])))
     for name in NAMES:
         empty = "[]" if name == "BATCH" else "{}"
-        data = json.dumps(payload[name], separators=(",", ":"), allow_nan=False, default=str).replace("<", "\\u003c")
+        # Runs calculated before a report existed render it as unavailable.
+        data = json.dumps(payload.get(name, [] if name == "BATCH" else {}), separators=(",", ":"), allow_nan=False, default=str).replace("<", "\\u003c")
         template = template.replace(f"/*{name}*/{empty}", data)
     return template
 
@@ -44,6 +46,8 @@ def extract_legacy(html: str) -> dict:
     result = {}
     for name in NAMES:
         prefix = f"const {name} = "
+        if prefix not in html:
+            continue
         start = html.index(prefix) + len(prefix)
         end = html.index(";\n", start)
         result[name] = json.loads(html[start:end])

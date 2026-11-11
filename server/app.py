@@ -11,7 +11,9 @@ Every URL is relative to the page, so the app works under a path prefix such as
     POST   api/runs/<id>/start        queue the run; explicit override_unsettled for a history gap
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
-    GET    api/runs/<id>/report.xlsx  protected action plan input workbook
+    GET    api/runs/<id>/report.xlsx  protected action plan input workbook (rescue notes pre-filled)
+    GET    api/runs/<id>/notes        rescue plans by brand / SKU / town + whether they can change
+    POST   api/runs/<id>/notes        {"scope", "brand", "material"?, "town"?, "categories", "remarks"}; empty removes
     PUT    api/runs/<id>/action-plan/check  returned workbook -> counts + acceptance token
     POST   api/runs/<id>/action-plan/accept  {"token"} -> rebuild downstream view
     GET    api/runs/<id>/settlement-check   month, batches and blank statuses
@@ -183,6 +185,10 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     f"action_plan_to_tm_{run_date}.xlsx",
                 )
+            if rest == "notes" and method == "GET":
+                return self._json(store.plan_notes(run_id))
+            if rest == "notes" and method == "POST":
+                return self._json(store.save_plan_note(run_id, body, self._user()))
             if rest.startswith("files/") and method == "PUT":
                 slot = rest[6:]
                 filename = unquote(self.headers.get("X-Filename", ""))

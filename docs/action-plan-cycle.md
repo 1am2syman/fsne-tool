@@ -67,7 +67,7 @@ The state is stored in the run's metadata (state, upload time, uploader, file na
 
 - Pushing to a remote.
 - Several returned files per month, or merging files.
-- Editing statuses inside the app.
+- Editing statuses inside the app. (Rescue plan notes only pre-fill the input file's entry cells; the uploaded file stays the only way plans reach history. See [rescue.md](rescue.md).)
 - Roles or permissions.
 
 ## Acceptance gates

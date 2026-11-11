@@ -33,6 +33,7 @@ from openpyxl.styles import Protection
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
 
+from . import plan_notes
 from .action_plans import STATUSES, ActionPlanCycle, decorate, previous_month
 from .errors import RunError
 
@@ -361,7 +362,10 @@ class Store:
                 self.update(run_id, run_date=started.astimezone().date().isoformat())
             run = self.path(run_id)
             target = run / "output" / "action_plan.xlsx"
-            if not target.exists() or meta.get("action_plan_format") != 2:
+            plans = plan_notes.read(run)
+            noted = plan_notes.stamp(plans)
+            # Rebuilt when the format is old or the rescue notes changed since the last export.
+            if not target.exists() or meta.get("action_plan_format") != 2 or meta.get("action_plan_notes", "") != noted:
                 import polars as pl
 
                 parquet = run / "output" / "inferred_report.parquet"
@@ -369,9 +373,21 @@ class Store:
                     raise RunError("This run's source report is missing; calculate it again to export an action plan.")
                 paths = sorted((run / "history").glob("saved-*.xlsx"))
                 write_action_plan(pl.read_parquet(parquet), meta["report_date"], target,
-                                  {} if meta.get("history_override") else history_by_date(paths))
-                self.update(run_id, action_plan_format=2)
+                                  {} if meta.get("history_override") else history_by_date(paths),
+                                  entries=plan_notes.entries(run, plans))
+                self.update(run_id, action_plan_format=2, action_plan_notes=noted)
             return target
+
+    def plan_notes(self, run_id: str) -> dict:
+        with self.lock:
+            meta = self.get(run_id)
+            return {"plans": plan_notes.read(self.path(run_id)),
+                    "editable": meta["status"] == "ok" and meta.get("plan_state") != "settled"}
+
+    def save_plan_note(self, run_id: str, body: dict, user: str) -> dict:
+        with self.lock:
+            plans = plan_notes.save(self.path(run_id), self.get(run_id), body, user)
+        return {"plans": plans}
 
     def discard(self, run_id: str) -> None:
         """Delete a draft whose upload failed; started runs are history and stay."""
@@ -676,8 +692,9 @@ def history_by_date(paths: list[Path]) -> dict[str, Path]:
     return result
 
 
-def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, Path]) -> None:
-    """Exact left join to the previous calendar month; current entry cells blank.
+def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, Path], entries=None) -> None:
+    """Exact left join to the previous calendar month; current entry cells blank
+    unless ``entries`` (rescue plan notes, exact ``batch_index``) pre-fill them.
 
     Movement's shortened-key label inheritance stays in snapshot(), separately.
     Legacy history spellings are accepted at this input boundary.
@@ -707,7 +724,11 @@ def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, 
         frame = frame.join(labels, on="batch_index", how="left", validate="m:1", maintain_order="left")
     else:
         frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(f"lm_{c}") for c in columns)
-    frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(c) for c in columns)
+    if entries is None:
+        frame = frame.with_columns(pl.lit(None, dtype=pl.String).alias(c) for c in columns)
+    else:
+        frame = frame.join(entries.select("batch_index", *columns), on="batch_index", how="left",
+                           validate="m:1", maintain_order="left")
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=target.parent) as staging:
         temporary = Path(staging) / target.name

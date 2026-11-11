@@ -19,11 +19,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from src.movement import (
     BRAND,
     RSL,
-    read_reports,
+    normalise,
+    read_raw_reports,
     transform_parent_series,
     transform_series,
 )
 from ui.render import render
+from ui.rescue_data import build_payload as rescue_payload
 from ui.run_rate_data import build_current
 from ui.sales_push_data import build_payload as sales_push_payload
 from ui.status_data import build_payload
@@ -47,7 +49,8 @@ s = pl.read_parquet(src).sort('month')
 months = s['month'].unique().sort().to_list()
 def r2(v):
     return None if v is None else round(v, 2)
-history = read_reports(HIST)
+raw_history = read_raw_reports(HIST)
+history = pl.concat([normalise(f) for f in raw_history], how='vertical_relaxed')
 volume_series = transform_series(history, keys=(BRAND, RSL), stock_column='total_closing_stock_kl')
 volume_parents = transform_parent_series(history, rsl=True, stock_column='total_closing_stock_kl')
 volume_by = {(r['brand'], r.get('parent_code'), r['month'], r['rsl_group']): r
@@ -102,6 +105,9 @@ if _args.frozen:
     if status['labels'] != [m.strftime('%b %Y') for m in status_months]:
         status = build_payload(HIST, status_months)
     payload = {**existing, 'SERIES': series, 'STATUS': status}
+    # rescue depends only on this run's frozen report, last month's saved plans and
+    # its shelf-life file, so rebuilding it here is idempotent and upgrades older runs.
+    payload['RESCUE'] = rescue_payload(pl.read_parquet(OUT / 'inferred_report.parquet'), raw_history, DATA, OUT)
 else:
     latest_saved = None
     for path in sorted(HIST.glob('*.xlsx'), reverse=True):
@@ -120,8 +126,9 @@ else:
     status = build_payload(HIST, status_months, current=refreshed)
     transfer = transfer_payload(current, DATA, OUT)
     sales_push = sales_push_payload(DATA, current)
+    rescue = rescue_payload(current, raw_history, DATA, OUT)
     payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
-               'MEASURES': impact['measures_after'], 'STATUS': status}
+               'MEASURES': impact['measures_after'], 'STATUS': status, 'RESCUE': rescue}
 if _args.payload:
     _args.payload.write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False, default=str))
 else:
