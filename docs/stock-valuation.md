@@ -26,6 +26,6 @@ The workbook's rate is a period average (`DISTRIBUTOR_LANDED_PRICE ÷ SALES_QTY`
 ## Consequences
 
 - Monthly upload needs the shelf-life report, secondary sales and product hierarchy, plus the report date.
-- `sample_output/sample_output.xlsx` was valued with the workbook. `python -m src.compare_report --legacy` still matches every physical column; the seven BDT columns differ by design and are reported separately (`valuation_columns_differing`).
+- `sample_output/sample_output.xlsx` was valued with the workbook and used the former per-deadline queue. `python -m src.compare_report --legacy` checks all unaffected columns; valuation and the approved queue correction are reported separately (`valuation_columns_differing`, `queue_columns_differing`). See [inference.md](inference.md) for the shared 90-day queue.
 - Saved snapshots from earlier months keep their stored BDT values. Month-on-month BDT changes across the switch compare different valuation bases once.
 - Zero values in the shelf-life file (352 sample rows) are treated as real zeros. One of them, material 725335, disagrees with the old workbook (148.26); check it with the data owner.

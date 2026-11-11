@@ -141,14 +141,15 @@ def transform(stock: pl.DataFrame, report_date: date) -> pl.DataFrame:
             .then(pl.lit("6M - 10M"))
             .otherwise(pl.lit("> 10M"))
             .alias("rsl_group"),
-            _duration(300, 1).alias("_duration_300"),
-            _duration(300, 2).alias("_duration_300_2x"),
+            # Older stock keeps selling below 300 days RSL. Use the same 90-day
+            # queue for both deadlines; separate queues let LND FC exceed Exposure.
+            _duration(90, 2).alias("_duration_90_2x"),
             _duration(90, 1).alias("_duration_90"),
         )
         .sort([*QUEUE_KEYS, "Expiry Date", "batch_index"])
         .with_columns(
-            _consumption(300, 1, "_duration_300").alias("consumable_kl"),
-            _consumption(300, 2, "_duration_300_2x").alias("consumable_kl_2x_rate"),
+            _consumption(300, 1, "_duration_90").alias("consumable_kl"),
+            _consumption(300, 2, "_duration_90_2x").alias("consumable_kl_2x_rate"),
             (
                 pl.col("total_closing_stock_kl") - _consumption(90, 1, "_duration_90")
             ).alias("lnd_fc_kl"),

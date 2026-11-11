@@ -48,17 +48,19 @@ For stock `S`, monthly rate `R`, reserve `b` days, multiplier `m`:
 
 ```text
 horizon_i = max(rsl_days_i - b, 0)
-duration_i = min(horizon_i, (S_i / R_i * 30) / m)
+duration_i = min(max(rsl_days_i - 90, 0), (S_i / R_i * 30) / m)
 start_i = floor(report_date_serial + sum(duration_j for j before i))
 available_i = max(expiry_serial_i - b - start_i, 0)
 consumed_i = min(S_i, available_i / 30 * R_i * m)
 ```
 
-**Do not replace this with ideal FIFO.** Each duration is capped independently using its horizon from the report date; it is not recalculated using the preceding batch's actual finish time. This can allocate zero consumption to a later batch even when an ideal queue would resume consumption. The sample confirms that unusual behavior.
+**Approved queue correction (2026-11-11).** Both deadlines now use the same 90-day selling queue at a given rate. Older stock continues to block newer stock below 300 days RSL until it sells out or reaches 90 days. The previous reference-matching formula used each output's own reserve to build its queue; that incorrectly let Exposure fall below LND FC on some >10M batches.
+
+Durations still have independent caps measured from the report date, rather than being recalculated from each preceding batch's actual finish time. This preserves the existing LND FC calculation; it is not an ideal FIFO simulation.
 
 **Do not truncate individual durations.** Fractional durations are accumulated first. Truncate the resulting absolute Excel date serial to whole days. Truncating each duration or subtracting preceding stock volumes does not reproduce the sample.
 
-Three schedules run independently:
+Three outputs use two queues (1× and 2×), each with 90-day duration caps. Their own evaluation deadlines remain:
 
 | Output | Reserve | Rate multiplier |
 | --- | --- | --- |
@@ -96,7 +98,8 @@ Final rows sort by `batch_index`; final columns match the reference order.
 - Negative/zero stock, zero/negative or nonfinite rates, pre-expired stock, malformed source dates, unusual cultures and 1904-system serials are not established by this sample. The current report rejects nonpositive stock and negative/nonfinite non-null sales rates. By the approved DOH policy, a known zero rate consumes no stock and retains null batch `doh` for portable export; the UI renders ∞ from its retained zero rate.
 - The original eight query scripts remain distinct from the inferred final report. `history` can load historical outputs but no historical workbooks were supplied.
 - `measures.png` contains historical comparison aggregates, not formulas. Last-month exposure, new-inclusion/no-new-inclusion splits, down-transition, incumbent stock and month-to-month reductions **cannot be reconstructed from the single supplied period alone**.
-- Two visible current-period measures can be checked: closing stock ≈ 1,551.28 KL, exposure ≈ 41.46 KL / 37,880,532.37 BDT. The inferred report matches these; it does not manufacture missing historical measures.
+- The original reference used the former queue rule. With current rates and shelf-life valuation, corrected sample Exposure is 42.6931 KL / 38,788,056.10 BDT. LND FC is unchanged. `src.compare_report --legacy` verifies every non-valuation, non-queue column against the reference; queue differences are reported explicitly.
+- Saved months and completed runs retain their stored Exposure and Rotation req. The first newly calculated month therefore compares methods once; this is a method change, not a sales outcome. Rebuilding a frozen dashboard alone does not recalculate its report.
 - Excel export matches contents, not original formatting, table metadata or workbook binary bytes.
 
 ## Reproduce

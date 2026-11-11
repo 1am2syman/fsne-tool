@@ -46,11 +46,11 @@ The server binds to localhost. For another device, use the `preview` helper's ta
 ```bash
 uv sync
 uv run python -m src report --data-dir sample_input --output output/inferred_report.xlsx
-# Verify original unadjusted formulas without overwriting adjusted outputs:
+# Verify raw rates against the reference, reporting valuation and queue differences:
 uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
 ```
 
-`src/report.py` infers the missing final calculation layer from the supplied sample, without reading reference data during generation. Its unadjusted baseline reproduces all 27,891 rows and 30 columns within documented floating-point tolerance. Production rates now apply seasonality-aware upper-tail winsorization, so rate-dependent outputs intentionally differ from the original reference. See [docs/inference.md](docs/inference.md) for original formulas and [docs/run-rates.md](docs/run-rates.md) for the adjustment policy, audits and DOH column.
+`src/report.py` infers the missing final calculation layer from the supplied sample, without reading reference data during generation. Its raw-rate comparison checks all 27,891 rows and 30 columns; valuation and the approved queue correction differ explicitly from the reference. Exposure and LND FC now use the same 90-day selling queue, so Exposure cannot be below LND FC. Rotation req uses that queue at 2× rate. Saved reports retain their original figures, so comparisons across the first corrected month include a method change. Production rates also apply seasonality-aware upper-tail winsorization, so rate-dependent outputs intentionally differ from the original reference. See [docs/inference.md](docs/inference.md) for original formulas and [docs/run-rates.md](docs/run-rates.md) for the adjustment policy, audits and DOH column.
 
 This is sample-matched inference, not a verified translation of the missing original formulas. Historical measures shown in `measures.png` require prior-period inputs that are not supplied.
 

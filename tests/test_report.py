@@ -54,15 +54,43 @@ class InferredReportTests(unittest.TestCase):
         self.assertAlmostEqual(result["exposure_bdt"][2], 60.0)
 
     def test_duration_caps_are_independent_not_ideal_fifo(self):
-        # Each of the first two rows adds its OWN capped deadline of 5 days,
-        # even though the second can't be consumed. Third begins after 10 days.
+        # Queue durations use the 90-day selling cutoff: each .2 batch adds
+        # 20 days at .01/day. Starts are 0, 20, 40, so only the first batch
+        # sells any stock before its own 300-day line (day 5).
         result = transform(
             stock_frame([305, 305, 315], [0.2, 0.2, 0.2]), DAY
         )
         for actual, expected in zip(
-            result["consumable_kl"], [0.05, 0.0, 0.05], strict=True
+            result["consumable_kl"], [0.05, 0.0, 0.0], strict=True
         ):
             self.assertAlmostEqual(actual, expected)
+
+    def test_older_stock_keeps_selling_below_300_days(self):
+        # At one carton/month, A adds 180 days and B adds 240 days to
+        # the queue. C starts at day 420: after its 300-day deadline
+        # (day 150) and its 90-day deadline (day 360). Both risks = 1.
+        result = transform(stock_frame([270, 330, 450], [20., 20., 1.], [1.] * 3), DAY)
+        self.assertEqual(result["exposure_kl"][2], 1.)
+        self.assertEqual(result["lnd_fc_kl"][2], 1.)
+        # At twice the rate, A and B still add 180 + 240 days: neither
+        # sells out before its 90-day cutoff, so C still has rotation risk.
+        self.assertEqual(result["rotation_req_kl"][2], 1.)
+
+    def test_risk_nesting_across_mixed_queues(self):
+        from random import Random
+
+        rng = Random(42)
+        source = stock_frame(
+            [rng.randrange(1, 900) for _ in range(400)],
+            [rng.uniform(.001, 2) for _ in range(400)],
+            [.3] * 400,
+            towns=[f"T{i % 20}" for i in range(400)],
+        )
+        result = transform(source, DAY)
+        self.assertEqual(result.filter(pl.col("lnd_fc_kl") > pl.col("exposure_kl") + 1e-12).height, 0)
+        self.assertEqual(result.filter(pl.col("rotation_req_kl") > pl.col("exposure_kl") + 1e-12).height, 0)
+        below = result.filter(pl.col("rsl_days") <= 300)
+        self.assertEqual(below["exposure_kl"].to_list(), below["total_closing_stock_kl"].to_list())
 
     def test_town_child_queues_are_independent_despite_same_parent(self):
         source = stock_frame(

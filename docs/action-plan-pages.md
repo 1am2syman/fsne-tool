@@ -34,7 +34,7 @@ The sheet ends at the viewport bottom, so its sticky total row is visible on loa
 | Remark panel bands | 3M–10M | 6M–10M | >10M |
 | Uncovered-batch list | `output/rescue_batches.parquet` | `output/rebalance_batches.parquet` | `output/loading_watch_batches.parquet` |
 
-**loading-watch rows.** At >10M most stock sells before the 300-day line and is not at risk, so a batch is listed only when the report's `exposure_*` is above zero. A batch with LND FC > 0 almost always has exposure > 0 (stock unsold at 90 days RSL was also unsold at 300). The report's queue order can break this for a few tiny batches (3 in the sample build, 0.002 KL of LND FC); they are not listed. The saved reports behind the two outcome panels carry no exposure column, so those panels cover every >10M batch with LND FC > 0.
+**loading-watch rows.** At >10M most stock sells before the 300-day line and is not at risk, so a batch is listed only when the report's `exposure_*` is above zero. A batch with LND FC > 0 also has Exposure > 0: the corrected report uses the same 90-day selling queue for both measures. Earlier reports used separate queue rules that could violate this relationship; newly calculated reports correct it. Saved months retain their stored Exposure and Rotation req, so the first month across this change compares methods once. The saved reports behind the two outcome panels carry no exposure column, so those panels cover every >10M batch with LND FC > 0.
 
 **Rotation req.** The report's own `rotation_req_*`: the exposure still left if the run rate doubled. Exposure − Rotation req is what doubling the rate clears. It follows the BDT/KL switch and has its own total. It is not part of the CSV export, whose columns are the same on every page.
 

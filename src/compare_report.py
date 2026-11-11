@@ -17,6 +17,13 @@ REL_TOL = 1e-12
 # pipeline now uses the shelf-life file's `DB Landing value`. Valuation columns
 # therefore differ by design and are reported apart from the physical columns.
 VALUATION_MARKER = "bdt"
+# The reference drops older batches at 300 days when building its Exposure
+# queue. The approved shared 90-day queue intentionally changes these columns.
+QUEUE_COLUMNS = (
+    "consumable_kl", "consumable_kl_2x_rate", "consumable_bdt",
+    "exposure_kl", "exposure_bdt", "rotation_req_kl", "rotation_req_bdt",
+    "exposure_kl_%", "exposure_bdt_%",
+)
 
 
 def compare(actual: pl.DataFrame, expected: pl.DataFrame) -> pl.DataFrame:
@@ -78,7 +85,7 @@ def compare(actual: pl.DataFrame, expected: pl.DataFrame) -> pl.DataFrame:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data-dir", type=Path, default=Path("sample_input"))
-    parser.add_argument('--legacy', action='store_true', help='Verify unadjusted original formulas against the legacy reference; use a separate output directory')
+    parser.add_argument('--legacy', action='store_true', help='Compare raw rates against the reference, reporting approved valuation and queue differences separately; use a separate output directory')
     parser.add_argument(
         "--reference", type=Path, default=Path("sample_output/sample_output.xlsx")
     )
@@ -130,6 +137,7 @@ def main() -> None:
     measures = actual.select(
         pl.col("total_closing_stock_kl").sum(),
         pl.col("total_closing_stock_bdt").sum(),
+        pl.col("consumable_kl").sum(),
         pl.col("exposure_kl").sum(),
         pl.col("exposure_bdt").sum(),
         pl.col("rotation_req_kl").sum(),
@@ -140,13 +148,20 @@ def main() -> None:
     (output / "current_measures.json").write_text(json.dumps(measures, indent=2) + "\n")
     mismatches = pl.sum_horizontal("null_mismatches", "value_mismatches")
     valuation = pl.col("column").str.contains(VALUATION_MARKER)
-    physical_mismatches = metrics.filter(~valuation).select(mismatches.sum()).item()
+    queue = pl.col("column").is_in(QUEUE_COLUMNS)
+    rate = pl.col("column").is_in(("avg_sec_m", "doh", "lnd_fc_kl", "lnd_fc_kl_%")) if not args.legacy else pl.lit(False)
+    physical_mismatches = metrics.filter(~valuation & ~queue & ~rate).select(mismatches.sum()).item()
+    rate_differing = metrics.filter(rate & (mismatches > 0)).height
+    queue_differing = metrics.filter(queue & (mismatches > 0)).height
     valuation_differing = metrics.filter(valuation & (mismatches > 0)).height
     summary = {
-        "status": "sample_match_except_valuation"
+        "status": ("sample_match_except_valuation_and_queue" if args.legacy else "policy_adjusted_expected_difference")
         if physical_mismatches == 0
         else "sample_mismatch",
-        "non_valuation_mismatched_cells": physical_mismatches,
+        "non_policy_mismatched_cells": physical_mismatches,
+        "rate_columns_differing": rate_differing,
+        "raw_rates": args.legacy,
+        "queue_columns_differing": queue_differing,
         "valuation_columns_differing": valuation_differing,
         "rows": actual.height,
         "columns": actual.width,
