@@ -374,21 +374,23 @@
     else if (r.status === 'bad') lead = `<button type="button" class="btn run-open is-outline" data-log="${id}">${ICON.log}View log</button>`;
     else if (live) lead = `<button type="button" class="btn run-open is-outline is-stop" data-cancel="${id}"${r.cancel_requested ? ' disabled' : ''}>${ICON.stop}Cancel run</button>`;
     else if (r.status === 'draft' && !r.archived && draft?.id === r.id) lead = `<button type="button" class="btn run-open is-outline" data-resume>Continue in Setup${ICON.open}</button>`;
+    // Housekeeping is icon-only beside the lead action so the pane fits a laptop screen without scrolling.
+    const icon = (attrs, svg, label, cls = '') => `<button type="button" class="btn${cls}" ${attrs} aria-label="${label}" title="${label}">${svg}</button>`;
     const house = [
-      r.status === 'bad' ? '' : `<button type="button" class="btn" data-log="${id}">${ICON.log}Log</button>`,
-      live ? '' : `<button type="button" class="btn" data-archive="${id}" data-value="${!r.archived}">${ICON.archive}${r.archived ? 'Restore' : 'Archive'}</button>`,
-      ['ok', 'bad', 'cancelled'].includes(r.status) && r.plan_state !== 'settled' ? `<button type="button" class="btn is-danger" data-delete="${id}">${ICON.trash}Delete</button>` : '',
+      r.status === 'bad' ? '' : icon(`data-log="${id}"`, ICON.log, 'Log'),
+      live ? '' : icon(`data-archive="${id}" data-value="${!r.archived}"`, ICON.archive, r.archived ? 'Restore' : 'Archive'),
+      ['ok', 'bad', 'cancelled'].includes(r.status) && r.plan_state !== 'settled' ? icon(`data-delete="${id}"`, ICON.trash, 'Delete', ' is-danger') : '',
     ].join('');
-    return [lead, house ? `<div class="run-house">${house}</div>` : ''];
+    return lead || house ? `<div class="run-lead">${lead}${house ? `<div class="run-house">${house}</div>` : ''}</div>` : '';
   }
   function runPane(r, paneId) {
-    const [badgeClass, badge] = runState(r), [lead, house] = runPaneActions(r);
+    const [badgeClass, badge] = runState(r), actions = runPaneActions(r);
     const by = esc(r.started_by || 'local') + ' · ' + (r.status === 'draft' ? 'draft created ' + esc(stamp(r.created)) : 'started ' + esc(stamp(r.started || r.created)))
       + (r.archived ? ' · archived ' + esc(shortDate(r.archived)) : '');
     return `<section class="run-pane${r.archived ? ' is-archived' : ''}" id="${paneId}" aria-label="Selected run ${esc(r.id)}"><div class="run-pane-top">`
       + `<p class="run-pane-date${r.report_date ? '' : ' empty'}"><span class="sr-only">Stock snapshot date </span>${esc(stampText(r.report_date))}</p><p class="run-pane-eyebrow">${esc(r.id)}</p></div>`
       + `<h2>${esc(r.label)}</h2><p class="run-pane-by">${by}</p>${r.status === 'ok' ? '' : `<p style="margin-top:12px"><span class="run-badge ${badgeClass}">${esc(badge)}</span></p>`}`
-      + `${lead}${runNotices(r)}${runBody(r)}${house}</section>`;
+      + `${actions}${runNotices(r)}${runBody(r)}</section>`;
   }
   function runRow(r, selectedId, paneId, fresh) {
     const [badgeClass, badge] = runState(r), s = r.summary || {};

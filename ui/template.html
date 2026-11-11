@@ -229,7 +229,7 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 /* Runs and archive: a ledger of report months beside the selected run. Every rule is scoped to the onboarding page. */
 #v-onboarding{--run-warn-bg:#fcf0d9;--run-warn-ink:#8a5712;--run-stamp-ink:var(--ob-ticket)}
 [data-theme=dark] #v-onboarding{--run-warn-bg:#2b2215;--run-warn-ink:#e3a14a;--run-stamp-ink:var(--ob-gold)}
-#v-onboarding .run-ledger{display:grid;grid-template-columns:minmax(0,1fr) clamp(330px,29vw,384px);gap:24px;align-items:start}
+#v-onboarding .run-ledger{display:grid;grid-template-columns:minmax(0,1fr) clamp(350px,32vw,440px);gap:24px;align-items:start}
 /* month: the gutter carries the history spine and the month's own state */
 #v-onboarding .run-month{display:grid;grid-template-columns:clamp(140px,13vw,168px) minmax(0,1fr)}
 #v-onboarding .run-gutter{position:relative;min-width:0;padding:2px 18px 26px 30px}
@@ -271,15 +271,15 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 #v-onboarding .is-bad>.run-node{background:var(--bad) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 7l10 10M17 7 7 17' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") center/10px no-repeat;box-shadow:none}
 #v-onboarding :is(.is-skipped,.is-locked)>.run-node{background:linear-gradient(var(--ink3),var(--ink3)) center/8px 1.5px no-repeat,var(--sunken);box-shadow:none}
 /* detail pane for the selected run */
-#v-onboarding .run-pane{position:sticky;top:16px;min-width:0;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:20px 22px 18px;border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--ob-lift)}
+#v-onboarding .run-pane{position:sticky;top:16px;min-width:0;max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:18px 22px 16px;border:1px solid var(--line);border-radius:20px;background:var(--surface);box-shadow:var(--ob-lift)}
 #v-onboarding .run-pane-eyebrow{font:500 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
 #v-onboarding .run-pane-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-#v-onboarding .run-pane-date{font:900 32px/1 var(--ob-dot);color:var(--run-stamp-ink);white-space:nowrap}
+#v-onboarding .run-pane-date{font:900 28px/1 var(--ob-dot);color:var(--run-stamp-ink);white-space:nowrap}
 #v-onboarding .run-pane-date.empty{color:var(--line2)}
-#v-onboarding .run-pane h2{margin-top:12px;font:600 17px/1.3 var(--font);letter-spacing:-.01em;overflow-wrap:anywhere}
+#v-onboarding .run-pane h2{margin-top:10px;font:600 17px/1.3 var(--font);letter-spacing:-.01em;overflow-wrap:anywhere}
 #v-onboarding .run-pane-by{margin-top:2px;color:var(--ink3);font-size:12.5px}
-#v-onboarding .run-steps{margin:20px 0 0;padding:18px 0 0;border-top:1px solid var(--line);list-style:none}
-#v-onboarding .run-steps>li{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;padding-bottom:14px}
+#v-onboarding .run-steps{margin:14px 0 0;padding:14px 0 0;border-top:1px solid var(--line);list-style:none}
+#v-onboarding .run-steps>li{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:12px;padding-bottom:12px}
 #v-onboarding .run-steps>li:not(:last-child)::before{content:"";position:absolute;left:8px;top:23px;bottom:3px;width:2px;border-radius:2px;background:var(--line)}
 #v-onboarding .run-steps>li:is(.is-done,.is-skipped):not(:last-child)::before{background:var(--ok)}
 #v-onboarding .run-steps b{font-size:13px;font-weight:600}
@@ -288,11 +288,11 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 #v-onboarding .run-steps p{margin-top:2px;color:var(--ink3);font-size:12px;line-height:1.45}
 #v-onboarding .run-file{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
 #v-onboarding .run-warn{color:var(--run-warn-ink);font-weight:500}
-#v-onboarding .run-step-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-#v-onboarding .run-btn{height:32px;padding:0 12px;border-radius:9px;font-size:12.5px;color:var(--ink);text-decoration:none}
+#v-onboarding .run-step-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+#v-onboarding .run-btn{height:30px;padding:0 10px;border-radius:9px;font-size:12.5px;color:var(--ink);text-decoration:none}
 #v-onboarding .run-btn svg,#v-onboarding .run-house svg{width:15px;height:15px;color:var(--ink3);transition:color .12s}
 #v-onboarding .run-btn:hover svg,#v-onboarding .run-house .btn:hover svg{color:var(--ink)}
-#v-onboarding .run-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:2px 0 0;padding-top:16px;border-top:1px dashed var(--line2);font-size:12.5px}
+#v-onboarding .run-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:0;padding-top:12px;border-top:1px dashed var(--line2);font-size:12.5px}
 #v-onboarding .run-facts dt{color:var(--ink3)}
 #v-onboarding .run-facts dd{margin:0;text-align:right;font:500 12.5px/1.4 var(--mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 #v-onboarding .run-facts dd.is-missing{color:var(--ink3)}
@@ -301,8 +301,9 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 #v-onboarding .run-facts dd>span{display:block;margin-top:1px;font:450 11.5px/1.4 var(--font);color:var(--ink3)}
 #v-onboarding .run-facts .up{color:var(--bad)}
 #v-onboarding .run-facts .down{color:var(--ok)}
-#v-onboarding .run-facts-note{margin-top:10px;color:var(--ink3);font-size:11.5px}
-#v-onboarding .run-open{width:100%;height:40px;margin-top:14px;justify-content:center;border-color:var(--pri);border-radius:10px;background:var(--pri);color:var(--pri-ink);font-size:13px;text-decoration:none}
+#v-onboarding .run-facts-note{margin-top:8px;color:var(--ink3);font-size:11.5px}
+#v-onboarding .run-lead{display:flex;gap:6px;margin-top:12px}
+#v-onboarding .run-open{flex:1;min-width:0;height:40px;justify-content:center;border-color:var(--pri);border-radius:10px;background:var(--pri);color:var(--pri-ink);font-size:13px;text-decoration:none}
 #v-onboarding .run-open:hover{border-color:var(--pri-h);background:var(--pri-h)}
 #v-onboarding .run-open svg{width:15px;height:15px;transition:transform .15s}
 #v-onboarding .run-open:hover svg{transform:translateX(2px)}
@@ -312,10 +313,9 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 #v-onboarding .run-open.is-stop:hover,#v-onboarding .run-open.is-stop:hover svg{border-color:var(--bad);color:var(--bad)}
 #v-onboarding .run-open:disabled{opacity:.5}
 /* housekeeping sits last and quiet; Delete only turns red on hover and still asks to confirm */
-#v-onboarding .run-house{display:flex;gap:4px;margin:14px -8px 0;padding-top:10px;border-top:1px solid var(--line)}
-#v-onboarding .run-house .btn{height:30px;padding:0 8px;border-color:transparent;border-radius:8px;background:none;color:var(--ink2);font-size:12.5px}
+#v-onboarding .run-house{display:flex;gap:6px;margin-left:auto}
+#v-onboarding .run-house .btn{width:40px;height:40px;padding:0;justify-content:center;border-radius:10px;background:var(--surface);color:var(--ink2)}
 #v-onboarding .run-house .btn:hover{background:var(--sunken);color:var(--ink)}
-#v-onboarding .run-house .is-danger{margin-left:auto}
 #v-onboarding .run-house .is-danger:hover,#v-onboarding .run-house .is-danger:hover svg{background:var(--bad-bg);color:var(--bad)}
 #v-onboarding .run-pane.is-archived .run-steps em{display:none}
 #v-onboarding .run-pane.is-archived .is-current>.run-node{box-shadow:inset 0 0 0 2px var(--accent)}
