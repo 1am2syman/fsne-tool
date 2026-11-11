@@ -8,13 +8,24 @@
     ['shelflife', 'Shelf-life report', '.csv'],
   ];
   const requiredSlots = slots.filter(([slot]) => slot !== 'config');
+  const descriptions = {
+    config: 'Fill the report date from a workbook.',
+    secondary: 'Monthly sales through the report month.',
+    hierarchy: 'Material codes, products and parent mapping.',
+    shelflife: 'Stock, expiry dates and DB Landing value.',
+  };
   const help = {
     config: 'Optional import: fills the report date from config_table. You can edit the date above.',
     secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
     shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry, stock and DB Landing value (the source of stock value in BDT). Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
   };
+  const formats = {config: ['XLSX', '#1E7A4C'], secondary: ['XLSB', '#1E7A4C'], hierarchy: ['XLSX', '#1E7A4C'], shelflife: ['CSV', '#3D5A99']};
+  const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
   let online = false, busy = false, runs = [], polling = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
+  // The ticket stamp spells the month out so 08/09 can never be read the wrong way round.
+  const stampText = value => value ? value.slice(8, 10) + ' ' + MONTHS[Number(value.slice(5, 7)) - 1] + ' ' + value.slice(0, 4) : 'DD MMM YYYY';
+  const sizeText = bytes => bytes < 1024 ** 2 ? Math.max(1, Math.ceil(bytes / 1024)).toLocaleString('en-GB') + ' KB' : (bytes / 1024 ** 2).toLocaleString('en-GB', {maximumFractionDigits: 1}) + ' MB';
   const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
   const apiUrl = path => location.origin + basePath + 'api/' + path;
@@ -30,23 +41,95 @@
   }
   const post = (path, body = {}) => api(path, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
   let pendingSettings = Promise.resolve();
+  /** Median duration of completed runs in seconds, or null before the first completed run. */
+  function medianSeconds() {
+    const durations = runs.filter(r => r.status === 'ok' && r.seconds != null).map(r => r.seconds).sort((a, b) => a - b);
+    if (!durations.length) return null;
+    const mid = Math.floor(durations.length / 2);
+    return durations.length % 2 ? durations[mid] : Math.round((durations[mid - 1] + durations[mid]) / 2);
+  }
+  function startMessage(missing, hasDate) {
+    if (!online) return 'Open the live app to start a run.';
+    if (busy) return 'Saving and checking your files…';
+    if (invalidSlot === 'config') return 'Check the report date or configuration workbook.';
+    if (invalidSlot) return 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1].toLowerCase() + ' file.';
+    if (!hasDate) return 'Add a report date to continue.';
+    if (missing === 1) return 'Add the ' + requiredSlots.find(([slot]) => !selected.has(slot))[1].toLowerCase() + ' to continue.';
+    if (missing) return 'Add ' + missing + ' more files to continue.';
+    const median = medianSeconds();
+    return median == null ? 'Ready to calculate and save your report.' : 'Ready. A run usually takes about ' + Math.max(1, Math.round(median / 60)) + ' min.';
+  }
+  function showStamp() {
+    const value = $('#sDate').validity.valid ? $('#sDate').value : '';
+    $('#dateStamp').textContent = stampText(value);
+    $('#dateStamp').classList.toggle('empty', !value);
+  }
+  /** Ticket checklist entry for one required file: [row class, short note]. */
+  function checklistEntry(slot) {
+    if (invalidSlot === slot) return busy ? ['', 'Checking…'] : ['bad', 'Check file'];
+    const file = selected.get(slot);
+    return file ? ['ok', sizeText(file.size)] : ['', 'Missing'];
+  }
+  function showChecklist() {
+    $('#fileChecklist').html = requiredSlots.map(([slot, label]) => {
+      const [state, note] = checklistEntry(slot);
+      return `<li class="${state}"><span class="ob-tick" aria-hidden="true"></span>${label}<em>${note}</em></li>`;
+    }).join('');
+  }
   function controls() {
     const missing = requiredSlots.filter(([slot]) => !selected.has(slot)).length;
     const hasDate = !!$('#sDate').value && $('#sDate').validity.valid;
     $('#runBtn').disabled = !online || busy || missing > 0 || !hasDate || !!invalidSlot;
-    $('#dateHint').textContent = !hasDate ? 'Choose the stock snapshot date.' : 'Use the stock snapshot date.';
-    $('#startReason').textContent = !online ? 'Connect to the live app to upload files.' : busy ? 'Please wait for the upload.' : invalidSlot === 'config' ? 'Check the report date or configuration workbook.' : invalidSlot ? 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1] + ' file.' : !hasDate ? '' : missing ? missing + (missing === 1 ? ' more file needed' : ' more files needed') : '';
+    $('#dateHint').textContent = !hasDate ? 'The day stock was counted.' : 'Sets stock age and the sales cutoff.';
+    $('#startReason').textContent = startMessage(missing, hasDate);
     $('#discardDraft').hidden = !draft;
     $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
     $('#sDate').disabled = busy || !online;
+    $('#datePick').disabled = busy || !online;
+    $('#datePick').textContent = hasDate ? 'Change' : 'Choose date';
+    $('#ticketRun').textContent = draft ? draft.id + ' · Draft' : 'New run';
     $$('#ob-setup input[type="file"]').forEach(input => input.disabled = busy || !online);
-    $('#fileProg').textContent = requiredSlots.length - missing + ' of ' + requiredSlots.length + ' selected';
+    const count = requiredSlots.length - missing;
+    $('#fileProg').textContent = count + ' of ' + requiredSlots.length + ' selected';
+    $$('#ob-setup .ob-segs i').forEach((segment, i) => segment.classList.toggle('on', i < count));
+    showStamp();
+    showChecklist();
   }
   $('#runBtn').disabled = true;
-  const fileRow = ([slot, label, ext]) => `<div class="file" data-slot="${slot}"><span class="st"></span><div><div class="file-heading"><b>${label}</b><span class="file-ext">${ext.replaceAll(',', ' / ')}</span></div><small class="file-meta"></small><span class="file-help">${esc(help[slot])}</span></div><div class="file-actions"><a class="btn sm ghost file-sample" href="${esc(SAMPLES[slot].href)}" download="${esc(SAMPLES[slot].name)}" aria-label="Download ${label.toLowerCase()} sample" title="Download sample · synthetic example"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 16v5h14v-5"/></svg></a><label class="btn sm"><span class="file-choose">Choose file</span><input type="file" aria-label="${label}" accept="${ext}"></label></div></div>`;
+  function fileGlyph(slot) {
+    const [tag, color] = formats[slot];
+    const lines = tag === 'CSV' ? 'M8 18h22M8 23h16M8 28h20' : 'M8 18h22M8 23h22M8 28h22M15.5 15v15M23 15v15';
+    return `<svg viewBox="-4 0 46 50" aria-hidden="true"><path class="fg-page" d="M7 1.5h18.6L38.5 14.4V43A5.5 5.5 0 0 1 33 48.5H7A5.5 5.5 0 0 1 1.5 43V7A5.5 5.5 0 0 1 7 1.5Z"/><path class="fg-fold" d="M25.6 1.5V9a5.4 5.4 0 0 0 5.4 5.4h7.5"/><path class="fg-grid" d="${lines}"/><g class="fg-tag"><rect x="-3" y="31.5" width="${tag.length * 6 + 8}" height="12" rx="3" fill="${color}"/><text x="${tag.length * 3 + 1}" y="40.2" text-anchor="middle">${tag}</text></g></svg>`;
+  }
+  const fileRow = ([slot, label, ext]) => `
+    <div class="file" data-slot="${slot}">
+      <span class="st">${fileGlyph(slot)}</span>
+      <div class="file-body">
+        <div class="file-heading"><b>${label}</b><details class="file-info"><summary aria-label="${label} file requirements" title="File requirements">i</summary><div class="file-help">${esc(help[slot])}</div></details></div>
+        <span class="file-description" id="${slot}-description">${descriptions[slot]}</span>
+        <div class="file-meta" hidden><span class="file-name"></span><span class="file-upload-status"></span></div>
+        <span class="file-ext">${ext.split(',').map(e => e.slice(1).toUpperCase()).join(' · ')}</span>
+      </div>
+      <div class="file-actions">
+        <a class="btn sm ghost file-sample" href="${esc(SAMPLES[slot].href)}" download="${esc(SAMPLES[slot].name)}" aria-label="Download ${label.toLowerCase()} sample" title="Download sample · synthetic example"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14"/></svg></a>
+        <label class="btn sm"><span class="file-choose">Choose file</span><input type="file" aria-label="${label}" aria-describedby="${slot}-description" accept="${ext}"></label>
+      </div>
+    </div>`;
   $('#files').html = requiredSlots.map(fileRow).join('');
   $('#configFile').html = fileRow(slots[0]);
+  // Requirement notes and the ticket's option popovers close on an outside click or Escape.
+  const popovers = '.file-info[open], .ob-pop[open]';
+  document.addEventListener('click', event => {
+    $$(popovers).forEach(pop => {if (!pop.contains(event.target)) pop.open = false;});
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') $$(popovers).forEach(pop => pop.open = false);
+  });
+  const openDatePicker = () => {try {$('#sDate').showPicker();} catch {/* Older browsers open the picker from the field itself. */}};
+  $('#datePick').onclick = () => {$('#sDate').focus(); openDatePicker();};
+  $('#sDate').addEventListener('click', openDatePicker);
+  $('#sDate').addEventListener('input', showStamp);
   function showDraft(run, keepFields = false) {
     draft = run;
     selected.clear();
@@ -55,8 +138,9 @@
       const file = selected.get(el.dataset.slot);
       el.classList.toggle('done', !!file && !file.generated);
       const metadata = el.querySelector('.file-meta');
-      metadata.textContent = file?.generated ? 'Using the date entered above.' : file ? file.name + ' · ' + Math.ceil(file.size / 1024).toLocaleString() + ' KB uploaded' : '';
-      metadata.title = metadata.textContent;
+      metadata.hidden = !file;
+      el.querySelector('.file-name').textContent = file?.generated ? 'Using the date entered above.' : file?.name || '';
+      el.querySelector('.file-upload-status').textContent = file && !file.generated ? sizeText(file.size) + ' · Uploaded' : '';
       metadata.tabIndex = file ? 0 : -1;
       el.querySelector('.file-choose').textContent = file && !file.generated ? 'Replace' : 'Choose file';
     });
@@ -139,9 +223,7 @@
     if (r.status === 'ok') return 'Done — open results';
     if (r.status !== 'running') return r.step || status[r.status][1];
     const elapsed = r.started ? Math.max(0, Math.floor((Date.now() - Date.parse(r.started)) / 1000)) : 0;
-    const durations = runs.filter(x => x.status === 'ok' && x.seconds != null).map(x => x.seconds).sort((a,b) => a-b);
-    const mid = Math.floor(durations.length / 2);
-    const median = durations.length ? (durations.length % 2 ? durations[mid] : Math.round((durations[mid-1] + durations[mid])/2)) : null;
+    const median = medianSeconds();
     return (r.step || 'Running') + ' · ' + elapsed + ' s elapsed' + (median == null ? '' : ' · typical ' + median + ' s');
   }
   function summary(r) {

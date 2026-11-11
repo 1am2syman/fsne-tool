@@ -58,15 +58,16 @@ const selected = name => group === 'all' || group === name;
     if(selected('cards')) equalCards(empty);
     if(selected('date')) {
       assert.equal(await page.locator('#runBtn').isDisabled(),true);
-      assert.equal(await page.locator('#dateHint').textContent(),'Choose the stock snapshot date.');
-      const hiddenReason=await page.locator('#startReason').evaluate(el=>({clip:getComputedStyle(el).clipPath,text:el.textContent}));
-      assert.notEqual(hiddenReason.clip,'none');
-      assert.ok(!hiddenReason.text.includes('Choose a report date'));
+      assert.equal(await page.locator('#dateHint').textContent(),'The day stock was counted.');
+      assert.equal(await page.locator('#dateStamp').textContent(),'DD MMM YYYY');
+      assert.ok(await page.locator('#startReason').isVisible());
+      assert.equal(await page.locator('#startReason').textContent(),'Add a report date to continue.');
     }
     if(selected('date') || selected('cards') || selected('uploads')) {
       await page.locator('#sDate').fill('2026-08-30');
       await page.locator('#sDate').blur();
       await page.waitForFunction(()=>!document.querySelector('#discardDraft').hidden);
+      assert.equal(await page.locator('#dateStamp').textContent(),'30 AUG 2026');
       const draft=await bounds();
       assert.deepEqual(draft.rows,empty.rows,'Draft control changed upload row heights');
       assert.deepEqual(draft.cards.map(c=>c.height),empty.cards.map(c=>c.height),'Draft control changed card heights');
@@ -82,9 +83,7 @@ const selected = name => group === 'all' || group === name;
         const after=await bounds();
         assert.deepEqual(after.rows,empty.rows,'File selection grew an upload row');
         assert.deepEqual(after.cards.map(c=>c.height),empty.cards.map(c=>c.height),'File selection grew a card');
-        const meta=page.locator(`[data-slot=${slot}] .file-meta`);
-        assert.ok((await meta.textContent()).includes(name));
-        assert.equal(await meta.getAttribute('title'),await meta.textContent());
+        assert.equal(await page.locator(`[data-slot=${slot}] .file-name`).textContent(),name);
       }
       await page.waitForFunction(()=>!document.querySelector('#runBtn').disabled);
       const filled=await bounds();
@@ -107,8 +106,9 @@ const selected = name => group === 'all' || group === name;
         await page.locator('.config-about>summary').click();
         equalCards(await bounds());
         await shot('desktop-expanded');
-        await page.locator('.config-import>summary').click();
-        await page.locator('.config-about>summary').click();
+        // The ticket's option popovers are exclusive and close on Escape.
+        await page.keyboard.press('Escape');
+        assert.equal(await page.locator('.ob-pop[open]').count(),0,'Option popover stayed open');
       }
       await resize({width:390,height:1100});
       const mobile=await bounds();
@@ -120,10 +120,13 @@ const selected = name => group === 'all' || group === name;
         const filename='a-long-mobile-filename-'.repeat(8)+'.csv';
         await page.locator('[data-slot=shelflife] input').setInputFiles({name:filename,mimeType:'text/csv',buffer:Buffer.from(sample.split(',')[1],'base64')});
         assert.equal((await accepted).status(),200);
-        await page.waitForFunction(name=>document.querySelector('[data-slot=shelflife] .file-meta').textContent.startsWith(name),filename);
+        await page.waitForFunction(name=>document.querySelector('[data-slot=shelflife] .file-name').textContent===name,filename);
         await page.waitForFunction(()=>!document.querySelector('#sDate').disabled);
-        assert.deepEqual((await bounds()).rows,mobile.rows,'Mobile filename replacement changed row heights');
-        assert.deepEqual((await bounds()).cards.map(c=>c.height),mobile.cards.map(c=>c.height),'Mobile filename replacement changed card heights');
+        // Filenames wrap in full instead of truncating, so a very long name may grow its row.
+        const fit=await page.locator('[data-slot=shelflife] .file-name').evaluate(el=>({w:el.clientWidth,sw:el.scrollWidth,h:el.clientHeight,sh:el.scrollHeight}));
+        assert.ok(fit.w>=fit.sw&&fit.h>=fit.sh,'Mobile filename is clipped: '+JSON.stringify(fit));
+        const replaced=await bounds();
+        assert.equal(replaced.scrollWidth,replaced.pageWidth,'Mobile filename replacement overflows the page');
       }
       await shot('mobile-setup-top');
       await page.locator('main').evaluate(el=>el.scrollTop=el.scrollHeight);

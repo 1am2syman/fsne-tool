@@ -6,7 +6,7 @@
 <title>FSNE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Doto:wght@900&family=Geist:wght@400;450;500;600&family=Geist+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
 <style>
 :root{
   --canvas:#f5f6f8; --surface:#fff; --sunken:#f0f1f4; --hover:#f7f8fa;
@@ -106,29 +106,128 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .panel-h h2{font-size:13.5px;font-weight:600}
 .panel-h p{color:var(--ink3);font-size:12.5px}
 .cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start}
-#ob-setup{align-items:stretch}#ob-setup>.panel{min-width:0}.source-panel{display:flex;flex-direction:column}#files{flex:1;display:grid;grid-template-rows:repeat(3,minmax(min-content,1fr))}.setup-footer{min-height:52px;padding:12px 18px;border-top:1px solid var(--line)}
+.page:has(#v-onboarding.on){padding-bottom:24px}
+/* Monthly upload: file list + run ticket. Every rule here is scoped to the onboarding page. */
+#v-onboarding{--ob-gold:#F0AE3C;--ob-ticket:#121528;--ob-ticket-2:#171B34;--ob-ticket-line:#2A3154;--ob-ticket-ink:#E8EBF4;--ob-ticket-dim:#8790B0;--ob-ticket-mute:#6E7798;--ob-ticket-off:#252B4C;--ob-lift:0 1px 2px rgba(18,21,40,.05),0 12px 32px -18px rgba(18,21,40,.22);--ob-dot:'Doto','Geist Mono',ui-monospace,monospace}
+[data-theme=dark] #v-onboarding{--ob-ticket:#181C31;--ob-ticket-2:#1E233C;--ob-ticket-line:#30375C;--ob-lift:none}
+#v-onboarding>.head{align-items:center;margin-bottom:18px}
+#v-onboarding>.head h1{font-size:34px;letter-spacing:-.02em}
+#obTabs{flex:none;gap:2px;margin:0;border:0;padding:3px;border-radius:11px;background:var(--sunken)}
+#obTabs .tab{margin:0;border:0;padding:6px 14px;border-radius:8px;color:var(--ink2)}
+#obTabs .tab:hover{color:var(--ink)}
+#obTabs .tab[aria-selected=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(18,21,40,.12)}
+#obTabs .count{margin-left:7px}#obTabs .count:empty{display:none}
+#appNotice{margin:0 0 14px;color:var(--ink2);font-size:12.5px}
+#onboardingError{margin:-4px 0 14px;padding:9px 14px;border-radius:10px;background:var(--bad-bg);font-size:12.5px}
+#onboardingError[hidden]{display:none}
+#ob-setup{display:grid;grid-template-columns:minmax(0,1fr) 368px;gap:24px;align-items:stretch}
+#ob-setup[hidden]{display:none}
+#ob-setup>.panel{min-width:0;display:flex;flex-direction:column;border-radius:20px;overflow:visible}
+#ob-setup>.source-panel{box-shadow:var(--ob-lift)}
+#ob-setup .ob-files-h{padding:22px 26px 8px;border:0;align-items:flex-end}
+#ob-setup .ob-files-h h2{font-size:15px}
+#ob-setup .ob-files-h p{font-size:12.5px;margin-top:3px}
+.ob-meter{display:flex;align-items:center;gap:10px;flex:none}
+.ob-segs{display:flex;gap:4px}.ob-segs i{width:26px;height:5px;border-radius:3px;background:var(--line)}.ob-segs i.on{background:var(--ok)}
+#ob-setup #fileProg{font:500 12px var(--mono);color:var(--ink2)}
+#files{flex:1;display:grid;grid-auto-rows:1fr;padding:4px 26px}
+#v-onboarding .file{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:18px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);transition:background .12s,box-shadow .12s}
+#files .file:last-child{border-bottom:0}
+#v-onboarding .file.over{background:var(--accent-soft);box-shadow:0 0 0 8px var(--accent-soft);outline:1.5px dashed var(--accent);outline-offset:8px;border-radius:6px}
+#v-onboarding .file:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:8px;border-radius:6px}
+#v-onboarding .file input[type=file]{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+#v-onboarding .st{position:relative;width:40px;height:48px;justify-self:center}
+#v-onboarding .st svg{display:block;width:100%;height:100%;stroke:none}
+#v-onboarding .fg-page{fill:var(--surface);stroke:var(--line2);stroke-width:1.5}
+#v-onboarding .fg-fold{fill:none;stroke:var(--line2);stroke-width:1.5}
+#v-onboarding .fg-grid{fill:none;stroke:var(--line);stroke-width:1.2}
+#v-onboarding .fg-tag text{fill:#fff;font:600 7.6px var(--mono)}
+#v-onboarding .file.done .st::after{content:"";position:absolute;right:-6px;bottom:-4px;width:18px;height:18px;border-radius:50%;background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/11px no-repeat;box-shadow:0 0 0 2px var(--surface)}
+#v-onboarding .file-body{min-width:0}
+#v-onboarding .file-heading{display:flex;align-items:center;gap:8px}
+#v-onboarding .file-heading b{font-size:14px;font-weight:600}
+#v-onboarding .file-description{display:block;margin-top:4px;color:var(--ink2);font-size:12.5px}
+#v-onboarding .file-ext{display:block;margin-top:5px;font:500 10.5px var(--mono);letter-spacing:.06em;color:var(--ink3)}
+#v-onboarding .file.done .file-description,#v-onboarding .file.done .file-ext{display:none}
+#v-onboarding .file-meta{margin-top:5px}#v-onboarding .file-meta[hidden]{display:none}
+#v-onboarding .file-name{display:block;font-size:13px;font-weight:500;line-height:1.4;color:var(--ink);overflow-wrap:anywhere}
+#v-onboarding .file-upload-status{display:block;margin-top:3px;font-size:12px;color:var(--ink3)}
+#v-onboarding .file-upload-status:empty{display:none}
+#v-onboarding .file-info{display:inline-flex}
+#v-onboarding .file-info summary{list-style:none;display:grid;place-items:center;width:16px;height:16px;border:1px solid var(--line2);border-radius:50%;font:500 10px var(--font);color:var(--ink3);cursor:pointer}
+#v-onboarding .file-info summary::-webkit-details-marker{display:none}
+#v-onboarding .file-info[open] summary,#v-onboarding .file-info summary:hover{color:var(--accent);border-color:var(--accent)}
+#v-onboarding .file-help{position:absolute;z-index:20;left:62px;right:0;top:calc(100% - 10px);padding:14px 16px;border:1px solid var(--line2);border-radius:12px;background:var(--surface);box-shadow:0 12px 32px -12px rgba(18,21,40,.3);color:var(--ink2);font-size:12px;line-height:1.6;font-weight:400}
+#v-onboarding .file-actions{display:flex;align-items:center;gap:6px}
+#v-onboarding .file-sample{width:32px;height:32px;padding:0;border-radius:9px;justify-content:center;color:var(--ink3)}
+#v-onboarding .file-sample svg{width:15px;height:15px}
+#v-onboarding .file-actions label.btn{height:32px;min-width:96px;padding:0 13px;border-radius:9px;justify-content:center;font-size:13px}
+.ob-files-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 26px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px}
+.ob-files-foot>span{display:flex;align-items:center;gap:7px}
+.ob-files-foot svg{width:14px;height:14px}
+.ob-draft:has(#discardDraft[hidden]){display:none}
+#discardDraft{padding:0;border:0;background:none;color:var(--ink2);font-weight:500;text-decoration:underline;text-decoration-color:var(--line2);text-underline-offset:3px}
+#discardDraft:hover{color:var(--ink)}
+#discardDraft:disabled{opacity:.5;cursor:default}
+/* run ticket */
+#ob-setup>.ob-ticket{position:relative;padding:22px 24px 18px;background:var(--ob-ticket);border-color:var(--ob-ticket);color:var(--ob-ticket-ink);box-shadow:0 22px 44px -24px rgba(18,21,40,.7)}
+[data-theme=dark] #ob-setup>.ob-ticket{border-color:var(--ob-ticket-line);box-shadow:none}
+.ob-run-id{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ob-ticket-dim)}
+.ob-stamp{margin-top:16px;padding:14px 16px 12px;border:1px solid var(--ob-ticket-line);border-radius:14px;background:var(--ob-ticket-2) radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.3px) 0 0/6px 6px}
+.ob-stamp:focus-within{border-color:var(--ob-gold)}
+.ob-stamp>label{display:block;font-size:11.5px;color:var(--ob-ticket-dim)}
+.ob-date{position:relative;height:50px;margin-top:4px}
+#dateStamp{display:block;font:900 42px/50px var(--ob-dot);letter-spacing:.01em;color:var(--ob-gold);white-space:nowrap}
+#dateStamp.empty{color:#353C66}
+#sDate{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;border-radius:6px;opacity:0;cursor:pointer;background:var(--ob-ticket-2);color:var(--ob-gold);font:900 38px/1 var(--ob-dot);color-scheme:dark}
+#sDate:focus{opacity:1;outline:0}
+#sDate:disabled{cursor:default}
+#sDate::-webkit-calendar-picker-indicator{display:none}
+.ob-date:focus-within #dateStamp{visibility:hidden}
+.ob-hint{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px}
+#dateHint{font-size:12px;color:var(--ob-ticket-dim)}
+#datePick{flex:none;height:26px;padding:0 10px;border:1px solid #363E66;border-radius:8px;background:none;color:var(--ob-ticket-ink);font-size:12px}
+#datePick:hover{border-color:var(--ob-ticket-ink)}
+#datePick:disabled{opacity:.5;cursor:default}
+.ob-field{display:block;margin-top:14px;font-size:12px;font-weight:500;color:#B5BCD3}
+.ob-field span{margin-left:4px;font-weight:400;color:var(--ob-ticket-mute)}
+#sLabel{display:block;width:100%;height:38px;margin-top:6px;padding:0 12px;border:1px solid var(--ob-ticket-line);border-radius:10px;background:var(--ob-ticket-2);color:#fff;outline:0}
+#sLabel:focus{border-color:var(--ob-gold)}
+#sLabel::placeholder{color:#59617F}
+.ob-perf{position:relative;margin:18px -24px 14px;border-top:1.5px dashed #343B62}
+.ob-perf::before,.ob-perf::after{content:"";position:absolute;top:-12px;width:22px;height:22px;border-radius:50%;background:var(--canvas)}
+.ob-perf::before{left:-12px}.ob-perf::after{right:-12px}
+#fileChecklist{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+#fileChecklist li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:13px;color:#C9CFE2}
+.ob-tick{width:18px;height:18px;border:1.5px dashed #4A5280;border-radius:50%}
+#fileChecklist li.ok .ob-tick{border:0;background:var(--ob-gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5' fill='none' stroke='%23121528' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/11px no-repeat}
+#fileChecklist li.bad .ob-tick{border:1.5px solid #F0707A}
+#fileChecklist em{font:500 11.5px var(--mono);font-style:normal;color:var(--ob-ticket-mute)}
+#fileChecklist li.ok em{color:#A9B1CB}
+#fileChecklist li.bad em{color:#F0707A}
+.ob-go{margin-top:auto;padding-top:16px}
+#runBtn{width:100%;height:46px;justify-content:center;gap:8px;border:0;border-radius:12px;background:var(--ob-gold);color:#121528;font-size:14.5px;font-weight:600}
+#runBtn:hover{background:#F4BB55}
+#runBtn:disabled{opacity:1;background:var(--ob-ticket-off);color:var(--ob-ticket-mute)}
+#runBtn svg{width:15px;height:15px}
+#startReason{margin-top:8px;min-height:18px;text-align:center;font-size:12px;color:var(--ob-ticket-dim)}
+.ob-more{display:flex;justify-content:center;gap:18px;margin-top:12px;padding-top:12px;border-top:1px solid #232946}
+.ob-pop>summary{list-style:none;cursor:pointer;white-space:nowrap;font-size:12px;color:var(--ob-ticket-dim);text-decoration:underline dotted;text-underline-offset:3px}
+.ob-pop>summary::-webkit-details-marker{display:none}
+.ob-pop>summary:hover,.ob-pop[open]>summary{color:var(--ob-ticket-ink)}
+.ob-pop-body{position:absolute;z-index:30;left:14px;right:14px;bottom:56px;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:0 22px 48px -16px rgba(0,0,0,.5)}
+.ob-pop-body>p{font-size:12.5px;line-height:1.55;color:var(--ink2)}
+#configFile .file{grid-template-columns:32px minmax(0,1fr);gap:8px 12px;padding:12px 0 0;border:0;align-items:start}
+#configFile .st{width:32px;height:38px}
+#configFile .file-actions{grid-column:2}
+#configFile .file-help{left:0;top:100%}
+@media (max-width:1000px){#ob-setup{grid-template-columns:1fr}}
+@media (max-width:700px){#v-onboarding>.head{flex-wrap:wrap}#v-onboarding .file{grid-template-columns:40px minmax(0,1fr)}#v-onboarding .file-actions{grid-column:2}#dateStamp{font-size:30px}}
 .cols[hidden],.panel[hidden]{display:none}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-#appNotice{margin:0 0 14px;color:var(--ink2);font-size:13px}.file-help{display:block;color:var(--ink2);font-size:12px;margin-top:5px}#onboardingError{margin:0 0 14px;font-size:13px}#onboardingError[hidden]{display:none}
 
-/* inputs list */
-.file{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);transition:background .12s}
-.file:last-child{border:0}
-.file.over{background:var(--accent-soft)}
-.file .st{width:16px;height:16px;border-radius:50%;border:1.5px dashed var(--line2)}
-.file.done .st{border:0;background:var(--ok);display:grid;place-items:center}
-.file.done .st::after{content:"";width:4px;height:7px;border:solid #fff;border-width:0 1.6px 1.6px 0;transform:rotate(45deg) translate(-.5px,-.5px)}
-.file b{font-weight:500}
-.file-heading{display:flex;align-items:baseline;gap:10px;min-width:0}
-.file-ext{color:var(--ink3);font-size:11px;font-family:var(--mono);white-space:nowrap}
-.file-meta{display:block;color:var(--ink2);font-size:12px;line-height:18px;height:18px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.file-actions{display:flex;align-items:center;gap:6px}.file-actions label{min-width:94px;justify-content:center}
-.file-sample{width:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.file-sample svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.5}
-.file.done small{color:var(--ink2)}
-#discardDraft[hidden]{display:none}.file input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}.file:focus-within{outline:2px solid var(--accent);outline-offset:-2px}.runs-scroll{overflow:auto}.runs-table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1160px;background:var(--surface)}.runs-table th,.runs-table td{position:static;text-align:left;vertical-align:top;padding:8px 6px;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}.runs-table th:nth-child(1){width:90px}.runs-table th:nth-child(2){width:auto}.runs-table th:nth-child(3){width:125px}.runs-table th:nth-child(4){width:85px}.runs-table th:nth-child(5){width:140px}.runs-table th:nth-child(6){width:170px}.runs-table th:nth-child(7){width:370px}.runs-table th:nth-child(2),.runs-table td:nth-child(2){position:static;left:auto;z-index:auto}.run-actions{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}.run-actions>.btn{flex:none;margin:0}.run-secondary{color:var(--ink3);font-size:12px;margin-top:4px}
+.runs-scroll{overflow:auto}.runs-table{border-collapse:collapse;table-layout:fixed;width:100%;min-width:1160px;background:var(--surface)}.runs-table th,.runs-table td{position:static;text-align:left;vertical-align:top;padding:8px 6px;white-space:normal;overflow-wrap:anywhere;border-bottom:1px solid var(--line)}.runs-table th:nth-child(1){width:90px}.runs-table th:nth-child(2){width:auto}.runs-table th:nth-child(3){width:125px}.runs-table th:nth-child(4){width:85px}.runs-table th:nth-child(5){width:140px}.runs-table th:nth-child(6){width:170px}.runs-table th:nth-child(7){width:370px}.runs-table th:nth-child(2),.runs-table td:nth-child(2){position:static;left:auto;z-index:auto}.run-actions{display:flex;align-items:center;gap:4px;flex-wrap:nowrap;white-space:nowrap}.run-actions>.btn{flex:none;margin:0}.run-secondary{color:var(--ink3);font-size:12px;margin-top:4px}
 
-.config-form{padding:20px 18px}.config-field{display:block;font-size:12.5px;font-weight:500;margin-bottom:20px}.config-field input{display:block;width:100%;height:38px;border:1px solid var(--line2);background:var(--surface);border-radius:6px;padding:0 10px;margin-top:7px;color:var(--ink)}.config-field small{display:block;font-size:11.5px;font-weight:400;color:var(--ink3);margin-top:6px}.optional-label{font-weight:400;color:var(--ink3)}.config-import{border-top:1px solid var(--line);padding-top:16px}.config-import summary,.config-about summary{font-size:12px;color:var(--ink2);cursor:pointer}.config-import .file{grid-template-columns:16px minmax(0,1fr);padding:14px 0 0}.config-import .file-actions{grid-column:2}.config-note{font-size:11.5px;color:var(--ink3);border-left:2px solid var(--line2);padding-left:10px;margin-top:20px}.config-about{margin-top:16px}.config-about p{font-size:12px;color:var(--ink2);margin-top:8px}
 .form{padding:6px 18px 14px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
 .row:last-child{border:0}
@@ -542,31 +641,36 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <!-- ONBOARDING -->
 <section class="view on" id="v-onboarding">
   <div class="head">
-    <div><h1>Monthly upload</h1><p class="lede">Set the report date, add three source files, then calculate and save a report.</p></div>
-    <div><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" class="sr-only" aria-live="polite"></p></div>
-  </div>
-  <div class="tabs" role="tablist" id="obTabs">
-    <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
-    <button class="tab" role="tab" aria-selected="false" data-t="runs">Runs<span class="count" id="runsN"></span></button>
-    <button class="tab" role="tab" aria-selected="false" data-t="archive">Archive<span class="count" id="archN"></span></button>
+    <div><h1>Monthly upload</h1><p class="lede">Add this month’s exports and set the stock snapshot date.</p></div>
+    <div class="tabs" role="tablist" id="obTabs">
+      <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
+      <button class="tab" role="tab" aria-selected="false" data-t="runs">Runs<span class="count" id="runsN"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-t="archive">Archive<span class="count" id="archN"></span></button>
+    </div>
   </div>
 
   <p id="appNotice" role="status" aria-live="polite">Connecting to the run service…</p>
   <p id="onboardingError" role="alert" class="badc" hidden></p>
-  <div id="ob-setup" class="cols">
+  <div id="ob-setup">
     <div class="panel source-panel">
-      <div class="panel-h"><h2>Source files</h2><p id="fileProg" class="mono"></p></div>
+      <div class="panel-h ob-files-h"><div><h2>Source files</h2><p>Three exports for the report month.</p></div><div class="ob-meter"><span class="ob-segs" aria-hidden="true"><i></i><i></i><i></i></span><p id="fileProg" role="status"></p></div></div>
       <div id="files"></div>
-      <div class="setup-footer"><button id="discardDraft" class="btn sm ghost" type="button" hidden>Discard draft</button></div>
+      <div class="ob-files-foot"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m-4 4 4-4 4 4M5 14v5h14v-5"/></svg>Drop a file onto its row to add it.</span><span class="ob-draft">Draft saved automatically ·<button id="discardDraft" type="button" hidden>Discard draft</button></span></div>
     </div>
-    <div class="panel">
-      <div class="panel-h"><h2>Run settings</h2><p>Enter directly</p></div>
-      <div class="config-form">
-        <label class="config-field" for="sDate">Report date<input id="sDate" type="date" required disabled aria-describedby="dateHint"><small id="dateHint">Choose the stock snapshot date.</small></label>
-        <label class="config-field" for="sLabel">Run label <span class="optional-label">optional</span><input id="sLabel" maxlength="80" placeholder="e.g. August 2026 close" disabled><small>A name to recognize this run later.</small></label>
-        <details class="config-import"><summary>Import configuration from Excel · optional</summary><div id="configFile"></div></details>
-        <p class="config-note">The report date determines stock age and the sales-history cutoff.</p>
-        <details class="config-about"><summary>About the calculation</summary><p>Sales rates use all supplied months through the report date. Rotation uses twice the average sales rate. Spaces in batch keys are kept as supplied.</p></details>
+    <div class="panel ob-ticket">
+      <p class="ob-run-id" id="ticketRun">New run</p>
+      <div class="ob-stamp">
+        <label for="sDate">Stock snapshot date</label>
+        <div class="ob-date"><span id="dateStamp" class="empty" aria-hidden="true">DD MMM YYYY</span><input id="sDate" type="date" required disabled aria-describedby="dateHint"></div>
+        <div class="ob-hint"><small id="dateHint">The day stock was counted.</small><button type="button" id="datePick" disabled>Choose date</button></div>
+      </div>
+      <label class="ob-field" for="sLabel">Run label<span>optional</span><input id="sLabel" maxlength="80" placeholder="e.g. August 2026 close" disabled></label>
+      <div class="ob-perf" aria-hidden="true"></div>
+      <ul id="fileChecklist" aria-label="Files for this run"></ul>
+      <div class="ob-go"><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" aria-live="polite"></p></div>
+      <div class="ob-more">
+        <details class="config-import ob-pop" name="setup-options"><summary>Import settings from Excel</summary><div class="ob-pop-body"><p>Optional. Fills the report date from a configuration workbook. You can still change the date.</p><div id="configFile"></div></div></details>
+        <details class="config-about ob-pop" name="setup-options"><summary>About the calculation</summary><div class="ob-pop-body"><p>The report date determines stock age and the sales-history cutoff. Sales rates use all supplied months through that date. Rotation uses twice the average sales rate. Spaces in batch keys are kept as supplied.</p></div></details>
       </div>
     </div>
   </div>
@@ -746,7 +850,7 @@ setRail(!!localStorage.rail);
 $('#collapse').onclick=()=>setRail(!app.classList.contains('rail'));
 addEventListener('keydown',e=>{if(e.key==='['&&!/INPUT|SELECT/.test(e.target.tagName))$('#collapse').click()});
 const setTheme=t=>{document.documentElement.dataset.theme=t;localStorage.theme=t};
-setTheme(localStorage.theme||'light');
+setTheme('light');
 $('#theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
 function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push'}[k];['overview','batch','move','status','transfer','salespush'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':k));$('#mTools').hidden=k!=='move';$('#unitTools').hidden=k==='salespush';$('#sTools').hidden=!isStatus;if(isStatus||k==='move')$(isStatus?'#sExp':'#mExp').after($('#unitTools'));else $('#exportBtn').before($('#unitTools'));$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':'Recalculated snapshot · '+new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});$('#repDate').hidden=true;$('#repSep').hidden=false;if(isStatus)setStatusView(k);if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
 let curRep='batch';
