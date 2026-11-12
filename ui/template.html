@@ -373,7 +373,7 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 #v-onboarding .run-log-raw summary:hover{color:var(--ink)}
 #v-onboarding .run-log-raw pre{margin-top:12px;padding:14px 16px;border-radius:12px;background:var(--ob-ticket);color:#C9CFE2;font:12px/1.6 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
 @media (max-width:1100px){#v-onboarding .run-ledger{grid-template-columns:1fr}#v-onboarding .run-pane{position:static;order:-1}}
-.plan-flag{padding:10px 14px;border:1px solid #d8c8a2;border-left:3px solid #ad792b;border-radius:6px;background:#faf4e5;color:#695224;font-size:12px;line-height:1.5;margin:-4px 0 16px}.plan-flag[data-state="settled"]{border-color:#b1c9bc;border-left-color:#438265;background:#edf5ef;color:#315d49}.plan-flag[hidden]{display:none}.cycle-dialog{margin:auto;border:1px solid var(--line);border-radius:18px;padding:26px 28px 22px;width:560px;max-width:90vw;background:var(--surface);color:var(--ink);box-shadow:0 30px 80px -28px rgba(15,17,22,.5)}.cycle-dialog::backdrop{background:rgba(15,17,22,.4)}.cycle-dialog h2{font:400 26px var(--serif);margin:0 0 14px}.cycle-dialog p{font-size:13px;line-height:1.6;margin:10px 0}.cycle-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.cycle-dialog input[type="file"]{display:block;width:100%;margin-top:14px;padding:14px;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-size:12.5px}.cycle-dialog input[type="file"]::file-selector-button{height:30px;margin-right:12px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);font:500 12.5px var(--font);cursor:pointer}.plan-checks{display:grid;grid-template-columns:1fr auto;gap:10px 16px;padding:16px;background:var(--sunken);border-radius:12px;font-size:13px}.plan-checks dt,.plan-checks dd{margin:0}.plan-checks dd{font:600 13px var(--mono);text-align:right}.plan-warning{color:#8a5e1e}.plan-confirmation{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;margin-top:16px}
+.cycle-dialog{margin:auto;border:1px solid var(--line);border-radius:18px;padding:26px 28px 22px;width:560px;max-width:90vw;background:var(--surface);color:var(--ink);box-shadow:0 30px 80px -28px rgba(15,17,22,.5)}.cycle-dialog::backdrop{background:rgba(15,17,22,.4)}.cycle-dialog h2{font:400 26px var(--serif);margin:0 0 14px}.cycle-dialog p{font-size:13px;line-height:1.6;margin:10px 0}.cycle-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}.cycle-dialog input[type="file"]{display:block;width:100%;margin-top:14px;padding:14px;border:1.5px dashed var(--line2);border-radius:12px;color:var(--ink2);font-size:12.5px}.cycle-dialog input[type="file"]::file-selector-button{height:30px;margin-right:12px;padding:0 12px;border:1px solid var(--line2);border-radius:8px;background:var(--surface);color:var(--ink);font:500 12.5px var(--font);cursor:pointer}.plan-checks{display:grid;grid-template-columns:1fr auto;gap:10px 16px;padding:16px;background:var(--sunken);border-radius:12px;font-size:13px}.plan-checks dt,.plan-checks dd{margin:0}.plan-checks dd{font:600 13px var(--mono);text-align:right}.plan-warning{color:#8a5e1e}.plan-confirmation{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.5;margin-top:16px}
 
 .form{padding:6px 18px 14px}
 .row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
@@ -387,17 +387,10 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .sw[aria-checked=true]{background:var(--pri)}.sw[aria-checked=true]::after{left:16px;background:var(--pri-ink)}
 
 /* summary strip */
-.strip{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:20px;box-shadow:var(--shadow)}
-.stat{padding:14px 18px;border-right:1px solid var(--line)}
-.stat:last-child{border:0}
-.stat small{color:var(--ink3);font-size:12px;display:block}
-.stat .v{font:500 22px/1.2 var(--mono);letter-spacing:-.03em;margin-top:4px}
-.stat .v i{font:450 12.5px var(--font);color:var(--ink3);font-style:normal;margin-left:3px;letter-spacing:0}
-.stat .d{font-size:12px;color:var(--ink3);margin-top:2px}
 .good{color:var(--ok)}.badc{color:var(--bad)}
 
 /* tables */
-.tools{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.tools{display:flex;align-items:center;gap:8px;min-width:0;margin-bottom:8px}
 .search{display:flex;align-items:center;gap:8px;height:32px;border:1px solid var(--line2);background:var(--surface);border-radius:8px;padding:0 10px;width:280px;color:var(--ink3)}
 .search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .search input{border:0;outline:0;background:none;flex:1;min-width:0;color:var(--ink)}
@@ -406,13 +399,13 @@ h1{font:400 30px/1.1 var(--serif);letter-spacing:-.015em}
 .status-search-pop button{display:block;width:100%;text-align:left;border:0;background:none;color:var(--ink);padding:8px;border-radius:5px}
 .status-search-pop button:hover,.status-search-pop button[aria-selected=true]{background:var(--accent-soft)}
 .status-search-pop small{display:block;color:var(--ink3)}
-.status-chips{display:flex;gap:4px;flex-wrap:wrap;max-width:440px}
+.status-chips{display:flex;gap:4px;max-width:300px;overflow:hidden}.status-chips:empty{display:none}
 .status-chips button{font-size:11px;height:26px}
 .seg{display:inline-flex;gap:2px;padding:3px;border-radius:8px;background:var(--sunken)}
 .seg button{border:0;background:none;height:26px;padding:0 12px;border-radius:6px;color:var(--ink2);font-weight:500;transition:background .12s,color .12s}
 .seg button:hover{color:var(--ink)}
 .seg button[aria-pressed=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
-.meta{color:var(--ink3);font-size:12.5px;margin-left:auto}
+.meta{color:var(--ink3);font-size:12.5px}
 .sheet{border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--surface)}
 .fx{display:flex;height:28px;border-bottom:1px solid var(--line2);font-size:12.5px;background:var(--surface)}
 .fx .nb{width:64px;display:grid;place-items:center;border-right:1px solid var(--line2);font:500 12px var(--mono);color:var(--ink2);background:var(--sunken)}
@@ -461,7 +454,7 @@ tfoot td.rn{z-index:4}
 .legend{display:flex;gap:16px;color:var(--ink3);font-size:12px;align-items:center}
 .legend span{display:inline-flex;gap:6px;align-items:center}
 .legend i{width:14px;height:8px;border-radius:2px;display:block}
-.pager{display:flex;gap:6px;margin-left:8px}
+.pager{display:flex;gap:4px}
 .note{display:flex;gap:6px;flex-wrap:wrap;color:var(--ink3);font-size:12.5px;margin-bottom:14px}
 .note b{color:var(--ink2);font-weight:500}
 .note span+span::before{content:"·";margin-right:6px}
@@ -521,60 +514,93 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 
 /* table-first reports layout */
 .page:has(#v-reports.on){max-width:none;padding:12px 20px 16px}
-#v-reports>.head{align-items:center;margin-bottom:8px}
-#v-reports>.head>div{display:flex;align-items:baseline;gap:14px}
-#v-reports h1{font-size:23px}
-#v-reports>.head .lede{margin:0;font-size:12px}
-#repTabs{margin-bottom:8px}
-#mTools{margin:0 0 0 auto;gap:6px;flex-wrap:nowrap}#v-reports>.head>#mTools[hidden]{display:none}
-#v-reports>.head>div:first-child{flex:none}
-#mTools .search{width:180px}
-#mTools .scale{font-size:11px}
-#mTools .scale span{display:none}
-.movement-notes{font-size:11.5px;color:var(--ink3);margin-bottom:6px}
-.movement-notes summary{cursor:pointer;width:max-content}
-.movement-notes .note{margin:6px 0}
-#r-move .tw{max-height:none;height:calc(100dvh - 190px);min-height:220px}
-#r-move:has(.movement-notes[open]) .tw{height:calc(100dvh - 250px)}
-#v-reports>.head:has(#mTools:not([hidden])){flex-wrap:wrap}#mTools{flex-wrap:wrap;flex:1 0 100%;order:3;justify-content:flex-start;margin:6px 0 0}#v-reports>.head:has(#mTools:not([hidden])) #exportBtn{margin-left:auto}
-@media(max-width:700px){#v-reports>.head>div{display:block}#v-reports>.head .lede{font-size:11px}#r-move .tw{height:calc(100dvh - 250px)}}
-
-#unitTools{flex:1 0 100%;order:2;margin:6px 0 0}
-.expand-tools{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
-.expand-tools>#unitTools{flex:0 0 auto;order:0;margin:0;flex-wrap:nowrap}
-/* Shared report switches: square, inset segments matching the reference. */
-:is(#reportUnit,#overviewMode){gap:0;padding:2px;border:1px solid #aeb4bf;border-radius:0;background:#d3d6dc}
-:is(#reportUnit,#overviewMode) button{min-width:60px;height:30px;padding:0 14px;border-radius:0;color:#303744;font-weight:500;box-shadow:none}
-:is(#reportUnit,#overviewMode) button:hover{color:#14161b;background:#c3c8d1}
-:is(#reportUnit,#overviewMode) button[aria-pressed=true]{background:#4b5362;color:#fff;box-shadow:none}
+/* Report header, three rows: title (name, plan state, display controls), KPI band (batch and action plans), one toolbar. */
+.rh{flex:none;display:flex;align-items:center;gap:10px;min-height:32px;min-width:0;margin-bottom:8px}
+.rh-crumb{flex:none;display:inline-flex;align-items:center;gap:2px;margin-right:-4px;color:var(--ink3);font-size:12.5px}
+.rh-crumb svg{width:13px;height:13px}
+.rh h1{flex:none;font:400 23px/1 var(--serif);letter-spacing:-.015em;white-space:nowrap}
+.rh-range{flex:none;padding:2px 6px;border-radius:5px;background:var(--sunken);color:var(--ink2);font:500 11px var(--mono)}
+.rh-end{flex:none;margin-left:auto;display:flex;align-items:center;gap:10px}
+.rh-meta{color:var(--ink3);font-size:12px;white-space:nowrap}
+/* Plan flag: one sentence from the server, styled in parts. Clipped parts stay in the text but take no room. */
+#planFlag{--tone:var(--warn);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink3);font-size:12px;line-height:22px}
+#planFlag[data-state=plan_uploaded]{--tone:var(--accent)}
+#planFlag[data-state=settled]{--tone:var(--ok)}
+.pf-pill{display:inline-block;height:22px;margin-right:6px;padding:0 9px 0 8px;border-radius:999px;vertical-align:top;font-size:11.5px;font-weight:500;background:color-mix(in srgb,var(--tone) 11%,var(--surface));color:color-mix(in srgb,var(--tone) 78%,var(--ink));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--tone) 24%,transparent)}
+.pf-pill::before{content:"";display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;vertical-align:middle;background:var(--tone)}
+.pf-bad{--tone:var(--bad)}.pf-warn{--tone:var(--warn)}
+.pf-clip{display:inline-block;width:0;overflow:hidden;white-space:pre;vertical-align:top}
+/* One control language for the title row and toolbar: 28px, 7px radius, quiet borders. */
+.tools,.rh-end{--h:28px;font-size:12.5px}
+:is(.tools,.rh-end) .btn{height:var(--h);padding:0 10px;border-radius:7px;gap:6px;font-size:12.5px}
+:is(.tools,.rh-end) .btn:hover{border-color:color-mix(in srgb,var(--ink) 28%,var(--line2))}
+:is(.tools,.rh-end) .btn svg{width:14px;height:14px}
+.tools [hidden]{display:none!important}
+.tools select.btn{-webkit-appearance:none;appearance:none;color:var(--ink);max-width:230px;padding:0 26px 0 10px;text-overflow:ellipsis;font-weight:500;cursor:pointer;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23868c9b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 8px center/12px}
+.tools select.btn:hover{background-color:var(--surface)}
+.tools>.sp{flex:1 1 auto;min-width:8px}
+.tools>.vr{flex:none;width:1px;height:16px;background:var(--line2)}
+.tools>.search{flex:0 1 220px;width:auto;min-width:150px;height:var(--h);padding:0 9px;gap:7px;border-radius:7px}
+.tools>.status-search{flex:0 1 220px;min-width:150px}
+.tools>.status-search>.search{width:100%;height:var(--h);padding:0 9px;gap:7px;border-radius:7px}
+.tools .search svg{width:14px;height:14px}
+.tools .search input{font-size:12.5px}
+.status-search-pop{top:32px}
+.tools .seg{flex:none;padding:2px;border-radius:8px}
+.tools .seg button{height:calc(var(--h) - 4px);padding:0 10px;font-size:12.5px}
+.tools .seg .mb>button[data-m]{padding:0 24px 0 10px}
+.tools .seg button.help{top:5px;right:6px;width:14px;height:14px;font-size:8.5px}
+.tools .ms-pop{top:32px}
+.tools .pager .btn{width:var(--h);padding:0;justify-content:center;color:var(--ink2)}
+.lbl{flex:none;display:inline-flex;align-items:center;gap:6px;color:var(--ink3)}
+.tools .meta{flex:none;white-space:nowrap}
+.tools .scale{font-size:11px}
+.tools .scale span{display:none}
+.tools .scale i{width:64px}
+.tools>.help{flex:none;display:grid;place-items:center;width:22px;height:22px;padding:0;border:1px solid var(--line2);border-radius:50%;background:var(--surface);color:var(--ink2);font:600 11px var(--font);cursor:pointer}
+.tools>.help:hover{color:var(--accent);border-color:var(--accent)}
+.tools>.help:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+/* Display switches (BDT/KL, Qty/%): soft segments. */
+#unitTools{display:flex;align-items:center;gap:6px}
+#unitTools[hidden]{display:none}
+#unitTools>.l{font-size:12px;color:var(--ink3)}
+:is(#reportUnit,#overviewMode){gap:2px;padding:2px;border:0;border-radius:8px;background:var(--sunken)}
+:is(#reportUnit,#overviewMode) button{min-width:0;height:24px;padding:0 10px;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
+:is(#reportUnit,#overviewMode) button:hover{background:none;color:var(--ink)}
+:is(#reportUnit,#overviewMode) button[aria-pressed=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
 :is(#reportUnit,#overviewMode) button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-#r-move .tw,#r-status .tw{height:calc(100dvh - 230px)}
-#r-move:has(.movement-notes[open]) .tw,#r-status:has(.movement-notes[open]) .tw{height:calc(100dvh - 290px)}
+/* Notes: a popover on the toolbar, so opening it never pushes the table down. */
+.movement-notes{position:relative;flex:none}
+.movement-notes>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;height:var(--h);padding:0 10px;border-radius:7px;color:var(--ink2);white-space:nowrap;cursor:pointer}
+.movement-notes>summary::-webkit-details-marker{display:none}
+.movement-notes>summary::before{content:"";width:15px;height:15px;background:currentColor;-webkit-mask:var(--icon-info) center/contain no-repeat;mask:var(--icon-info) center/contain no-repeat;--icon-info:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 11v5M12 8h.01'/%3E%3C/svg%3E")}
+.movement-notes>summary:hover,.movement-notes[open]>summary{background:var(--sunken);color:var(--ink)}
+.movement-notes>.note{position:absolute;right:0;top:calc(var(--h) + 6px);z-index:60;width:min(540px,60vw);margin:0;padding:12px 14px 12px 12px;flex-direction:column;flex-wrap:nowrap;gap:6px;background:var(--surface);border:1px solid var(--line2);border-radius:10px;box-shadow:0 14px 36px -10px rgba(15,17,22,.32);font-size:12.5px;line-height:1.45;color:var(--ink2)}
+.movement-notes>.note>span{position:relative;padding-left:14px}
+.movement-notes>.note>span::before{content:"";position:absolute;left:3px;top:.6em;width:4px;height:4px;margin:0;border-radius:50%;background:var(--ink3)}
+#r-batch .tw{max-height:calc(100dvh - 208px)}
+#r-move .tw,#r-status .tw{max-height:none;height:calc(100dvh - 134px);min-height:220px}
 @media(max-width:700px){#r-move .tw,#r-status .tw{height:calc(100dvh - 290px)}}
-#v-reports>.head{flex-wrap:wrap}
 
 /* Action plans pages (rescue, rebalance, loading-watch): brand-status sheet treatment, compact header so the sheet gets the height */
 .item.subitem small{margin-left:6px;color:var(--ink3);font:500 11px var(--mono)}
-#rTools{flex:1 0 100%;order:3;gap:6px;margin:6px 0 0;justify-content:flex-start}
-#v-reports>.head>#rTools[hidden]{display:none}#rTools .search{width:240px}
-#v-reports>.head:has(#rTools:not([hidden])) #exportBtn{margin-left:auto}
 #rNotesBtn b{font:500 12px var(--mono);margin-left:6px;color:var(--ink2)}
 .rc-empty{padding:40px 16px;text-align:center;color:var(--ink3)}
-.rc-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);border-radius:8px;background:var(--surface);margin-bottom:6px}
-.rc-card{padding:5px 12px 6px;border-right:1px solid var(--line);min-width:0}
-.rc-card:last-child{border-right:0}
-.rc-card small{display:block;color:var(--ink3);font-size:11px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rc-card div{display:flex;align-items:baseline;gap:8px;white-space:nowrap;overflow:hidden;line-height:1.35}
-.rc-card b{font:500 16px var(--mono);letter-spacing:-.02em}
-.rc-card b i{font:450 11px var(--font);font-style:normal;color:var(--ink3);margin-left:3px;letter-spacing:0}
-.rc-card span{font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis}
-.rc-split{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-size:11.5px;min-height:18px}
-.rc-split h3{font-size:11.5px;font-weight:600;white-space:nowrap}
-.rc-bar{flex:1;display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--sunken)}
+/* KPI band: one slim line between hairlines; on action plans the exposure split is its bottom edge. */
+.strip,.rc-band{position:relative;display:flex;min-width:0;margin:0 0 8px;border-block:1px solid var(--line)}
+.rc-cards{display:flex;flex:1;min-width:0}
+:is(.stat,.rc-card){flex:1 1 0;min-width:0;display:flex;align-items:baseline;gap:8px;padding:8px 16px;border-right:1px solid var(--line);white-space:nowrap;overflow:hidden}
+:is(.stat,.rc-card):first-child{padding-left:2px}
+:is(.stat,.rc-card):last-child{border-right:0}
+:is(.stat,.rc-card) small{flex:none;max-width:62%;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--ink3)}
+.stat .v,.rc-card b{flex:none;font:500 15px/1 var(--mono);letter-spacing:-.02em}
+.stat .v i,.rc-card b i{font:450 11px var(--font);font-style:normal;color:var(--ink3);margin-left:3px;letter-spacing:0}
+.stat .d,.rc-card span{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:var(--ink3)}
+.rc-card>div{display:contents}
+.rc-split{position:absolute;left:0;right:0;bottom:-1px;height:6px;display:flex;align-items:flex-end}
+.rc-bar{flex:1;display:flex;height:3px;overflow:hidden;background:var(--sunken)}
 .rc-bar i{display:block;height:100%}
-.rc-split .legend{gap:12px;font-size:11.5px;white-space:nowrap}
-.rc-split .legend i{width:10px;height:6px}
-#r-plan .movement-notes{margin-bottom:4px}
 #rcBody>.sheet .tw{min-height:200px}
 #rT td.name{min-width:240px;max-width:340px;overflow:hidden;text-overflow:ellipsis}
 #rT th .ar{width:0;margin-left:2px;overflow:visible}
@@ -636,12 +662,6 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .rcn-clear{margin-left:8px;border:1px solid var(--line2);background:var(--surface);color:var(--ink3);border-radius:5px;width:20px;height:20px;line-height:16px;padding:0}
 .rcn-clear:hover{color:var(--bad);border-color:var(--bad)}
 /* brand-status uses the movement sheet's existing tokens and expansion treatment */
-#sTools{flex:1 0 100%;order:3;gap:6px;margin:6px 0 0;justify-content:flex-start}
-#v-reports>.head>#sTools[hidden]{display:none}#sOrder[hidden]{display:none}#sTools .search{width:220px}
-#v-reports>.head:has(#sTools:not([hidden])){flex-wrap:wrap}
-#v-reports>.head:has(#sTools:not([hidden])) #exportBtn{margin-left:auto}
-#r-status .tw{max-height:none;height:calc(100dvh - 190px);min-height:220px}
-#r-status:has(.movement-notes[open]) .tw{height:calc(100dvh - 250px)}
 #sT{min-width:100%}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
 #sT th .ar{width:0;margin-left:2px;overflow:visible}
 #sT td.rsl-cell{padding:0}
@@ -676,8 +696,6 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .page:has(#v-reports.on #r-overview:not([hidden])){height:100%;padding:12px 20px}
 #v-reports.on:has(#r-overview:not([hidden])){height:100%;display:flex;flex-direction:column;min-height:0}
-#v-reports:has(#r-overview:not([hidden]))>.head{flex:none;gap:10px;margin-bottom:8px}
-#v-reports:has(#r-overview:not([hidden])) #unitTools{flex:0 0 auto;order:0;margin:0 0 0 auto}
 #v-reports:has(#r-overview:not([hidden])) #exportBtn{display:none}
 #overviewMode{display:none}
 #v-reports:has(#r-overview:not([hidden])) #overviewMode{display:inline-flex}
@@ -723,7 +741,7 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
   .app:has(#v-reports.on #r-overview:not([hidden])) .overview-nav{display:block;flex:1;min-width:0;height:28px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);font-size:12px}
   .app:has(#v-reports.on #r-overview:not([hidden])) main{flex:1;min-height:0}
   .page:has(#v-reports.on #r-overview:not([hidden])){padding:6px 8px}
-  #v-reports:has(#r-overview:not([hidden]))>.head{gap:4px;margin-bottom:5px}
+  #v-reports:has(#r-overview:not([hidden]))>.rh{gap:4px;margin-bottom:5px}
   #v-reports:has(#r-overview:not([hidden])) #unitTools>.l{display:none}
   #v-reports:has(#r-overview:not([hidden])) h1{font-size:20px}
   #v-reports:has(#r-overview:not([hidden])) :is(#reportUnit,#overviewMode) button{padding:0 7px;font-size:11px;height:24px}
@@ -739,9 +757,6 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 }
 
 /* metric help */
-#r-transfer .tools>.help{display:grid;place-items:center;width:22px;height:22px;padding:0;border:1px solid var(--line2);border-radius:50%;background:var(--surface);color:var(--ink2);font:600 12px var(--font);cursor:pointer}
-#r-transfer .tools>.help:hover{color:var(--accent);border-color:var(--accent)}
-#r-transfer .tools>.help:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 #helpTabs[hidden]{display:none}
 .transfer-comparison{margin:8px 0 12px;font-size:12px;color:var(--ink2)}
 .transfer-comparison:empty{display:none}
@@ -834,7 +849,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 @media(max-width:700px){#doh.modal{padding:8px}.sheetm.doh-sheet{width:100%;height:96vh;padding:16px}.doh-equation{grid-template-columns:1fr}.doh-equation>div{border-right:0;border-bottom:1px solid var(--line)}.doh-equation strong{font-size:20px}.doh-toolbar select{width:100%;min-width:0}}
 .sheetm h3{font-size:12px;font-weight:500;color:var(--ink3);margin:16px 0 6px}
 .worked{font:500 13px var(--mono);margin:0 0 4px}
-@media (max-width:1000px){.cols{grid-template-columns:1fr}.strip{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}.page{padding:20px}}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}.page{padding:20px}}
 @media(max-width:700px){.app,.app.rail{grid-template-columns:var(--rail) minmax(0,1fr)}aside .subitem,aside .item span,aside .group,aside .brand b,aside .brand span,aside .item kbd,aside .count,aside .who{display:none}aside .item{justify-content:center;padding:0}aside .brand{justify-content:center;padding:0}main{min-width:0}.page{padding:16px 12px 48px}.head{align-items:flex-start;flex-wrap:wrap}.file{grid-template-columns:16px minmax(0,1fr);padding:12px}.file .file-actions{grid-column:2}.file-heading{gap:6px}.file-ext{font-size:9px}.tabs{gap:14px;flex-wrap:wrap}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -928,44 +943,17 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div class="dialog-actions"><button class="btn" id="planCancel">Cancel</button><button class="btn primary" id="planConfirm">Continue</button></div>
 </dialog>
 <section class="view" id="v-reports">
-  <div class="head">
-    <div><h1 id="repName">total-batch-wise</h1><p class="lede"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></p></div>
-    <div class="tools" id="mTools" hidden>
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand" aria-label="Search brands"></label>
-      <div class="seg" id="mMetric" aria-label="Metric">
-        <div class="mb"><button aria-pressed="true" data-m="red">Reduction %</button><button class="help" data-help="red" aria-label="How Reduction % is calculated" title="How Reduction % is calculated">?</button></div>
-        <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
-      </div>
-      <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
-      <details class="ms" id="mRsl"><summary class="btn" id="mRslLbl" aria-label="Filter by remaining shelf life">RSL: All</summary><div class="ms-pop" id="mRslPop"></div></details>
-      <select id="mSort" aria-label="Sort brands" class="btn" style="padding:0 8px">
-        <option value="now:-1">Stock now · high to low</option><option value="avg:1">Avg reduction · low to high</option><option value="avg:-1">Avg reduction · high to low</option>
-        <option value="grow:-1">Stock growth · most first</option><option value="brand:1">Brand A–Z</option></select>
-      <div class="expand-tools"><button class="btn" id="mExp" type="button">Expand all</button></div>
-      <span class="meta scale" id="mScale"></span>
+  <header class="rh">
+    <span class="rh-crumb"><span id="repGroup">Reports</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
+    <h1 id="repName">total-batch-wise</h1>
+    <span class="rh-range" id="repRange" hidden></span>
+    <div id="planFlag" data-state="<!--PLAN_STATE-->" role="status"><!--PLAN_FLAG--></div>
+    <div class="rh-end">
+      <span class="rh-meta"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></span>
+      <div id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div><div class="seg" id="overviewMode" role="group" aria-label="Overview chart display"><button type="button" data-overview-mode="qty" aria-pressed="true">Qty</button><button type="button" data-overview-mode="percent" aria-pressed="false">%</button></div></div>
+      <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
     </div>
-    <div class="tools" id="sTools" hidden>
-      <div class="status-search" id="sSearchBox"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="sSearch" placeholder="Town, brand or parent" aria-label="Search towns, brands and parents" role="combobox" aria-autocomplete="list" aria-controls="sSearchPop" aria-expanded="false" autocomplete="off"></label><div class="status-search-pop" id="sSearchPop" role="listbox" aria-label="Search results" aria-multiselectable="true" hidden></div></div>
-      <div class="status-chips" id="sSearchChips" aria-label="Selected search filters"></div>
-      <select id="sOrder" class="btn" aria-label="Brand drill-down order" hidden><option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option></select>
-      <select id="sMetric" class="btn" aria-label="Status metric"><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option><option value="0">stock-bdt</option></select>
-      <select id="sSort" class="btn" aria-label="Sort towns"><option value="total:-1">Selected metric · high to low</option><option value="total:1">Selected metric · low to high</option><option value="name:1">Town A–Z</option></select>
-      <div class="expand-tools"><button class="btn" id="sExp" type="button">Expand all</button></div>
-      <span class="meta" id="sCount"></span>
-    </div>
-    <div class="tools" id="rTools" hidden>
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="rSearch" placeholder="Brand, parent, SKU or town" aria-label="Search brands, parents, SKUs and towns" autocomplete="off"></label>
-      <select id="rOrder" class="btn" aria-label="Drill-down order"><option value="bpt">Brand → Parent → Town</option><option value="btp">Brand → Town → Parent</option><option value="tbp">Town → Brand → Parent</option></select>
-      <select id="rSort" class="btn" aria-label="Sort rows"><option value="lnd:-1">LND FC · high to low</option><option value="cov:1">Coverage · low to high</option><option value="tn:-1">Towns · most first</option><option value="share:-1">LND ÷ Exp · high to low</option><option value="name:1">A–Z</option></select>
-      <button class="btn" id="rNotesBtn" type="button" title="Note new action plans for batches without a last-month plan">New plans<b id="rNotesN"></b></button>
-      <div class="expand-tools"><button class="btn" id="rExp" type="button">Expand all</button></div>
-      <span class="meta" id="rCount"></span>
-    </div>
-    <div class="tools" id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div><div class="seg" id="overviewMode" role="group" aria-label="Overview chart display"><button type="button" data-overview-mode="qty" aria-pressed="true">Qty</button><button type="button" data-overview-mode="percent" aria-pressed="false">%</button></div></div>
-    <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
-  </div>
-
-  <div id="planFlag" class="plan-flag" data-state="<!--PLAN_STATE-->" role="status"><!--PLAN_FLAG--></div>
+  </header>
   <div id="r-overview" hidden>
     <div class="panel overview-panel">
       <div class="panel-h"><div><div class="overview-heading"><h2>Stock by remaining shelf life</h2><details class="overview-info"><summary aria-label="About the overview charts">i</summary><p>Latest saved snapshot each month; gaps mean missing snapshots. The two charts share the available height equally and use separate, fixed scales: shorter RSL is stacked; risk overlaps from zero, never stacks. Qty shows amounts in the selected unit. % shows shorter-RSL stock divided by total stock and Exposure/LND divided by &gt;10M stock, using that month's selected-unit values. A zero or missing denominator leaves a gap. All four RSL percentages in the summary sum to 100% of total stock. Exposure/LND belong to &gt;10M and show both % of total and % of &gt;10M; do not add them to the RSL shares. Value tags inside each chart follow the inspected month; full category names and total stock are in the summary below. Hover or select a month to inspect it.</p></details></div><p id="overviewRange"></p></div><div class="overview-total" id="overviewTotal" aria-live="polite"></div></div>
@@ -986,7 +974,9 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     </div>
     <div class="tools">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="bSearch" placeholder="Town, brand, material or batch" aria-label="Search batches"></label>
+      <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="rslSeg" aria-label="Remaining shelf life"></div>
+      <span class="sp"></span>
       <span class="meta" id="bCount"></span>
       <span class="pager"><button class="btn sm" id="bPrev" aria-label="Previous page">←</button><button class="btn sm" id="bNext" aria-label="Next page">→</button></span>
     </div>
@@ -999,9 +989,11 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div id="r-transfer" hidden>
     <div class="tools">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="tfSearch" placeholder="Town, brand, material or batch" aria-label="Search transfer candidates"></label>
+      <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="tfFilter" role="group" aria-label="Candidate filter"><button type="button" aria-pressed="true" data-f="all">All sources</button><button type="button" aria-pressed="false" data-f="opt">With a suggestion</button><button type="button" aria-pressed="false" data-f="none">No suggestion</button></div>
-      <button type="button" class="help" data-help="transfer" aria-label="How transfer suggestions are calculated" title="How transfer suggestions are calculated">?</button>
       <select id="tfAssessment" class="btn" aria-label="Transfer assessment"><option value="">Both assessments</option><option value="before_300_days">Before 300-day checkpoint</option><option value="before_expiry">Already below 300 days</option></select>
+      <button type="button" class="help" data-help="transfer" aria-label="How transfer suggestions are calculated" title="How transfer suggestions are calculated">?</button>
+      <span class="sp"></span>
       <span class="meta" id="tfCount"></span>
       <span class="pager"><button class="btn sm" id="tfPrev" aria-label="Previous page">←</button><button class="btn sm" id="tfNext" aria-label="Next page">→</button></span>
     </div>
@@ -1015,9 +1007,11 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div id="r-salespush" hidden>
     <div class="tools">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="spSearch" placeholder="Town, brand or material" aria-label="Search sales-push pools"></label>
-      <label class="meta">Scenario <select id="spScen" aria-label="Scenario"></select></label>
-      <label class="meta">Review state <select id="spState" aria-label="Review state"><option value="">All</option><option value="supported_assumptions">Supported assumptions</option><option value="stretch_scenario">Stretch scenario</option><option value="incomplete_evidence">Incomplete evidence</option><option value="infeasible_under_stated_constraints">Infeasible under constraints</option></select></label>
+      <i class="vr" aria-hidden="true"></i>
+      <label class="lbl">Scenario <select class="btn" id="spScen" aria-label="Scenario"></select></label>
+      <label class="lbl">Review state <select class="btn" id="spState" aria-label="Review state"><option value="">All</option><option value="supported_assumptions">Supported assumptions</option><option value="stretch_scenario">Stretch scenario</option><option value="incomplete_evidence">Incomplete evidence</option><option value="infeasible_under_stated_constraints">Infeasible under constraints</option></select></label>
       <button type="button" class="help" data-help="salespush" aria-label="How sales-push feasibility is calculated" title="How sales-push feasibility is calculated">?</button>
+      <span class="sp"></span>
       <span class="meta" id="spCount"></span>
       <span class="pager"><button class="btn sm" id="spPrev" aria-label="Previous page">←</button><button class="btn sm" id="spNext" aria-label="Next page">→</button></span>
     </div>
@@ -1028,15 +1022,45 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </div>
 
   <div id="r-move" hidden>
-    <details class="movement-notes"><summary>Notes · amounts in M BDT</summary><div class="note" id="mNote"></div></details>
+    <div class="tools" id="mTools">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand" aria-label="Search brands"></label>
+      <i class="vr" aria-hidden="true"></i>
+      <div class="seg" id="mMetric" aria-label="Metric">
+        <div class="mb"><button aria-pressed="true" data-m="red">Reduction %</button><button class="help" data-help="red" aria-label="How Reduction % is calculated" title="How Reduction % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
+      </div>
+      <i class="vr" aria-hidden="true"></i>
+      <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
+      <details class="ms" id="mRsl"><summary class="btn" id="mRslLbl" aria-label="Filter by remaining shelf life">RSL: All</summary><div class="ms-pop" id="mRslPop"></div></details>
+      <i class="vr" aria-hidden="true"></i>
+      <select id="mSort" aria-label="Sort brands" class="btn">
+        <option value="now:-1">Stock now · high to low</option><option value="avg:1">Avg reduction · low to high</option><option value="avg:-1">Avg reduction · high to low</option>
+        <option value="grow:-1">Stock growth · most first</option><option value="brand:1">Brand A–Z</option></select>
+      <button class="btn" id="mExp" type="button">Expand all</button>
+      <span class="sp"></span>
+      <span class="meta scale" id="mScale"></span>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note" id="mNote"></div></details>
+    </div>
     <div data-sheet="mT"></div>
   </div>
   <div id="r-plan" hidden>
     <p class="rc-empty" id="rcEmpty" hidden></p>
     <div id="rcBody">
-    <div class="rc-cards" id="rcCards"></div>
-    <section class="rc-split" aria-labelledby="rcSplitH"><h3 id="rcSplitH">Exposure split by LND FC</h3><div class="rc-bar" id="rcSplit" role="img"></div><div class="legend" id="rcSplitLegend"></div></section>
-    <details class="movement-notes"><summary>Notes · amounts in M BDT</summary><div class="note" id="rcNote"></div></details>
+    <div class="rc-band">
+      <div class="rc-cards" id="rcCards"></div>
+      <div class="rc-split"><div class="rc-bar" id="rcSplit" role="img"></div></div>
+    </div>
+    <div class="tools" id="rTools">
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="rSearch" placeholder="Brand, parent, SKU or town" aria-label="Search brands, parents, SKUs and towns" autocomplete="off"></label>
+      <i class="vr" aria-hidden="true"></i>
+      <select id="rOrder" class="btn" aria-label="Drill-down order"><option value="bpt">Brand → Parent → Town</option><option value="btp">Brand → Town → Parent</option><option value="tbp">Town → Brand → Parent</option></select>
+      <select id="rSort" class="btn" aria-label="Sort rows"><option value="lnd:-1">LND FC · high to low</option><option value="cov:1">Coverage · low to high</option><option value="tn:-1">Towns · most first</option><option value="share:-1">LND ÷ Exp · high to low</option><option value="name:1">A–Z</option></select>
+      <button class="btn" id="rExp" type="button">Expand all</button>
+      <button class="btn" id="rNotesBtn" type="button" title="Note new action plans for batches without a last-month plan">New plans<b id="rNotesN"></b></button>
+      <span class="sp"></span>
+      <span class="meta" id="rCount"></span>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note" id="rcNote"></div></details>
+    </div>
     <div data-sheet="rT"></div>
     <div class="rc-viz">
       <section class="panel"><div class="panel-h"><div><h2 id="rcTrendH">LND FC reduced from last month · incumbents</h2><p id="rcTrendSub"></p></div></div><div class="rc-viz-body" id="rcTrend"></div><p class="rc-viz-note" id="rcTrendNote"></p></section>
@@ -1045,7 +1069,19 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     </div>
   </div>
   <div id="r-status" hidden>
-    <details class="movement-notes"><summary>Notes · amounts in M BDT</summary><div class="note"><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>RSL bar width and solid colour depth = cell value ÷ row Total for the selected metric; 3–6M red, 6–10M amber, &gt;10M green</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+    <div class="tools" id="sTools">
+      <div class="status-search" id="sSearchBox"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="sSearch" placeholder="Town, brand or parent" aria-label="Search towns, brands and parents" role="combobox" aria-autocomplete="list" aria-controls="sSearchPop" aria-expanded="false" autocomplete="off"></label><div class="status-search-pop" id="sSearchPop" role="listbox" aria-label="Search results" aria-multiselectable="true" hidden></div></div>
+      <div class="status-chips" id="sSearchChips" aria-label="Selected search filters"></div>
+      <i class="vr" aria-hidden="true"></i>
+      <select id="sMetric" class="btn" aria-label="Status metric"><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option><option value="0">stock-bdt</option></select>
+      <i class="vr" aria-hidden="true"></i>
+      <select id="sOrder" class="btn" aria-label="Brand drill-down order" hidden><option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option></select>
+      <select id="sSort" class="btn" aria-label="Sort towns"><option value="total:-1">Selected metric · high to low</option><option value="total:1">Selected metric · low to high</option><option value="name:1">Town A–Z</option></select>
+      <button class="btn" id="sExp" type="button">Expand all</button>
+      <span class="sp"></span>
+      <span class="meta" id="sCount"></span>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>RSL bar width and solid colour depth = cell value ÷ row Total for the selected metric; 3–6M red, 6–10M amber, &gt;10M green</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+    </div>
     <div data-sheet="sT"></div>
   </div>
   </section>
@@ -1126,7 +1162,25 @@ addEventListener('keydown',e=>{if(e.key==='['&&!/INPUT|SELECT/.test(e.target.tag
 const setTheme=t=>{document.documentElement.dataset.theme=t;localStorage.theme=t};
 setTheme('light');
 $('#theme').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
-function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push',rescue:'rescue',rebalance:'rebalance','loading-watch':'loading-watch'}[k];const ap=ACTION_PLANS.includes(k);['overview','batch','move','status','transfer','salespush','plan'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':ap?'plan':k));$('#mTools').hidden=k!=='move';$('#rTools').hidden=!ap;$('#unitTools').hidden=k==='salespush';$('#sTools').hidden=!isStatus;if(isStatus||k==='move'||ap)$(isStatus?'#sExp':k==='move'?'#mExp':'#rExp').after($('#unitTools'));else $('#exportBtn').before($('#unitTools'));$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':'Recalculated snapshot · '+new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});$('#repDate').hidden=true;$('#repSep').hidden=false;if(ap)$('#repRun').textContent='Action plans · '+$(`.item[data-r="${k}"] small`).textContent+' · '+$('#repRun').textContent;if(isStatus)setStatusView(k);if(ap){rcSelect(k);drawRescue()}if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
+/* Plan flag: the server renders one sentence. Wrap its parts for styling; the joined text stays exactly as rendered (tests read its innerText).
+   Parts the design leaves out (the " view" suffix, separators, "Sample report") are clipped to zero width, never hidden. */
+function decoratePlanFlag(){
+  const el=$('#planFlag'),text=el.textContent.trim(),clip=t=>Object.assign(document.createElement('span'),{className:'pf-clip',textContent:t});
+  const pill=(cls,head)=>{const n=document.createElement('span'),m=/ view\b/.exec(head),at=m?m.index:head.length;n.className='pf-pill '+cls;n.append(head.slice(0,at));if(m)n.append(clip(m[0]),head.slice(at+m[0].length));return n};
+  const kids=[];let stated=false;
+  text.split(' · ').forEach((part,i)=>{
+    if(i)kids.push(clip(' · '));
+    const at=part.indexOf(': '),head=at<0?part:part.slice(0,at),detail=at<0?[]:[clip(': '),part.slice(at+2)];
+    if(/^Out of date/i.test(part))kids.push(pill('pf-bad',head),...detail);
+    else if(/not committed/i.test(part))kids.push(pill('pf-warn',part));
+    else if(/^Sample report$/i.test(part))kids.push(clip(part));
+    else if(!stated){stated=true;kids.push(pill('',head),...detail)}
+    else kids.push(part);
+  });
+  el.replaceChildren(...kids);el.title=text;
+}
+decoratePlanFlag();
+function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push',rescue:'rescue',rebalance:'rebalance','loading-watch':'loading-watch'}[k];const ap=ACTION_PLANS.includes(k);['overview','batch','move','status','transfer','salespush','plan'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':ap?'plan':k));$$('.movement-notes[open]').forEach(d=>d.open=false);$('#unitTools').hidden=k==='salespush';$('#repGroup').textContent=ap?'Action plans':'Reports';$('#repRange').hidden=!ap;if(ap)$('#repRange').textContent=$(`.item[data-r="${k}"] small`).textContent;$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})+' · recalculated';$('#repDate').hidden=true;$('#repSep').hidden=false;if(isStatus)setStatusView(k);if(ap){rcSelect(k);drawRescue()}if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
 let curRep='batch',lastRep='batch';
 const ACTION_PLANS=['rescue','rebalance','loading-watch'];
 $$('.item[data-view]').forEach(b=>b.onclick=()=>{
@@ -1209,7 +1263,7 @@ $$('#rslSeg button').forEach(c=>c.onclick=()=>{rsl=c.textContent;pg=0;$$('#rslSe
 $('#bSearch').oninput=e=>{bq=e.target.value.toLowerCase();pg=0;drawB()};
 function drawB(){
   bcols.filter(c=>['stock','exposure','lnd'].includes(c.k)).forEach(c=>c.h=({stock:'Stock',exposure:'Exposure',lnd:'Liq. forecast'}[c.k])+' ('+unitLabel()+')');
-  $$('#r-batch .stat').forEach((el,i)=>{const stem=['total_closing_stock','exposure','rotation_req','lnd_fc'][i],other=reportUnit==='bdt'?'kl':'bdt';el.querySelector('.v').html=amount(MEASURES[stem+'_'+reportUnit],1)+'<i>'+unitLabel()+'</i>';el.querySelector('.d').textContent=f(MEASURES[stem+'_'+other]/(other==='bdt'?1e6:1),1)+' '+(other==='bdt'?'M BDT':'KL')});
+  $$('#r-batch .stat').forEach((el,i)=>{const stem=['total_closing_stock','exposure','rotation_req','lnd_fc'][i],other=reportUnit==='bdt'?'kl':'bdt';el.querySelector('.v').html=amount(MEASURES[stem+'_'+reportUnit],1)+'<i>'+unitLabel()+'</i>';el.querySelector('.d').textContent=f(MEASURES[stem+'_'+other]/(other==='bdt'?1e6:1),1)+' '+(other==='bdt'?'M BDT':'KL');el.title=[el.querySelector('small'),el.querySelector('.v'),el.querySelector('.d')].map(n=>n.textContent).join(' · ')});
   const rows=BR.map(r=>({...r,stock:r['total_closing_stock_'+reportUnit],exposure:r['exposure_'+reportUnit],lnd:r['lnd_fc_'+reportUnit]})).filter(r=>(rsl==='All'||r.rsl_group===rsl)&&(!bq||[r.Town,r['Brand Name'],r.material_desc,r['Batch code']].join(' ').toLowerCase().includes(bq))).sort(cmp(bs.k,bs.d));
   table({t:'#bT',cols:bcols,rows:rows.slice(pg*PS,pg*PS+PS),sort:bs,onSort:k=>{bs=bs.k===k?{k,d:-bs.d}:{k,d:-1};drawB()},onSelect:(r,c)=>{if(bcols[c].k==='doh')openBatchDoh(r,$('#bT').closest('.tw'))}});
   $('#bCount').textContent=rows.length?`${pg*PS+1}–${Math.min(rows.length,pg*PS+PS)} of ${rows.length}`:'0 results';
@@ -1874,7 +1928,7 @@ $$('#reportUnit button').forEach(button=>button.onclick=()=>{
   reportUnit=button.dataset.unit;
   $$('#reportUnit button').forEach(b=>b.setAttribute('aria-pressed',b===button));
   $('#mv').hidden=true;sel=null;
-  $$('#r-move .movement-notes summary,#r-status .movement-notes summary,#r-plan .movement-notes summary').forEach(el=>el.textContent='Notes · amounts in '+unitLabel());
+  $$('#r-move .movement-notes summary,#r-status .movement-notes summary,#r-plan .movement-notes summary').forEach(el=>el.title='Notes · amounts in '+unitLabel());
   statusMetricNames=['stock','exposure','lnd'].map(name=>name+'-'+reportUnit);
   $$('#sMetric option').forEach(o=>o.textContent=statusMetricNames[+o.value]);
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
@@ -2116,7 +2170,7 @@ function drawRescueSummary(){
   const sell=Math.max(0,all.exp-all.lnd),w=v=>all.exp>0?v/all.exp*100:0;
   $('#rcSplit').html=`<i style="width:${w(all.lnd)}%;background:var(--bad)"></i><i style="width:${w(sell)}%;background:#9aa0ab"></i>`;
   $('#rcSplit').setAttribute('aria-label',`Exposure ${amount(all.exp)} ${u}: ${rcPct(sell/all.exp,0)} sells before 90 days RSL, ${rcPct(all.share,0)} LND FC`);
-  $('#rcSplitLegend').html=`<span><i style="background:var(--bad)"></i>LND FC · ${amount(all.lnd)} · ${rcPct(all.share,0)}</span><span><i style="background:#9aa0ab"></i>Sells before 90 days RSL · ${amount(sell)} · ${rcPct(all.exp>0?sell/all.exp:null,0)}</span>`;
+  $('#rcSplit').closest('.rc-split').title=`Exposure split by LND FC · LND FC ${amount(all.lnd)} (${rcPct(all.share,0)}) · Sells before 90 days RSL ${amount(sell)} (${rcPct(all.exp>0?sell/all.exp:null,0)})`;
 }
 function drawRescueTable(){
   const pg=rcMeta(),rot=pg.rotation?1:0;
@@ -2328,7 +2382,8 @@ $('#rT').closest('.tw').addEventListener('keydown',e=>{const n=e.target.closest?
 $('#rNotesBtn').onclick=e=>{const q=rcQ.trim().toLowerCase();openRescueNotes(q?RCR.filter(r=>rcMatches(r,q)):RCR,q?`Matching “${rcQ.trim()}”`:`All ${rcMeta().label} stock`,e.currentTarget)};
 $('#rcNotes').addEventListener('click',e=>{if(e.target.closest('[data-rcn-close]'))closeRescueNotes()});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape'||$('#rcNotes').hidden)return;const d=$('#rcnBody details[open]');if(d){d.open=false;d.querySelector('summary').focus();return}closeRescueNotes()});
-$('#r-plan .movement-notes').addEventListener('toggle',fitRescue);
+document.addEventListener('click',e=>$$('.movement-notes[open]').forEach(d=>{if(!d.contains(e.target))d.open=false}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.movement-notes[open]').forEach(d=>d.open=false)});
 addEventListener('resize',fitRescue);
 $('#rSearch').oninput=e=>{rcQ=e.target.value;drawRescueTable()};
 $('#rOrder').onchange=e=>{rcOrder=e.target.value;rcOpen=new Set();drawRescueTable()};
