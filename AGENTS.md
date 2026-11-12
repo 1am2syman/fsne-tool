@@ -2,7 +2,7 @@
 
 ## UI scope and validation
 - Design and validate UI changes for widescreen laptop layouts only.
-- Validate UI changes with screenshots at widescreen laptop widths.
+- Validate UI changes with screenshots at widescreen laptop widths only. The e2e suites (`tests/e2e_*`) are out of scope for UI work unless the user explicitly requests them.
 - Mobile and tablet layouts, responsive refinements, and mobile validation are out of scope unless the user explicitly requests them.
 
 ## Preview must stay current
