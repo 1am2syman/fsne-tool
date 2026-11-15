@@ -1,0 +1,40 @@
+/* Reference Sankey styles, copied from the reference page <style> (build_category_evolution_sankey.py render_html)
+ * and scoped to the integrated chart: svg.rc / .rc-canvas / .rc-legend / .rc-tooltip / .rc-menu. Values unchanged except the tooltip, which FSNE docks bottom-right (FSNE host edit). */
+.rc-canvas { background: #ffffff !important; color-scheme: light; color: #14213d; }
+svg.rc { display: block; }
+svg.rc .node rect { stroke: rgba(0,0,0,.18); stroke-width: .75px; rx: 3px; }
+svg.rc .node text { font-size: 11px; font-weight: 650; dominant-baseline: hanging; pointer-events: none; paint-order: stroke; stroke: rgba(255,255,255,.9); stroke-width: 4px; stroke-linejoin: round; fill: #172033; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+svg.rc .node .node-value { font-weight: 500; fill: #475467; }
+svg.rc .link { fill: none; stroke-opacity: .34; mix-blend-mode: multiply; cursor: pointer; }
+svg.rc .link.dimmed { stroke-opacity: .045; }
+svg.rc .link:hover, svg.rc .link.active { stroke-opacity: .82; }
+svg.rc.focus-locked .link.dimmed:hover { stroke-opacity: .045; }
+svg.rc .node { cursor: pointer; }
+svg.rc .node.dimmed { opacity: .18; }
+svg.rc .node.active { opacity: 1; }
+svg.rc .node:hover rect, svg.rc .node.active rect { stroke: #101828; stroke-width: 1.5px; }
+svg.rc.focus-locked .node.dimmed:hover rect { stroke: rgba(0,0,0,.18); stroke-width: .75px; }
+svg.rc .node:focus-visible { outline: none; }
+svg.rc .node:focus-visible rect { stroke: #2f80ed; stroke-width: 2px; }
+svg.rc .focus-label { font-size: 10px; font-weight: 750; fill: #101828; paint-order: stroke; stroke: rgba(255,255,255,.92); stroke-width: 4px; stroke-linejoin: round; pointer-events: none; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+
+.rc-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; padding: 12px 18px 8px; color: #667085; font-size: 13px; background: #fff; border-top: 1px solid #e5e7eb; color-scheme: light; }
+.rc-legend .swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.legnote { padding: 0 18px 10px; color: #667085; font-size: 12px; background: #fff; color-scheme: light; }
+
+.rc-tooltip { position: fixed; left: auto; right: 18px; top: auto; bottom: 18px; pointer-events: none; z-index: 60; width: max-content; max-width: min(440px, calc(100vw - 36px)); max-height: min(54vh, 460px); overflow: hidden; background: #fff; color: #172033; border: 1px solid rgba(16, 24, 40, .12); border-radius: 16px; padding: 12px 14px; box-shadow: 0 18px 50px rgba(16, 24, 40, .16), 0 2px 8px rgba(16, 24, 40, .08); font-size: 11px; line-height: 1.38; opacity: 0; transition: opacity .14s ease; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+.rc-tooltip::before { content: ""; display: block; height: 3px; margin: -12px -14px 9px; background: linear-gradient(90deg, #2f80ed, #9b51e0); border-radius: 16px 16px 0 0; }
+.rc-tooltip h3 { margin: 0 0 5px; font-size: 12px; color: #101828; }
+.rc-tooltip .tip-grid-wrap { display: grid; grid-template-columns: max-content max-content; gap: 12px; align-items: start; margin-top: 7px; padding-top: 6px; border-top: 1px solid rgba(16,24,40,.10); width: max-content; max-width: 100%; }
+.rc-tooltip .rsl-tip-grid, .rc-tooltip .brand-tip-grid { display: grid; grid-template-columns: max-content max-content; gap: 2px 8px; }
+.rc-tooltip .rsl-tip-grid div:nth-child(2n), .rc-tooltip .brand-tip-grid div:nth-child(2n) { font-weight: 750; text-align: right; white-space: nowrap; }
+.rc-tooltip .brand-tip-grid div:nth-child(2n + 3) { max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.rc-menu { position: fixed; z-index: 70; display: none; min-width: 220px; max-width: min(320px, calc(100vw - 24px)); padding: 8px; border: 1px solid rgba(16, 24, 40, .14); border-radius: 14px; background: rgba(255, 255, 255, .98); box-shadow: 0 18px 48px rgba(16, 24, 40, .20); font-size: 12px; color: #344054; }
+.rc-menu.open { display: block; }
+.rc-menu .drilldown-context-title { padding: 6px 8px 8px; font-weight: 800; color: #101828; border-bottom: 1px solid rgba(16,24,40,.10); margin-bottom: 6px; }
+.rc-menu .drilldown-context-detail { padding: 0 8px 8px; color: #667085; line-height: 1.35; }
+.rc-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: #eef4ff; color: #1849a9; cursor: pointer; font: inherit; font-weight: 800; text-align: left; }
+.rc-menu button:hover:not(:disabled) { background: #dbeafe; }
+.rc-menu button:disabled { cursor: not-allowed; opacity: .58; background: #f2f4f7; color: #667085; }
+.rc-legend .swatch.hatch { background: repeating-linear-gradient(45deg, #94A3B8 0 2px, #e2e8f0 2px 5px) !important; }

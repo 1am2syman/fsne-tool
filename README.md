@@ -39,6 +39,10 @@ The cycle's E2E checks use real HTTP requests, pipeline calculations, Excel down
 
 The current dashboard needs saved history for movement comparisons and a matching latest secondary-sales month; unsuitable inputs fail visibly instead of falling back to sample data. The static `ui/index.html` and static preview can display results, but uploads require the live server. The batch table is the top 400 stock rows; the Excel download contains all rows. Rotation stays at 2×, rates use all supplied months through the report date, and batch-key whitespace follows the source queries.
 
+In **rescue**, **rebalance** and **loading-watch**, right-click an **Exposure** or **LND FC** cell and choose **Show evolution**. The chart carries the row scope, units, report date and the report’s RSL group (3M–6M, 6M–10M or >10M). The same action works on Exposure/LND RSL cells and totals in **brand-status** and **town-status**. Within the Sankey, right-click a category or band and choose **Show RSL evolution** to follow the selected quantity across RSL groups; **Back to categories** restores the chart, and Close returns to the report. Keyboard menus use **Shift+F10**.
+
+Evolution reads frozen snapshots, so its endpoint can differ from a report forecast refreshed from current rates. See [Inventory evolution](docs/inventory-evolution.md) for scopes, lenses, units, CSV export, API routes, caching and validation.
+
 The server binds to localhost. Large HTML dashboards are gzip-compressed when the browser accepts gzip, so previews and live runs share the same delivery path without a separate preview server. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
 
 ## National overview

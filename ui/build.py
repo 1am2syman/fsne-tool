@@ -16,6 +16,7 @@ import sys
 import polars as pl
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from src import evolution
 from src.movement import (
     BRAND,
     RSL,
@@ -130,6 +131,12 @@ else:
     action_plans = action_plan_pages(current, raw_history, DATA, OUT)
     payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
                'MEASURES': impact['measures_after'], 'STATUS': status, 'ACTIONPLANS': action_plans}
+# Inventory evolution graphs for every lens and unit; the server builds any missing one on first request.
+try:
+    evo = evolution.build_all(HIST, DATA, OUT / 'evolution')
+    print(f'evolution: {"reused" if evo["cached"] else "built in " + str(evo["build_s"]) + "s"}')
+except (OSError, ValueError, pl.exceptions.PolarsError) as exc:
+    print(f'evolution: skipped ({exc.__class__.__name__}: {exc})')
 if _args.payload:
     _args.payload.write_text(json.dumps(payload, separators=(',', ':'), allow_nan=False, default=str))
 else:

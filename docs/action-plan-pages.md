@@ -42,6 +42,14 @@ The sheet ends at the viewport bottom, so its sticky total row is visible on loa
 
 `RSL>10M_Good stock` stays a label, not a plan, on every page; it matters most on loading-watch. The lot threshold (≥ 20K BDT by SKU × region) is the same on every page.
 
+## Inventory evolution drill-down
+
+Right-click an **Exposure** or **LND FC** value, including an expanded parent/town row or total, and choose **Show evolution**. The overlay keeps the measure, BDT/KL display, report date and row dimensions, with 3M–6M for rescue, 6M–10M for rebalance or >10M for loading-watch. Select a cell and press **Shift+F10** to open the keyboard menu.
+
+Within the Sankey, right-click a category or flow band and choose **Show RSL evolution**. It follows the selected quantity across RSL groups while excluding later growth. **Back to categories** restores the chart and selection; Close restores the report’s expanded rows and scroll.
+
+Evolution uses saved snapshot figures. A current report forecast refreshed from current rates can differ from the chart’s endpoint, particularly for loading-watch Exposure. See [Inventory evolution](inventory-evolution.md) for attribution rules, units, export and API details.
+
 ## New plans for uncovered batches
 
 **New plans** in the toolbar, or a row's `✎ planned/uncovered` badge, opens the page's batches without a last-month plan as **Brand → SKU → Town**, collapsed to brands, largest LND FC first. A plan can be set on any level:

@@ -29,16 +29,34 @@ from __future__ import annotations
 import gzip
 import json
 import re
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
+from src import evolution
 from ui.render import extract_legacy, render
 
 from .runs import ROOT, SLOTS, RunError, Store
 
 FALLBACK_HTML = ROOT / "ui" / "index.html"
 ROUTE = re.compile(r"^/api/runs/(?P<id>RUN-\d{4,})(?:/(?P<rest>.*))?$")
+EVOLUTION = re.compile(r"^(?P<lens>[a-z]+)$")
+EVOLUTION_ASSETS = ROOT / "ui" / "evolution"
+ASSET_TYPES = {".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
+
+
+_GZIP_CACHE: dict[tuple[int, int], bytes] = {}
+
+
+def _gzipped(body: bytes) -> bytes:
+    """The dashboard page is tens of MB of inlined data and compresses about 6x; keep the last few results."""
+    key = (len(body), zlib.crc32(body))
+    if key not in _GZIP_CACHE:
+        if len(_GZIP_CACHE) >= 3:
+            _GZIP_CACHE.pop(next(iter(_GZIP_CACHE)))
+        _GZIP_CACHE[key] = gzip.compress(body, compresslevel=6, mtime=0)
+    return _GZIP_CACHE[key]
 
 
 def _accepts_gzip(header: str) -> bool:
@@ -72,12 +90,13 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             if ctype.startswith('text/html') and len(body) > 1 << 20:
                 extra = {**(extra or {}), 'Vary': 'Accept-Encoding'}
                 if _accepts_gzip(self.headers.get('Accept-Encoding', '')):
-                    body = gzip.compress(body, compresslevel=6, mtime=0)
+                    body = _gzipped(body)
                     extra['Content-Encoding'] = 'gzip'
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
+            if "Cache-Control" not in (extra or {}):
+                self.send_header("Cache-Control", "no-store")
             for k, v in (extra or {}).items():
                 self.send_header(k, v)
             self.end_headers()
@@ -97,6 +116,50 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             if not path.is_file():
                 return self._error(404, "Not found")
             return self._send(200, path.read_bytes(), ctype, {"Content-Disposition": f'attachment; filename="{name}"'} if name else None)
+
+        def _cached(self, path: Path, ctype: str, extra: dict | None = None) -> None:
+            """A static file with an ETag, so repeat visits cost a 304."""
+            if not path.is_file():
+                return self._error(404, "Not found")
+            stat = path.stat()
+            etag = f'"{stat.st_size:x}-{stat.st_mtime_ns:x}"'
+            headers = {"ETag": etag, "Cache-Control": "no-cache", **(extra or {})}
+            if self.headers.get("If-None-Match") == etag:
+                self.send_response(304)
+                for k, v in headers.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                return None
+            return self._send(200, path.read_bytes(), ctype, headers)
+
+        def _evolution(self, run_id: str | None, rest: str, query: str) -> None:
+            """Inventory graphs: <lens>[/rsl][/detail], with a stable selection for RSL drill-down."""
+            lens, _, part = rest.partition("/")
+            if (lens != "filters" and not EVOLUTION.match(lens)) or part not in {"", "detail", "rsl", "rsl/detail"} or (lens == "filters" and part):
+                return self._error(404, "Not found")
+            params = parse_qs(query)
+            unit = params.get("unit", ["bdt"])[0]
+            filters = {key: params[key] for key in evolution.FILTER_KEYS if key in params}
+            as_of = params.get("as_of", [None])[0]
+            selection = params.get("selection", [""])[0] if part.startswith("rsl") else None
+            if run_id:
+                run = store.path(run_id)
+                history, data, out = run / "history", run / "input", run / "output" / "evolution"
+            else:
+                history, data, out = store.history_dir, ROOT / "sample_input", ROOT / "output" / "evolution"
+            try:
+                if lens == "filters":
+                    return self._json(evolution.filter_options(history, data, out))
+                with evolution.cached_artifact(history, data, out, lens, unit, filters, as_of=as_of, selection=selection) as path:
+                    if part.endswith("detail"):
+                        path = evolution.artifact_path(path.parent, lens, unit, "detail")
+                    return self._cached(path, "application/json", {"Content-Encoding": "gzip"})
+            except evolution.InvalidFilter as exc:
+                return self._error(400, str(exc))
+            except ValueError as exc:
+                return self._error(404, str(exc))
+            except FileNotFoundError as exc:
+                raise RunError("No saved reports to chart") from exc
 
         def _body_json(self) -> dict:
             length = _length(self.headers.get("Content-Length"))
@@ -144,9 +207,16 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                             ),
                             201,
                         )
+                if method in {"GET", "HEAD"} and url.startswith("/assets/evolution/"):
+                    name = unquote(url.rsplit("/", 1)[-1])
+                    if name != Path(name).name:
+                        return self._error(404, "Not found")
+                    return self._cached(EVOLUTION_ASSETS / name, ASSET_TYPES.get(Path(name).suffix, "application/octet-stream"))
+                if method in {"GET", "HEAD"} and url.startswith("/api/evolution/"):
+                    return self._evolution(None, url[len("/api/evolution/"):], query)
                 m = ROUTE.match(url)
                 if m:
-                    return self._run_route(method, m["id"], m["rest"] or "")
+                    return self._run_route(method, m["id"], m["rest"] or "", query)
                 return self._error(404, "Not found")
             except (BrokenPipeError, ConnectionResetError):
                 self.close_connection = True
@@ -192,9 +262,11 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     raise RunError("Could not read this run's dashboard data") from exc
             return self._send(200, render(data, meta).encode(), "text/html; charset=utf-8")
 
-        def _run_route(self, method: str, run_id: str, rest: str) -> None:
+        def _run_route(self, method: str, run_id: str, rest: str, query: str = "") -> None:
             body = self._body_json() if method == "POST" else {}
             store.get(run_id)
+            if rest.startswith("evolution/") and method in {"GET", "HEAD"}:
+                return self._evolution(run_id, rest[len("evolution/"):], query)
             if not rest and method == "GET":
                 return self._json(store.get(run_id))
             if rest == "log" and method == "GET":

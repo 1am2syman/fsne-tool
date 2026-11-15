@@ -882,12 +882,68 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 @media (max-width:1000px){.cols{grid-template-columns:1fr}.page{padding:20px}}
 @media(max-width:700px){.app,.app.rail{grid-template-columns:var(--rail) minmax(0,1fr)}aside .subitem,aside .item span,aside .group,aside .brand b,aside .brand span,aside .item kbd,aside .count,aside .who{display:none}aside .item{justify-content:center;padding:0}aside .brand{justify-content:center;padding:0}main{min-width:0}.page{padding:16px 12px 48px}.head{align-items:flex-start;flex-wrap:wrap}.file{grid-template-columns:16px minmax(0,1fr);padding:12px}.file .file-actions{grid-column:2}.file-heading{gap:6px}.file-ext{font-size:9px}.tabs{gap:14px;flex-wrap:wrap}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* inventory-evolution: chart styles live in assets/evolution/refchart.css */
+#r-evolution .evo-panel{border-radius:12px}
+#r-evolution .evo-panel[data-state=status] #evScroll,#r-evolution .evo-panel[data-state=status] .rc-legend,#r-evolution .evo-panel[data-state=status] .legnote{display:none}
+#r-evolution .evo-panel[data-state=chart] #evStatus{display:none}
+#r-evolution .btn[aria-pressed=false]{color:var(--ink3)}
+#r-evolution .evo-gap{display:inline-flex;align-items:center;gap:8px;color:var(--ink2);font-size:12.5px;font-weight:500}
+#r-evolution .evo-gap input{width:140px;accent-color:var(--accent)}
+#r-evolution .evo-gap output{min-width:26px;text-align:right;font:500 12px var(--mono);color:var(--ink3)}
+#r-evolution .evo-sel{display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--sunken);font-size:12.5px}
+#r-evolution .evo-sel[hidden]{display:none}
+#r-evolution .evo-sel .evo-sw{width:10px;height:10px;border-radius:3px;flex:none}
+#r-evolution .evo-sel .stitle{font-weight:600}
+#r-evolution .evo-sel .sv{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+#r-evolution .evo-sel .meta{color:var(--ink3)}
+#r-evolution .evo-sel .sp{flex:1}
+#r-evolution .evo-sel kbd{font:500 10.5px var(--mono);color:var(--ink3);margin-left:4px}
+#r-evolution .evo-skel,#r-evolution .evo-state{display:grid;place-content:center;justify-items:center;gap:8px;min-height:360px;color:var(--ink3);text-align:center}
+#r-evolution .evo-state h3{font-size:15px;font-weight:600;color:var(--ink)}
+#r-evolution .evo-state p{max-width:420px;font-size:13px}
+#r-evolution .rc-canvas{overflow-x:auto;overflow-y:hidden}
+#r-evolution svg.rc{stroke-linecap:butt;stroke-linejoin:miter;stroke-width:1}
+#r-evolution .evo-filters{gap:10px;margin-bottom:12px;position:relative;z-index:5}
+#r-evolution .evo-filter{position:relative;width:220px}
+#r-evolution .evo-filter summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.5px;font-weight:500}
+#r-evolution .evo-filter summary::-webkit-details-marker{display:none}
+#r-evolution .evo-filter summary::after{content:'⌄';margin-left:auto;color:var(--ink3)}
+#r-evolution .evo-filter summary span{color:var(--ink3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#r-evolution .evo-filter[data-active=true] summary{border-color:var(--accent)}
+#r-evolution .evo-filter summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#r-evolution .evo-filter-pop{position:absolute;top:calc(100% + 6px);left:0;width:288px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.14)}
+#r-evolution .evo-filter-pop input[type=search]{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:12.5px var(--font)}
+#r-evolution .evo-options{max-height:260px;overflow-y:auto;margin:8px 0}
+#r-evolution .evo-options label{display:flex;align-items:center;gap:9px;padding:7px 5px;border-radius:5px;font-size:12.5px;cursor:pointer}
+#r-evolution .evo-options label[hidden]{display:none}
+#r-evolution .evo-options label:hover{background:var(--sunken)}
+#r-evolution .evo-options input{accent-color:var(--accent)}
+#r-evolution .evo-filter-actions{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px}
+#r-evolution .evo-filter-empty{padding:10px 4px;font-size:12px;color:var(--ink3)}
+#r-evolution #evFilterStatus{font-size:12px;color:var(--ink3)}
+#r-evolution #evFilters[hidden],#r-evolution #evLens[hidden],#r-evolution #evDrill[hidden]{display:none}
+#r-evolution #evDrill{margin:0;gap:12px;min-width:0}
+#r-evolution #evDrill strong{white-space:nowrap;font-size:13px}
+#r-evolution #evDrillScope{font-size:12px;color:var(--ink2);max-width:480px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#r-evolution #evFilterClear[hidden]{display:none}
+#evoDialog{width:calc(100vw - 48px);max-width:1600px;height:calc(100vh - 48px);max-height:none;margin:auto;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--ink);box-shadow:0 24px 80px #0003}
+#evoDialog::backdrop{background:#10182866}
+.evo-dialog-head{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
+.evo-dialog-head .sp{flex:1}
+.evo-dialog-head h2{font-size:18px;margin:0 0 3px}.evo-dialog-head p{font-size:12.5px;color:var(--ink2);margin:0}
+#evoDialogBody{height:calc(100% - 77px);overflow:auto;padding:16px 20px}
+#evoDialog .evo-filter{flex:1;min-width:0;width:auto;max-width:280px}
+#evoDialog #evScroll{max-height:calc(100vh - 310px);overflow:auto}
+#reportEvolutionMenu{position:fixed;z-index:80;min-width:180px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 24px #0002}
+#reportEvolutionMenu[hidden]{display:none}
+#reportEvolutionMenu button{width:100%;border:0;background:transparent;color:var(--ink);padding:9px 12px;border-radius:5px;text-align:left;font:500 13px var(--font);cursor:pointer}
+#reportEvolutionMenu button:is(:hover,:focus-visible){background:var(--accent-soft);outline:2px solid var(--accent);outline-offset:-2px}
 </style>
 </head>
 <body>
 <div class="app" id="app">
 <aside>
-  <select class="overview-nav" aria-label="Navigate reports"><option value="overview">Overview</option><option value="batch">total-batch-wise</option><option value="move">total-stock-movement</option><option value="town">town-status</option><option value="status">brand-status</option><option value="transfer">transfer-candidates</option><option value="salespush">sales-push</option><option value="rescue">rescue · 3M–6M</option><option value="rebalance">rebalance · 6M–10M</option><option value="loading-watch">loading-watch · &gt;10M</option><option value="onboarding">Monthly upload</option></select>
+  <select class="overview-nav" aria-label="Navigate reports"><option value="overview">Overview</option><option value="batch">total-batch-wise</option><option value="move">total-stock-movement</option><option value="town">town-status</option><option value="status">brand-status</option><option value="transfer">transfer-candidates</option><option value="salespush">sales-push</option><option value="evolution">inventory-evolution</option><option value="rescue">rescue · 3M–6M</option><option value="rebalance">rebalance · 6M–10M</option><option value="loading-watch">loading-watch · &gt;10M</option><option value="onboarding">Monthly upload</option></select>
   <div class="brand"><div class="glyph">F</div><b>FSNE</b><span>Marico BD</span></div>
   <div class="group">Workspace</div>
   <button class="item" data-view="onboarding" aria-current="page" title="Monthly upload">
@@ -901,6 +957,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <button class="item subitem" data-view="reports" data-r="status">brand-status</button>
   <button class="item subitem" data-view="reports" data-r="transfer">transfer-candidates</button>
   <button class="item subitem" data-view="reports" data-r="salespush">sales-push</button>
+  <button class="item subitem" data-view="reports" data-r="evolution">inventory-evolution</button>
   <button class="item" data-view="reports" data-group="ap" title="Action plans">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg><span>Action plans</span></button>
   <button class="item subitem" data-view="reports" data-r="rescue">rescue<small>3M–6M</small></button>
@@ -1042,6 +1099,25 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <p class="lede" id="spFoot" style="margin-top:10px;font-size:12.5px"></p>
   </div>
 
+  <div id="r-evolution" hidden>
+    <div class="tools evo-filters" id="evFilters" aria-label="Inventory filters"></div>
+    <div class="tools" id="evTools">
+      <div id="evDrill" class="tools" hidden><button class="btn" id="evBack" type="button">← Back to categories</button><strong>RSL evolution</strong><span id="evDrillScope"></span></div>
+      <div class="seg" id="evLens" role="group" aria-label="Lens"></div>
+      <button class="btn" id="evTen" type="button" aria-pressed="true" hidden title="Hidden stock re-enters as “Transitioned from >10M”">Show &gt;10M</button>
+      <span class="sp"></span>
+      <label class="evo-gap" for="evGap">Spacing<input type="range" id="evGap" min="160" max="420" step="1" value="240" aria-label="Horizontal spacing between columns"><output id="evGapOut">240</output></label>
+      <button class="btn" id="evGapReset" type="button">Reset</button>
+    </div>
+    <div class="panel evo-panel" id="evPanel" data-state="chart">
+      <div class="evo-sel" id="evSel" hidden></div>
+      <div id="evStatus"></div>
+      <div class="rc-canvas" id="evScroll"><svg id="evSvg" class="rc" role="img" aria-label="Inventory evolution Sankey chart"></svg></div>
+      <div class="rc-legend" id="evLegend"></div>
+      <div class="legnote" id="evNote"></div>
+    </div>
+    <div class="rc-tooltip" id="evTip"></div><div class="rc-menu" id="evMenu" role="menu"></div>
+  </div>
   <div id="r-move" hidden>
     <div class="tools" id="mTools">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand" aria-label="Search brands"></label>
@@ -1145,6 +1221,11 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div id="dohBody"></div>
   </section>
 </div>
+<div id="reportEvolutionMenu" role="menu" aria-label="Cell actions" hidden><button type="button" role="menuitem" id="showCellEvolution">Show evolution</button></div>
+<dialog id="evoDialog" aria-labelledby="evoDialogTitle" aria-describedby="evoDialogScope">
+  <header class="evo-dialog-head"><div><h2 id="evoDialogTitle">Inventory evolution</h2><p id="evoDialogScope"></p></div><span class="sp"></span><button class="btn" id="evoDialogExport" type="button">Export CSV</button><button class="btn" id="evoDialogClose" type="button" aria-label="Close inventory evolution">Close</button></header>
+  <div id="evoDialogBody"></div>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
@@ -1201,8 +1282,27 @@ function decoratePlanFlag(){
   el.replaceChildren(...kids);el.title=text;
 }
 decoratePlanFlag();
-function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push',rescue:'rescue',rebalance:'rebalance','loading-watch':'loading-watch'}[k];const ap=ACTION_PLANS.includes(k);['overview','batch','move','status','transfer','salespush','plan'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':ap?'plan':k));$$('.movement-notes[open]').forEach(d=>d.open=false);$('#unitTools').hidden=k==='salespush';$('#repGroup').textContent=ap?'Action plans':'Reports';$('#repRange').hidden=!ap;if(ap)$('#repRange').textContent=$(`.item[data-r="${k}"] small`).textContent;$('#repRun').textContent=historical?STATUS.labels.at(-1)+' snapshot':new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})+' · recalculated';$('#repDate').hidden=true;$('#repSep').hidden=false;if(isStatus)setStatusView(k);if(ap){rcSelect(k);drawRescue()}if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP()}
+function showRep(k){$('#unitLabel').textContent=k==='transfer'?'Exposure':'Display';$('#reportUnit').setAttribute('aria-label',k==='transfer'?'Source exposure unit':'Report unit');const isStatus=k==='status'||k==='town',historical=isStatus||k==='overview'||k==='move'||k==='evolution';$('#repName').textContent={overview:'Overview',move:'total-stock-movement',batch:'total-batch-wise',town:'town-status',status:'brand-status',transfer:'transfer-candidates',salespush:'sales-push',evolution:'inventory-evolution',rescue:'rescue',rebalance:'rebalance','loading-watch':'loading-watch'}[k];const ap=ACTION_PLANS.includes(k);['overview','batch','move','status','transfer','salespush','plan','evolution'].forEach(n=>$('#r-'+n).hidden=n!==(isStatus?'status':ap?'plan':k));$$('.movement-notes[open]').forEach(d=>d.open=false);$('#unitTools').hidden=k==='salespush';$('#repGroup').textContent=ap?'Action plans':'Reports';$('#repRange').hidden=!ap;if(ap)$('#repRange').textContent=$(`.item[data-r="${k}"] small`).textContent;$('#repRun').textContent=k==='evolution'?evoOpening()+' opening · '+STATUS.labels.at(-1)+' snapshot':historical?STATUS.labels.at(-1)+' snapshot':new Date(SERIES.doh.date+'T00:00:00Z').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})+' · recalculated';$('#repDate').hidden=true;$('#repSep').hidden=false;if(isStatus)setStatusView(k);if(ap){rcSelect(k);drawRescue()}if(k==='overview')drawOverview();if(k==='transfer')drawTransfer();if(k==='salespush')drawSP();if(k==='evolution')openEvolution()}
 let curRep='batch',lastRep='batch';
+/* inventory-evolution: scripts and chart styles load on first visit */
+let evoLoad=null;
+function evoOpening(){const d=new Date(Date.parse('1 '+STATUS.labels.at(-1)+' UTC'));if(Number.isNaN(+d))return 'Next';const m=d.getUTCMonth()+1;return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m%12]+' '+(d.getUTCFullYear()+(m>11?1:0))}
+function openEvolution(scope){
+  const request=++evoRequest;
+  if(!evoLoad){
+    const evoBase=rcApi('').slice(0,-4)+'assets/evolution/';
+    const css=Object.assign(document.createElement('link'),{rel:'stylesheet',href:evoBase+'refchart.css'});document.head.append(css);
+    const files=['d3.v7.9.2.min.js','d3-sankey.v0.12.3.min.js','refchart.js','page.js'];
+    evoLoad=Promise.all(files.map(name=>new Promise((ok,bad)=>{const s=document.createElement('script');s.src=evoBase+name;s.async=false;s.onload=ok;s.onerror=()=>bad(new Error('Could not load '+name));document.head.append(s)})));
+    evoLoad.catch(()=>{evoLoad=null});
+  }
+  return evoLoad.then(()=>{
+    if(request!==evoRequest||(scope&&!$('#evoDialog').open))return;
+    const evolution=window.FSNE.evolution;
+    if(scope)evoPrevious=evolution.captureScope();
+    return evolution.open({root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
+  }).catch(e=>{if(scope)$('#evoDialogScope').textContent='Could not load evolution: '+e.message;else toast(e.message)});
+}
 const ACTION_PLANS=['rescue','rebalance','loading-watch'];
 $$('.item[data-view]').forEach(b=>b.onclick=()=>{
   if(b.dataset.view==='reports'){if(!HAS_REPORT)return;
@@ -1261,6 +1361,67 @@ const cmp=(k,d)=>(a,b)=>{const x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==
 
 // Uploads and run management work before any report data exists.
 if(!HAS_REPORT)return;
+
+/* Report cells carry explicit evolution scopes; the same chart is moved into a modal and restored on close. */
+const evolutionCells=new WeakMap();
+const normalizeEvolutionRsl=value=>value.replace(/\s/g,'').replaceAll('-','–');
+let evoMenuCell=null,evoReturn=null,evoPrevious=null,evoHome=null,evoRequest=0;
+function bindEvolutionCells(t,rows,specs,total){
+  const annotate=(tr,n)=>{if(!n)return;specs.forEach(spec=>{
+    const td=tr.cells[spec.column+1];if(!td)return;
+    evolutionCells.set(td,{...spec.scope(n),lens:spec.lens});td.dataset.evolution=spec.lens;
+    td.title=(td.title?td.title+' · ':'')+'Right-click to show evolution';
+  })};
+  [...$(t).tBodies[0].rows].forEach((tr,i)=>annotate(tr,rows[i]));
+  if(total&&$(t).tFoot.rows[0])annotate($(t).tFoot.rows[0],total);
+}
+function closeEvolutionMenu(restore=false){
+  $('#reportEvolutionMenu').hidden=true;
+  if(restore)evoMenuCell?.closest('.tw')?.focus({preventScroll:true});
+}
+function showEvolutionMenu(td,x,y){
+  if(!evolutionCells.has(td))return;
+  evoMenuCell=td;const menu=$('#reportEvolutionMenu');menu.hidden=false;
+  menu.style.left=Math.max(8,Math.min(x,innerWidth-menu.offsetWidth-8))+'px';
+  menu.style.top=Math.max(8,Math.min(y,innerHeight-menu.offsetHeight-8))+'px';
+  $('#showCellEvolution').focus({preventScroll:true});
+}
+function showCellEvolution(){
+  const scope=evolutionCells.get(evoMenuCell);if(!scope)return;
+  if(evoHome)returnEvolutionToReport();
+  evoReturn=evoMenuCell.closest('.tw');closeEvolutionMenu();
+  const chart=$('#r-evolution'),dialog=$('#evoDialog');
+  evoHome=document.createComment('evolution home');chart.before(evoHome);$('#evoDialogBody').append(chart);chart.hidden=false;
+  const measure=scope.lens==='lnd'?'LND FC':'Exposure';
+  $('#evoDialogScope').textContent=[measure,scope.label,scope.asOf,unitLabel()].filter(Boolean).join(' · ');
+  dialog.showModal();$('#evoDialogClose').focus({preventScroll:true});
+  openEvolution({...scope,reportUnits:true});
+}
+$('#showCellEvolution').onclick=showCellEvolution;
+$('#evoDialogClose').onclick=()=>$('#evoDialog').close();
+$('#evoDialogExport').onclick=()=>window.FSNE?.evolution?.exportCsv();
+function returnEvolutionToReport(){
+  if(!evoHome)return;
+  ++evoRequest;
+  const chart=$('#r-evolution');chart.hidden=true;evoHome?.replaceWith(chart);evoHome=null;
+  if(evoPrevious)window.FSNE.evolution.restoreScope(evoPrevious);evoPrevious=null;
+  evoReturn?.focus({preventScroll:true});evoReturn=null;
+}
+$('#evoDialog').addEventListener('close',()=>{
+  if(!$('#evoDialog').open)returnEvolutionToReport();
+});
+document.addEventListener('contextmenu',e=>{const td=e.target.closest('td[data-evolution]');if(!td)return;e.preventDefault();showEvolutionMenu(td,e.clientX,e.clientY)});
+document.addEventListener('pointerdown',e=>{if(!e.target.closest('#reportEvolutionMenu'))closeEvolutionMenu()});
+document.addEventListener('scroll',()=>closeEvolutionMenu(),true);
+addEventListener('resize',()=>closeEvolutionMenu());
+document.addEventListener('keydown',e=>{
+  if(!$('#reportEvolutionMenu').hidden&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeEvolutionMenu(true);return}
+  if(e.key!=='ContextMenu'&&!(e.shiftKey&&e.key==='F10'))return;
+  const wrap=e.target.closest('.tw'),table=wrap?.querySelector('table'),st=table&&SHEETS['#'+table.id];
+  const td=e.target.closest('td[data-evolution]')||(st?.on&&table.tBodies[0].rows[st.r]?.cells[st.c+1]);
+  if(!td||!evolutionCells.has(td))return;
+  e.preventDefault();const rect=td.getBoundingClientRect();showEvolutionMenu(td,rect.left+rect.width/2,rect.bottom);
+},true);
 
 /* batch report */
 const serial=n=>new Date(Date.UTC(1899,11,30)+n*864e5).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
@@ -1898,12 +2059,16 @@ function setStatusView(view){
   const fx=$('#sT').closest('.sheet').querySelector('.fx');fx.querySelector('.nb').textContent='A1';fx.querySelector('.fv').textContent='';
   drawStatus();
 }
-function statusDohPairs(n,view,pairs){
-  if(n.id==='total')return pairs;
+function statusEvolutionFilters(n,view){
+  if(n.id==='total')return {};
   let town,brand,parent;
   if(view==='town'){town=n.level===0?n.name:n.town;brand=n.level===1?n.name:n.brand;parent=n.code}
   else{brand=n.path[0];if(view==='brand-town'){town=n.path[1];parent=n.code}else{parent=n.level>=1?n.code:undefined;town=n.level===2?n.path[2]:undefined;if(n.level===2)parent=n.parentCode}}
-  return pairs.filter(p=>(town==null||p.t===town)&&(brand==null||p.b===brand)&&(parent==null||p.p===String(parent)));
+  return Object.fromEntries(Object.entries({town,brand,parent}).filter(([,value])=>value!=null).map(([key,value])=>[key,[String(value)]]));
+}
+function statusDohPairs(n,view,pairs){
+  const filters=statusEvolutionFilters(n,view);
+  return pairs.filter(p=>(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
 const statusPts=n=>n.m.map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
@@ -1963,6 +2128,13 @@ function drawStatus(){
   table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No towns, brands or parents match this search.'});
+  if(statusMetric===1||statusMetric===2){
+    const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
+    const lens=statusMetric===1?'exposure':'lnd';
+    const specs=[...STATUS.groups.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
+      {column:STATUS.groups.length+1,lens,scope:n=>({filters:statusEvolutionFilters(n,statusView),asOf:date.toISOString().slice(0,10),label:n.name})}];
+    bindEvolutionCells('#sT',flat,specs,all);
+  }
   $$('#sT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=STATUS.groups.length+2;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===STATUS.groups.length+2)tr.cells[i].classList.add('bk-r')}});
   const gh=$$('#sT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
   const expandable=[...statusNodes.values()].filter(n=>n.id!=='total'&&n.kids.length),allOpen=expandable.every(n=>statusOpen.has(n.id));
@@ -2036,6 +2208,7 @@ $$('#reportUnit button').forEach(button=>button.onclick=()=>{
   statusTrees.clear();statusTrees.set('town',reportUnit==='bdt'?STATUS.total:STATUS.total_kl);
   setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
+  if(curRep==='evolution'&&window.FSNE&&window.FSNE.evolution)window.FSNE.evolution.setUnit(reportUnit);
 });
 
 /* metric help overlay: definitions + waterfall with dummy data */
@@ -2294,6 +2467,13 @@ function drawRescueTable(){
   table({t:'#rT',cols,rows:flat,sort:rcSort,foot,emptyMsg:'No brands, parents, SKUs, towns or batches match this search.',
     groups:[{span:1,label:hier},{span:3+rot,label:`${rcMonth(RESCUE.date)} · ${pg.label} · ${unitLabel()}`},{span:3,label:'Spread'},{span:2,label:`${RESCUE.lm_label} action plan`}],
     onSort:k=>{rcSort=rcSort.k===k?{k,d:-rcSort.d}:{k,d:k==='name'||k==='covShare'?1:-1};$('#rSort').value='';drawRescueTable()}});
+  const scope=n=>{
+    const values=n.id==='all'?[]:n.id.split('\u0001').slice(1);
+    const filters=Object.fromEntries(lv.slice(0,values.length).map((key,i)=>[key,[values[i]]]));
+    filters.rsl=[normalizeEvolutionRsl(pg.label)];
+    return {filters,asOf:RESCUE.date,label:[...values,pg.label].join(' · ')};
+  };
+  bindEvolutionCells('#rT',flat,[{column:1,lens:'exposure',scope},{column:2,lens:'lnd',scope}],root);
   $$('#rT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=4+rot;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===4+rot)tr.cells[i].classList.add('bk-r')}});
   const gh=$$('#rT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
   rcExpandable=[];(function walk(ns){ns.forEach(n=>{if(n.kids.length){rcExpandable.push(n.id);walk(n.kids)}})})(root.kids);
@@ -2489,7 +2669,7 @@ $('#rOrder').onchange=e=>{rcOrder=e.target.value;rcOpen=new Set();drawRescueTabl
 $('#rSort').onchange=e=>{const [k,d]=e.target.value.split(':');rcSort={k:k==='cov'?'covShare':k,d:+d};drawRescueTable()};
 $('#rExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;rcExpandable.forEach(id=>close?rcOpen.delete(id):rcOpen.add(id));drawRescueTable()};
 
-$('#exportBtn').onclick=()=>curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():ACTION_PLANS.includes(curRep)?exportRescue():toast('Export is not connected yet');
+$('#exportBtn').onclick=()=>curRep==='evolution'?toast(window.FSNE&&window.FSNE.evolution&&window.FSNE.evolution.exportCsv()?'Exported flows':'Nothing to export'):curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():ACTION_PLANS.includes(curRep)?exportRescue():toast('Export is not connected yet');
 })();
 </script>
 </body>
