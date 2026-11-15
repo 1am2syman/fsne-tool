@@ -65,8 +65,17 @@ month must be prepared appropriately upstream. Direct rate builds without an
 that their report date, batch identities, hierarchy and closing stock match the
 latest movement snapshot, and rebuilds the current report. It fails instead of
 silently combining unrelated stocks/rates. Earlier saved workbooks are immutable.
-The latest status/overview measures receive an in-memory recalculated overlay;
-manual mitigation statuses and stock-movement history remain saved facts.
+The latest status/overview quantities receive an in-memory recalculated overlay.
+Every BDT measure in that overlay uses the saved snapshot’s own batch price
+(`saved stock BDT / saved stock KL`), including Exposure, LND FC, Rotation req
+and consumable stock. Stock and its measures must use the same valuation. Manual
+mitigation statuses and stock-movement history remain saved facts.
+
+The August 2026 snapshot was corrected once with the owner’s approval to store
+these recalculated quantities at August’s own prices. It is then historical data;
+later months do not reprice it. Current calculations and exports continue to use
+the shelf-life file’s DB Landing value. The historical correction does not change
+that pricing policy.
 
 - `output/run_rate_audit.parquet`: every observed monthly value, expectation,
   season factor, clipping bounds, peer/history counts, reason and adjusted value.

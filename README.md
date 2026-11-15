@@ -39,7 +39,19 @@ The cycle's E2E checks use real HTTP requests, pipeline calculations, Excel down
 
 The current dashboard needs saved history for movement comparisons and a matching latest secondary-sales month; unsuitable inputs fail visibly instead of falling back to sample data. The static `ui/index.html` and static preview can display results, but uploads require the live server. The batch table is the top 400 stock rows; the Excel download contains all rows. Rotation stays at 2×, rates use all supplied months through the report date, and batch-key whitespace follows the source queries.
 
-The server binds to localhost. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
+The server binds to localhost. Large HTML dashboards are gzip-compressed when the browser accepts gzip, so previews and live runs share the same delivery path without a separate preview server. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
+
+## National overview
+
+**Reports → Overview** is the national stock view. It shows no brand or town breakdowns. The selected saved month controls the stock total, RSL table, four stock-trend cards and the lower Exposure/LND FC comparisons. Choose a month in the header or on the national stock chart; the header also supports left/right arrow keys. BDT/KL changes the displayed amounts and all ratios are calculated from those amounts.
+
+- The hero table has one row per RSL group and a Total row. Stock percentages use national stock; Exposure and LND FC percentages use that row’s own stock.
+- Each RSL card shows stock, its share of national stock and its change from the previous saved month. Trend lines use a separate scale per card, with subtle month labels and peak/trough values.
+- The bottom cards show Exposure and LND FC by RSL, the LND FC change from the previous saved month, and a comparison with that month. The first saved month shows LND ÷ Exp instead of a change.
+- Stock changes are neutral. Falling Exposure/LND FC is green and rising is red. The LND ÷ Stock change is shown in percentage points.
+- The layout fits widescreen laptop viewports without scrolling, in light and dark themes.
+
+Saved months retain their own prices. Stock, Exposure and LND FC in a historical row must use the same batch price. Newly calculated reports use the uploaded shelf-life file’s `DB Landing value`; earlier settled snapshots and completed runs are not repriced when a new month is calculated. See [stock valuation](docs/stock-valuation.md).
 
 ## Generate the inferred final sample report
 
@@ -125,6 +137,14 @@ uvx pyright --project pyrightconfig.json
 
 ## Rebuild generated outputs and the UI
 
+For a template-only change (`ui/template.html`, `ui/onboarding.js`, `ui/doh_overlay.js`), a completed live run picks up the current template on reload and keeps its frozen data. For the bundled sample, re-render an existing built page without recalculating the pipeline:
+
+```bash
+uv run python -m ui.rerender ui/index.html
+```
+
+`ui/index.html` must already contain sample results; `--html PATH` selects another output file. This command intentionally rejects a completed run’s page, which must retain its run identity through the live server. If the sample page is absent or report data changed, use the full build below. On a memory-constrained server, set `POLARS_MAX_THREADS=2` for the build and run it in the background.
+
 Only the final report files in `output/` (`inferred_report.*`, `comparison.*`, `current_measures.json`) and the sources are tracked.
 Everything else is regenerable and gitignored: the other `output/*` files, `output/legacy-compare/`, `ui/index.html` and `validation-artifacts/`.
 
@@ -134,8 +154,12 @@ uv run python -m src movement_series  --history-dir history --output output/move
 uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
 # 2. adjusted report + run-rate/transfer/sales-push outputs + ui/index.html
 uv run python ui/build.py
-# 3. publish the preview
-cp ui/index.html ~/previews/fsne-ui/index.html
+# 3. serve the dashboard and its run API together
+uv run python -m server --port 8770
+# On a preview host, publish this localhost server with the preview helper:
+# preview --proxy 8770 fsne-ui
+# An optional static copy can display saved reports, but cannot run the upload API.
+# cp ui/index.html ~/previews/fsne-ui/index.html
 # optional: parity of the original unadjusted formulas (separate output dir)
 uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
 ```

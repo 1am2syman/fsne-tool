@@ -11,11 +11,37 @@ from src.secondary import load
 from ui.doh_data import audit_payload
 
 
+def refresh_saved_snapshot(saved: pl.DataFrame, current: pl.DataFrame) -> pl.DataFrame:
+    """Refresh quantities at the saved snapshot's own batch prices.
+
+    Current report/export values remain authoritative at DB Landing value. A
+    historical stock amount must never be paired with a newly priced BDT measure.
+    The caller validates matching batch identities, RSL groups and stock KL.
+    """
+    fields = ['avg_sec_m', 'doh', 'consumable_kl', 'consumable_bdt', 'consumable_kl_2x_rate',
+              'rotation_req_kl', 'rotation_req_bdt', 'exposure_kl', 'exposure_bdt',
+              'lnd_fc_kl', 'lnd_fc_bdt', 'exposure_kl_%', 'exposure_bdt_%',
+              'lnd_fc_kl_%', 'lnd_fc_bdt_%']
+    refreshed = saved.drop(fields).join(current.select('batch_index', *fields), on='batch_index', validate='1:1')
+    stock_kl = pl.col('total_closing_stock_kl').cast(pl.Float64)
+    stock_bdt = pl.col('total_closing_stock_bdt').cast(pl.Float64)
+    return refreshed.with_columns(
+        *[(pl.col(quantity) / stock_kl * stock_bdt).alias(value)
+          for quantity, value in [('consumable_kl', 'consumable_bdt'),
+                                  ('rotation_req_kl', 'rotation_req_bdt'),
+                                  ('exposure_kl', 'exposure_bdt'), ('lnd_fc_kl', 'lnd_fc_bdt')]],
+    ).with_columns(
+        *[pl.when(stock_bdt > 0).then(pl.col(value) / stock_bdt).alias(value + '_%')
+          for value in ['exposure_bdt', 'lnd_fc_bdt']],
+    )
+
+
 def build_current(data_dir: Path, saved: pl.DataFrame, latest_date, output_dir: Path):
     """Fail rather than combine stocks and rates from different snapshots.
 
     The current stock input must reproduce saved stock/identity exactly. Only
-    rate-dependent fields are refreshed; manual mitigation labels stay saved.
+    rate-dependent quantities are refreshed at saved batch prices; manual
+    mitigation labels stay saved. Current report/export pricing stays DB Landing.
     """
     config_date = starting_date.build(data_dir).item(0, 'starting_date')
     if config_date != latest_date:
@@ -56,11 +82,7 @@ def build_current(data_dir: Path, saved: pl.DataFrame, latest_date, output_dir: 
             | ((pl.col(c) - pl.col('saved_' + c)).abs() > 1e-8 + pl.col(c).abs() * 1e-10)
         ).height:
             raise ValueError('Current inputs differ from saved stock: ' + c)
-    fields = ['avg_sec_m', 'doh', 'consumable_kl', 'consumable_bdt', 'consumable_kl_2x_rate',
-              'rotation_req_kl', 'rotation_req_bdt', 'exposure_kl', 'exposure_bdt',
-              'lnd_fc_kl', 'lnd_fc_bdt', 'exposure_kl_%', 'exposure_bdt_%',
-              'lnd_fc_kl_%', 'lnd_fc_bdt_%']
-    refreshed = saved.drop(fields).join(current.select('batch_index', *fields), on='batch_index', validate='1:1')
+    refreshed = refresh_saved_snapshot(saved, current)
     # Status reports display all stock, not only the Actionable movement cohort.
     pairs = stock_pairs(refreshed, rates, config_date, actionable_only=False)
     # Store each pair once; selected RSL cells share the same rate.

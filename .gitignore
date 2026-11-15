@@ -18,7 +18,8 @@ output/*
 !output/comparison.json
 !output/current_measures.json
 
-# Local validation evidence
+# Local agent state and validation evidence
+.pi/
 validation-artifacts/
 
 # Per-run uploads and results written by the app server

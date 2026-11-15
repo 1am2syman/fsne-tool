@@ -565,11 +565,12 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #unitTools{display:flex;align-items:center;gap:6px}
 #unitTools[hidden]{display:none}
 #unitTools>.l{font-size:12px;color:var(--ink3)}
-:is(#reportUnit,#overviewMode){gap:2px;padding:2px;border:0;border-radius:8px;background:var(--sunken)}
-:is(#reportUnit,#overviewMode) button{min-width:0;height:24px;padding:0 10px;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
-:is(#reportUnit,#overviewMode) button:hover{background:none;color:var(--ink)}
-:is(#reportUnit,#overviewMode) button[aria-pressed=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
-:is(#reportUnit,#overviewMode) button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+:is(#reportUnit,#overviewMonths){gap:2px;padding:2px;border:0;border-radius:8px;background:var(--sunken)}
+:is(#reportUnit,#overviewMonths) button{min-width:0;height:24px;padding:0 10px;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
+:is(#reportUnit,#overviewMonths) button:hover{background:none;color:var(--ink)}
+:is(#reportUnit,#overviewMonths) button[aria-pressed=true]{background:var(--seg-on);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+:is(#reportUnit,#overviewMonths) button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+#overviewMonths button:disabled{opacity:.4;cursor:default}
 /* Notes: a popover on the toolbar, so opening it never pushes the table down. */
 .movement-notes{position:relative;flex:none}
 .movement-notes>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;height:var(--h);padding:0 10px;border-radius:7px;color:var(--ink2);white-space:nowrap;cursor:pointer}
@@ -692,45 +693,83 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #sT td.hmc.sp{width:92px}#sT tbody td:not(.name):not(.rn){cursor:pointer}
 @media(max-width:700px){#r-status .tw{height:calc(100dvh - 250px)}#sT td.name{min-width:190px}}
 
-/* overview: one viewport, two equally sized charts, one shared month axis. */
+/* overview: national stock first, then each RSL group, then Exposure, LND FC and the change
+   since the previous saved month. One viewport without scrolling from 720p to 1080p: every
+   vertical size follows the viewport height; tall screens give extra room to the trends. */
 main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
-.page:has(#v-reports.on #r-overview:not([hidden])){height:100%;padding:12px 20px}
+.page:has(#v-reports.on #r-overview:not([hidden])){height:100%;padding:12px 20px 16px}
 #v-reports.on:has(#r-overview:not([hidden])){height:100%;display:flex;flex-direction:column;min-height:0}
 #v-reports:has(#r-overview:not([hidden])) #exportBtn{display:none}
-#overviewMode{display:none}
-#v-reports:has(#r-overview:not([hidden])) #overviewMode{display:inline-flex}
-#r-overview:not([hidden]){flex:1;min-height:0;display:flex}
-.overview-panel{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
-.overview-panel .panel-h{position:relative;flex:none;align-items:center;padding:10px 16px;gap:12px}
-.overview-panel .panel-h h2{font:400 20px var(--serif)}
-.overview-total{font:500 18px var(--mono);text-align:right;white-space:nowrap}
-.overview-total small{display:block;color:var(--ink3);font:450 11px var(--font);margin-top:2px}
-.overview-heading{display:flex;align-items:center;gap:8px}
-.overview-info{position:static}
-.overview-info>summary{list-style:none;display:grid;place-items:center;width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;color:var(--ink2);cursor:pointer;font:500 12px var(--mono)}
-.overview-info>summary::-webkit-details-marker{display:none}
-.overview-panel .panel-h .overview-info p{position:absolute;z-index:12;top:calc(100% - 2px);left:10px;width:min(440px,calc(100% - 20px));padding:12px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:0 4px 20px #0002;font:450 12px/1.5 var(--font);color:var(--ink2)}
-.overview-plots{flex:1;min-height:0;display:grid;grid-template-rows:1fr 1fr;padding:6px 16px 0;gap:8px}
-.overview-plot{min-height:0;display:flex;flex-direction:column}
-.overview-plot h3{flex:none;font:500 12px/18px var(--font);display:flex;justify-content:space-between;gap:8px;color:var(--ink2)}
-.overview-plot h3 small{font:450 11px/18px var(--font);color:var(--ink3)}
-.overview-plot svg{display:block;flex:1;width:100%;height:0;min-height:0;stroke:none;overflow:visible}
-.overview-plot svg text{fill:var(--ink3);font:10px var(--mono)}
-.overview-labels{pointer-events:none}
-.overview-plot svg text.overview-label{font:600 10.5px var(--mono);fill:#fff}
-.overview-readout [data-overview-value=total] dt{font-weight:600}
-.overview-readout [data-overview-value=total] dd{font-weight:600}
-.overview-months{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;height:30px;margin:0 16px;position:relative}
-.overview-months button{position:absolute;top:2px;transform:translateX(-50%);border:0;border-radius:4px;background:transparent;color:var(--ink2);font:500 11px var(--font);padding:3px 5px;white-space:nowrap}
-.overview-months button[aria-pressed=true]{background:var(--accent-soft);color:var(--accent)}
-.overview-readout{flex:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding:10px 16px;border-top:1px solid var(--line);background:var(--hover)}
-.overview-readout dt{display:flex;align-items:center;gap:5px;color:var(--ink2);font-size:11px;white-space:nowrap}
-.overview-readout i{width:8px;height:8px;display:inline-block;flex:none;border-radius:1px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.45)}
-.overview-readout dd{font:500 14px var(--mono);margin:4px 0 0}
-.overview-readout .overview-share{display:block;margin-top:3px;color:var(--ink2);font:450 11px var(--font);white-space:nowrap}
-.overview-readout .overview-share.secondary{color:var(--ink3)}
+#overviewMonths{display:none}
+#v-reports:has(#r-overview:not([hidden])) #overviewMonths{display:inline-flex}
+#r-overview{--ov-overlap:clamp(34px,5vh,50px);--ov-line:#1b2a4a;--ov-grid:#eef0f4;--ov-exp:#f1d49c;--ov-tick:#a3a8b4;--ov-lift:0 12px 28px -14px rgba(15,28,56,.32),0 1px 2px rgba(16,24,40,.05)}
+[data-theme=dark] #r-overview{--ov-line:#9db0dc;--ov-grid:#22252b;--ov-exp:#7d6026;--ov-tick:#5d6372;--ov-lift:0 12px 28px -16px rgba(0,0,0,.7)}
+#r-overview:not([hidden]){flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.ov-empty{margin:auto;color:var(--ink3)}
+.ov-plot{position:relative;flex:1;min-width:0;min-height:0}
+.ov-plot>svg{position:absolute;left:0;top:0;display:block;width:100%;height:100%;stroke:none;stroke-width:1;fill:none;overflow:visible}
+.ov-hero{flex:none;min-height:calc(64vh - 280px);display:grid;grid-template-columns:max-content minmax(0,1fr);gap:32px;padding:clamp(16px,2.6vh,24px) 28px calc(var(--ov-overlap) + clamp(8px,1.4vh,18px));border-radius:16px;color:#fff;
+  background:radial-gradient(80% 120% at 85% 0%,rgba(84,120,196,.38),transparent 60%),linear-gradient(135deg,#0f1c38,#1a2c52 60%,#16264a);box-shadow:0 18px 40px -24px rgba(15,28,56,.7)}
+.ov-hero-l{display:flex;flex-direction:column;min-width:0}
+.ov-k{font-size:12.5px;font-weight:500;color:rgba(255,255,255,.66)}
+.ov-vr{display:flex;align-items:center;gap:16px;margin-top:clamp(4px,1vh,14px)}
+.ov-v{font:600 clamp(38px,6.2vh,62px)/1 var(--font);letter-spacing:-.035em;white-space:nowrap}
+.ov-v span{margin-left:8px;font-size:17px;font-weight:500;letter-spacing:0;color:rgba(255,255,255,.62)}
+.ov-ch{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+/* hero table: RSL rows; Stock % of total, Exposure and LND FC % of that row's stock */
+.ov-ms{margin-top:auto;padding-top:clamp(8px,1.4vh,20px)}
+.ov-m{display:grid;grid-template-columns:64px repeat(3,50px 54px);column-gap:6px;align-items:baseline;padding:clamp(2px,.4vh,6px) 0;border-top:1px solid rgba(255,255,255,.12);font-size:13px;line-height:1.2;color:rgba(255,255,255,.7);white-space:nowrap}
+.ov-m b{color:#fff;font-weight:600;text-align:right}
+.ov-m em{font-style:normal;font-size:11.5px;color:rgba(255,255,255,.55)}
+.ov-m.h{border-top:0;padding-top:0;font-size:11px;color:rgba(255,255,255,.55)}
+.ov-m.h b{font-weight:500;color:rgba(255,255,255,.72)}
+.ov-m.h em{font-size:10.5px;color:rgba(255,255,255,.45)}
+.ov-m.t{border-top-color:rgba(255,255,255,.3)}
+.ov-m.t span{color:#fff;font-weight:600}
+.ov-chip{display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 8px;border-radius:999px;font:600 11.5px var(--font);white-space:nowrap}
+.ov-chip small{font-weight:500;opacity:.75;font-size:11px}
+.ov-chip.good{background:var(--ok-bg);color:var(--ok)}
+.ov-chip.bad{background:var(--bad-bg);color:var(--bad)}
+.ov-chip.flat{background:var(--sunken);color:var(--ink2)}
+.ov-hero .ov-chip.flat{background:rgba(255,255,255,.12);color:#dfe5f1}
+.ov-rsl{flex:none;position:relative;height:clamp(116px,20vh,228px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:calc(-1 * var(--ov-overlap)) 18px 0}
+.ov-card{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:clamp(12px,2vh,16px) 18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--ov-lift)}
+.ov-rc{padding:clamp(10px,1.6vh,14px) 16px 0}
+.ov-rc-h{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.ov-rc-n{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;white-space:nowrap}
+.ov-rc-n i{width:10px;height:10px;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(127,127,127,.35)}
+.ov-kv{display:flex;align-items:baseline;gap:6px;margin-top:clamp(2px,.8vh,8px);white-space:nowrap}
+.ov-kv b{font:600 clamp(20px,3.2vh,26px)/1 var(--font);letter-spacing:-.02em}
+.ov-kv span{color:var(--ink3);font-size:12.5px}
+.ov-rc .ov-plot{margin:2px -16px 0}
+.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
+.ov-card-h{flex:none;display:flex;align-items:baseline;gap:14px;margin-bottom:clamp(6px,1.2vh,12px)}
+.ov-card-h b{font-weight:600;font-size:13.5px;white-space:nowrap}
+.ov-meta{margin-left:auto;color:var(--ink3);font-size:12px;white-space:nowrap}
+.ov-lg{display:flex;gap:14px;color:var(--ink2);font-size:12px;white-space:nowrap}
+.ov-lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-.5px}
+.ov-fd{flex:none;font-size:13.5px;line-height:1.45;color:var(--ink2);margin-bottom:clamp(4px,1vh,10px)}
+.ov-fd b{color:var(--ink);font-weight:600}
+.ov-br{flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(4px,.7vh,6px);padding:clamp(3px,.7vh,6px) 0;border-top:1px solid var(--ov-grid)}
+.ov-br-t{display:flex;align-items:baseline;gap:8px;font-size:13px}
+.ov-br-t b{font-weight:500;white-space:nowrap}
+.ov-br-t .v{margin-left:auto;font-weight:600;white-space:nowrap}
+.ov-br-t .v small{font-weight:450;color:var(--ink3)}
+.ov-rate{width:52px;justify-content:center}
+.ov-track{position:relative;height:10px;border-radius:5px;background:var(--ov-grid)}
+.ov-track i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+:is(.ov-track,.ov-lg) .exp{background:var(--ov-exp)}
+:is(.ov-track,.ov-lg) .lnd{background:var(--bad)}
+.ov-sc{flex:1;max-height:58px;display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 66px;align-items:center;gap:0 6px;border-top:1px solid var(--ov-grid);font-size:13px}
+.ov-sc.h{flex:none;border-top:0;padding-bottom:clamp(4px,.8vh,7px);border-bottom:1px solid var(--line);color:var(--ink3);font-size:11.5px;font-weight:500}
+.ov-sc.h+.ov-sc{border-top:0}
+.ov-sc span{text-align:right}
+.ov-sc span:first-child{text-align:left;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-sc .now{font-weight:600}.ov-sc .was{color:var(--ink3)}
+.ov-sc .ov-chip{justify-self:end}
+@media(max-height:700px){:is(.ov-cards,.ov-rc) .ov-chip{height:18px}.ov-track{height:8px}.ov-fd{line-height:1.35}.ov-ch{flex-direction:row;align-items:center}.ov-br{padding:2px 0}}
+@media(max-height:640px){.ov-m{padding:2px 0}.ov-ms{padding-top:8px}.ov-br{padding:1px 0;gap:3px}.ov-card-h{margin-bottom:4px}.ov-cards .ov-chip{height:16px}.ov-track{height:6px}}
 .overview-nav{display:none}
-@media(max-width:1100px){.overview-readout{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px 12px}.overview-readout dd{font-size:12px}.overview-readout [data-overview-value=total]{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;padding-bottom:5px;border-bottom:1px solid var(--line)}.overview-readout [data-overview-value=total] dd{margin:0}}
 @media(max-width:700px){
   .app:has(#v-reports.on #r-overview:not([hidden])){height:100dvh;display:flex;flex-direction:column}
   .app:has(#v-reports.on #r-overview:not([hidden])) aside{flex:none;flex-direction:row;align-items:center;gap:8px;overflow:hidden;border-right:0;border-bottom:1px solid var(--line);padding:5px 10px}
@@ -744,16 +783,7 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
   #v-reports:has(#r-overview:not([hidden]))>.rh{gap:4px;margin-bottom:5px}
   #v-reports:has(#r-overview:not([hidden])) #unitTools>.l{display:none}
   #v-reports:has(#r-overview:not([hidden])) h1{font-size:20px}
-  #v-reports:has(#r-overview:not([hidden])) :is(#reportUnit,#overviewMode) button{padding:0 7px;font-size:11px;height:24px}
-  .overview-panel .panel-h{padding:7px 10px;gap:6px;flex-wrap:wrap}
-  .overview-panel .panel-h h2{font-size:17px}.overview-panel .panel-h p{font-size:10px}
-  .overview-total{font-size:14px;margin-left:auto}.overview-total small{font-size:10px}
-  .overview-heading{gap:5px}
-  .overview-plots{padding:5px 10px 0;gap:5px}.overview-plot h3{font-size:11px}.overview-plot h3 small{font-size:10px}
-  .overview-months{margin:0 10px;height:27px}.overview-months button{font-size:10px;padding:3px}
-  .overview-readout{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;padding:7px 10px}
-  .overview-readout dt{font-size:10px}.overview-readout dd{font-size:12px;margin-top:2px}
-  .overview-readout .overview-share{font-size:10px;margin-top:2px}
+  #v-reports:has(#r-overview:not([hidden])) :is(#reportUnit,#overviewMonths) button{padding:0 7px;font-size:11px;height:24px}
 }
 
 /* metric help */
@@ -950,21 +980,12 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div id="planFlag" data-state="<!--PLAN_STATE-->" role="status"><!--PLAN_FLAG--></div>
     <div class="rh-end">
       <span class="rh-meta"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></span>
-      <div id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div><div class="seg" id="overviewMode" role="group" aria-label="Overview chart display"><button type="button" data-overview-mode="qty" aria-pressed="true">Qty</button><button type="button" data-overview-mode="percent" aria-pressed="false">%</button></div></div>
+      <div class="seg" id="overviewMonths" role="group" aria-label="Month"></div>
+      <div id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div></div>
       <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
     </div>
   </header>
-  <div id="r-overview" hidden>
-    <div class="panel overview-panel">
-      <div class="panel-h"><div><div class="overview-heading"><h2>Stock by remaining shelf life</h2><details class="overview-info"><summary aria-label="About the overview charts">i</summary><p>Latest saved snapshot each month; gaps mean missing snapshots. The two charts share the available height equally and use separate, fixed scales: shorter RSL is stacked; risk overlaps from zero, never stacks. Qty shows amounts in the selected unit. % shows shorter-RSL stock divided by total stock and Exposure/LND divided by &gt;10M stock, using that month's selected-unit values. A zero or missing denominator leaves a gap. All four RSL percentages in the summary sum to 100% of total stock. Exposure/LND belong to &gt;10M and show both % of total and % of &gt;10M; do not add them to the RSL shares. Value tags inside each chart follow the inspected month; full category names and total stock are in the summary below. Hover or select a month to inspect it.</p></details></div><p id="overviewRange"></p></div><div class="overview-total" id="overviewTotal" aria-live="polite"></div></div>
-      <div class="overview-plots">
-        <section class="overview-plot"><h3>Shorter-RSL stock <small id="overviewShortBasis">Magnified · separate scale</small></h3><svg id="overviewShortChart" role="img" aria-label="Magnified stacked stock for less than 3 months, 3 to 6 months and 6 to 10 months"></svg></section>
-        <section class="overview-plot"><h3>Risk within &gt;10M <small id="overviewRiskBasis">Separate scale · not stacked</small></h3><svg id="overviewRiskChart" role="img" aria-label="Greater than 10 month Exposure and LND overlapping from a common zero baseline"></svg></section>
-      </div>
-      <div class="overview-months" id="overviewMonths" role="group" aria-label="Inspect a month"></div>
-      <dl class="overview-readout" id="overviewReadout" aria-live="polite"></dl>
-    </div>
-  </div>
+  <div id="r-overview" hidden></div>
   <div id="r-batch">
     <div class="strip">
       <div class="stat"><small>Closing stock</small><div class="v">1,551.3<i>KL</i></div><div class="d">৳123.46 cr</div></div>
@@ -1558,22 +1579,21 @@ $('#mT').closest('.tw').addEventListener('click',e=>{const g=e.target.closest('.
 $('#mExp').onclick=e=>{const all=e.currentTarget.dataset.all;B.forEach(r=>{if(r.now>=minStock&&r.kids.length)all?open.delete(r.brand):open.add(r.brand)});drawM()};
 drawNote();drawScale();drawRsl();drawM();
 
-/* overview report: source facts and geometry are independent of other report filters. */
-const OVERVIEW_COLORS={'< 3M':'#303030','3M - 6M':'#686868','6M - 10M':'#a0a0a0','> 10M':'#d8d8d8',exposure:'#d99519',lnd:'#c62d3a'};
-function overviewData(source,groups){
-  // Keep >10M at the top even if the source contains an unknown RSL bucket.
-  const order=['< 3M','3M - 6M','6M - 10M'];
-  const indices=groups.map((_,i)=>i).sort((a,b)=>{
-    const rank=g=>{if(g==='> 10M')return Infinity;const i=order.indexOf(g);return i<0?order.length:i};
-    return rank(groups[a])-rank(groups[b]);
-  });
-  const long=groups.indexOf('> 10M');
+/* overview report: national stock first, then each RSL group, then Exposure, LND FC and the
+   change since the previous saved month. Totals sum every RSL group in the selected unit, and
+   the selected month is independent of other report filters. */
+const OVERVIEW_RSL=['> 10M','6M - 10M','3M - 6M','< 3M'].filter(g=>(STATUS.groups||[]).includes(g));
+const OVERVIEW_SHORTER=['6M - 10M','3M - 6M','< 3M'];
+const OVERVIEW_SWATCH={'> 10M':'#dde2ec','6M - 10M':'#a7b3cc','3M - 6M':'#61749c','< 3M':'#1b2a4a'};
+const OVERVIEW_RATE={'> 10M':'#f3c5c8','6M - 10M':'#e48d94','3M - 6M':'#c94a55','< 3M':'#8c1c28'};
+const OVERVIEW_MONTH_NAMES={Jan:'January',Feb:'February',Mar:'March',Apr:'April',May:'May',Jun:'June',Jul:'July',Aug:'August',Sep:'September',Oct:'October',Nov:'November',Dec:'December'};
+// One entry per month label: per-RSL facts and their national sums, or null without a snapshot.
+function overviewFacts(source,groups){
   return source.map(cs=>{
-    if(cs==null)return null;
-    let total=0;
-    const bands=indices.map(i=>{const lower=total;total+=cs[i][0];return {group:groups[i],lower,upper:total,value:cs[i][0]}});
-    const c=cs[long]||[0,0,0];
-    return {total,bands,exposure:{lower:total-c[1],upper:total,value:c[1]},lnd:{lower:total-c[2],upper:total,value:c[2]}};
+    if(!cs)return null;
+    const b={};let stock=0,exp=0,lnd=0;
+    groups.forEach((g,j)=>{const [s,e,l]=cs[j];b[g]={stock:s,exp:e,lnd:l};stock+=s;exp+=e;lnd+=l});
+    return {b,stock,exp,lnd};
   });
 }
 // Shape-preserving cubic Hermite interpolation. Shared boundaries use the same
@@ -1597,127 +1617,206 @@ function overviewArea(run,bounds,X,Y){
   const upper=run.map(i=>[X(i),Y(bounds(i)[1])]),lower=run.map(i=>[X(i),Y(bounds(i)[0])]);
   return monotoneLine(upper)+' '+monotoneLine(lower.toReversed()).replace(/^M/,'L')+' Z';
 }
-let overviewMonth=STATUS.labels.length-1,overviewMode='qty';
-// Ratios are formed per month before interpolation; undefined bases remain gaps.
-function overviewPlotData(data,base,mode){
-  if(mode==='qty')return data;
-  return data.map(d=>{
-    if(!d)return null;
-    const denominator=base==='total'?d.total:d.bands.find(b=>b.group==='> 10M')?.value;
-    if(!(denominator>0))return null;
-    const factor=100/denominator;
-    const scaled=band=>({...band,lower:band.lower*factor,upper:band.upper*factor,value:band.value*factor});
-    return {...d,total:d.total*factor,bands:d.bands.map(scaled),exposure:scaled(d.exposure),lnd:scaled(d.lnd)};
+let overviewMonth=null; // null follows the latest saved month
+const ovMon=i=>STATUS.labels[i].split(' ')[0];
+const ovMonthName=i=>OVERVIEW_MONTH_NAMES[ovMon(i)]||STATUS.labels[i];
+// Adaptive precision keeps 1,235 and 0.11 equally readable in M BDT or KL.
+function ovNum(v){
+  if(v==null||!isFinite(v))return '–';
+  const x=v/unitDivisor(),a=Math.abs(x);
+  return a>=100?Math.round(x).toLocaleString('en-US'):a>=10?x.toFixed(1):x.toFixed(2);
+}
+const ovPct=x=>{const a=Math.abs(x*100);return (a<10?a.toFixed(1):Math.round(a))+'%'};
+const ovShare=x=>x==null||!isFinite(x)?'–':x<.1?(x*100).toFixed(2)+'%':ovPct(x);
+const ovSigned=v=>(v>0?'+':v<0?'−':'')+ovNum(Math.abs(v));
+const ovChange=(now,was)=>now==null||was==null||!was?null:now/was-1;
+const ovRatio=x=>x&&x.stock?x.lnd/x.stock:null;
+const ovShorter=x=>OVERVIEW_SHORTER.reduce((sum,g)=>sum+(x.b[g]?.stock||0),0);
+const ovPrev=(facts,m)=>{for(let i=m-1;i>=0;i--)if(facts[i])return i;return null};
+// Falling Exposure or LND FC is good and rising is bad; stock moves are shown neutral.
+function ovChip(change,label='',neutral=false){
+  if(change==null)return '';
+  const level=Math.abs(change)<.005,tone=level||neutral?'flat':change<0?'good':'bad';
+  return '<span class="ov-chip '+tone+'">'+(level?'Level':(change<0?'▼ ':'▲ ')+ovPct(change))+(label?' <small>'+label+'</small>':'')+'</span>';
+}
+function ovChipPP(diff){
+  if(diff==null)return '';
+  const level=Math.abs(diff)<5e-5;
+  return '<span class="ov-chip '+(level?'flat':diff<0?'good':'bad')+'">'+(level?'Level':(diff<0?'▼ ':'▲ ')+Math.abs(diff*100).toFixed(2)+' pp')+'</span>';
+}
+const ovSvg=(w,h,body,label)=>'<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"'+(label?' role="img" aria-label="'+esc(label)+'"':' aria-hidden="true"')+'>'+body+'</svg>';
+const ovText=(x,y,text,style,anchor='middle',dy=0)=>'<text x="'+x+'" y="'+y+'" dy="'+dy+'" text-anchor="'+anchor+'" style="'+style+'">'+text+'</text>';
+let ovUid=0;
+
+// National stock by month on its own non-zero scale; every saved point selects its month.
+function overviewStockChart(facts,m){return(w,h)=>{
+  const N=facts.length,saved=facts.map((x,i)=>x?i:null).filter(i=>i!=null);
+  if(!saved.length||w<=0||h<=0)return '';
+  const L=6,R=30,T=34,B=28,pw=w-L-R,ph=h-T-B,step=N>1?pw/(N-1):pw,base=T+ph;
+  const vals=saved.map(i=>facts[i].stock),lo=Math.min(...vals),hi=Math.max(...vals),pad=(hi-lo)*.35||Math.abs(hi)*.05||1;
+  const X=i=>N>1?L+i*step:L+pw/2,Y=v=>T+ph*(1-(v-(lo-pad))/(hi+pad*.4-(lo-pad)));
+  const P=saved.map(i=>[X(i),Y(facts[i].stock)]),line=monotoneLine(P),id='ovh'+(++ovUid);
+  let s='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb8ff" stop-opacity=".32"/><stop offset="1" stop-color="#9fb8ff" stop-opacity="0"/></linearGradient></defs>';
+  [0,1/3,2/3,1].forEach(k=>s+='<line x1="'+L+'" x2="'+(L+pw)+'" y1="'+(T+ph*k)+'" y2="'+(T+ph*k)+'" stroke="rgba(255,255,255,.08)"/>');
+  s+='<path d="'+line+' L'+P.at(-1)[0]+','+base+' L'+P[0][0]+','+base+' Z" fill="url(#'+id+')"/><path d="'+line+'" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>';
+  saved.forEach((i,k)=>{
+    const on=i===m,[x,y]=P[k],x0=Math.max(0,x-step/2),f=facts[i];
+    s+='<g data-overview-select="'+i+'" style="cursor:pointer"><title>'+esc(STATUS.labels[i]+' · Stock '+ovNum(f.stock)+' · Exposure '+ovNum(f.exp)+' · LND FC '+ovNum(f.lnd)+' '+unitLabel())+'</title>';
+    s+='<rect x="'+x0+'" y="0" width="'+step+'" height="'+h+'" fill="transparent"/>';
+    if(on)s+='<line x1="'+x+'" x2="'+x+'" y1="'+y+'" y2="'+base+'" stroke="rgba(255,255,255,.35)" stroke-dasharray="2 3"/><circle cx="'+x+'" cy="'+y+'" r="10" fill="rgba(255,255,255,.16)"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="'+(on?5:3)+'" fill="'+(on?'#fff':'#1a2c52')+'" stroke="#fff" stroke-width="2"/>';
+    s+=ovText(x,y-14,ovNum(f.stock),'font:'+(on?600:500)+' '+(on?14:12)+'px var(--font);fill:rgba(255,255,255,'+(on?1:.6)+')')+'</g>';
   });
-}
-const overviewShare=(value,total)=>{
-  if(!(total>0))return '—';
-  const percent=value/total*100;
-  return percent>0&&percent<0.01?'&lt;0.01%':f(percent,2)+'%';
-};
-function overviewReadout(d){
-  if(!d)return '<div>No saved snapshot for this month.</div>';
-  const long=d.bands.find(b=>b.group==='> 10M')?.value||0;
-  const values=[{key:'total',label:'Total stock',value:d.total},...d.bands.map(b=>({key:b.group,label:b.group,value:b.value})),
-    {key:'exposure',label:'Exposure · >10M',value:d.exposure.value,risk:true},
-    {key:'lnd',label:'LND · >10M',value:d.lnd.value,risk:true}];
-  return values.map(v=>'<div data-overview-value="'+esc(v.key)+'"><dt>'+(v.key==='total'?'':'<i style="background:'+(OVERVIEW_COLORS[v.key]||'#bababa')+'"></i>')+esc(v.label)+'</dt><dd>'+amount(v.value)+(v.key==='total'?'<span class="overview-share">'+unitLabel()+'</span>':'<span class="overview-share" data-share="total">'+overviewShare(v.value,d.total)+' of total</span>')+(v.risk?'<span class="overview-share secondary" data-share="long">'+overviewShare(v.value,long)+' of &gt;10M</span>':'')+'</dd></div>').join('');
-}
-// A fixed scale per panel, calculated from the entire period, never the hovered month.
-function overviewScale(values){
-  const max=Math.max(1,...values),raw=max/3,power=10**Math.floor(Math.log10(raw));
-  const step=[1,2,5,10].find(n=>raw/power<=n)*power;
-  return Math.ceil(max/step)*step;
-}
-// Only a small breathing space remains at the right; values live on the areas.
-const overviewGutter=()=>18;
-function overviewPanel(el,data,series,X,basis){
-  const runs=[];let run=[];
-  data.forEach((d,i)=>{if(d)run.push(i);else if(run.length){runs.push(run);run=[]}});if(run.length)runs.push(run);
-  const top=overviewScale(data.filter(Boolean).flatMap(d=>series.map(s=>s.bounds(d)[1])));
-  const W=el.clientWidth||700,H=el.clientHeight||100,L=52,R=overviewGutter(W),T=8,B=7;
-  const Y=v=>T+(H-T-B)*(1-v/top);
-  el.setAttribute('viewBox','0 0 '+W+' '+H);el.dataset.scale=top;
-  let svg='';
-  for(const value of [0,top/2,top]){
-    svg+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(value)+'" y2="'+Y(value)+'" stroke="var(--line)" stroke-width="1" stroke-dasharray="3 4"/><text x="'+(L-7)+'" y="'+(Y(value)+3)+'" text-anchor="end">'+(overviewMode==='percent'?f(value,2)+'%':amount(value,1))+'</text>';
-  }
-  series.forEach(s=>runs.forEach(run=>{
-    svg+='<path '+s.attribute+'="'+esc(s.key)+'" d="'+overviewArea(run,i=>s.bounds(data[i]),X,Y)+'" fill="'+s.color+'"/>';
-  }));
-  // Numeric tags follow the inspected month. Horizontal staggering keeps thin
-  // bands legible without pushing their values into a separate legend.
-  const fmt=v=>overviewMode==='percent'?f(v,2)+'%':amount(v,1);
-  el._paintLabels=i=>{
-    const g=el.querySelector('.overview-labels');if(!g)return;
-    const d=data[i];
-    if(!d){g.html='';return}
-    const rows=series.map(s=>{const[lo,hi]=s.bounds(d);return {s,v:hi-lo,y:Y(s.labelY(lo,hi,d))}});
-    const direction=X(i)>(L+W-R)/2?-1:1;
-    g.html=rows.map((r,j)=>{
-      if(!(r.v>0))return '';
-      const label=fmt(r.v),width=Math.max(34,label.length*6.5+14);
-      const x=Math.min(W-R-width/2,Math.max(L+width/2,X(i)+direction*(width/2+8+j*70)));
-      const y=Math.min(H-B-9,Math.max(T+9,r.y));
-      const tip=esc(STATUS.labels[i]+' · '+r.s.name)+' · '+(overviewMode==='percent'?label+' '+basis:amount(r.v)+' '+unitLabel());
-      return '<rect x="'+(x-width/2)+'" y="'+(y-9)+'" width="'+width+'" height="18" rx="4" fill="'+r.s.color+'" stroke="rgba(255,255,255,.65)" stroke-width="1"/>'
-        +'<text class="overview-label" x="'+x+'" y="'+(y+3.5)+'" text-anchor="middle"'+(r.s.key==='6M - 10M'||r.s.key==='exposure'?' style="fill:#14161b"':'')+'>'+label+'<title>'+tip+'</title></text>';
-    }).join('');
-  };
-  svg+='<g class="overview-labels"></g>';
-  if(!runs.length)svg+='<text x="'+(W/2)+'" y="'+(H/2)+'" text-anchor="middle">'+(overviewMode==='percent'?'No stock base for %':'No saved stock')+'</text>';
-  svg+='<line class="overview-cursor" y1="'+T+'" y2="'+Y(0)+'" stroke="var(--ink2)" stroke-width="1" stroke-dasharray="3 4" pointer-events="none"/>';
-  data.forEach((d,i)=>{
-    const left=i?(X(i-1)+X(i))/2:L,right=i<data.length-1?(X(i)+X(i+1))/2:W-R;
-    svg+='<rect data-overview-month="'+i+'" x="'+left+'" y="0" width="'+(right-left)+'" height="'+H+'" fill="transparent"/>';
+  STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-6,esc(ovMon(i)),'font:'+(i===m?600:450)+' 12px var(--font);fill:rgba(255,255,255,'+(i===m?.95:.5)+')')});
+  return ovSvg(w,h,s,'National stock by month in '+unitLabel());
+}}
+// One RSL group's stock on its own scale: faint month ticks, peak labelled above, trough below.
+function overviewRslTrend(vals,m){return(w,h)=>{
+  const N=vals.length,saved=vals.map((v,i)=>v==null?null:i).filter(i=>i!=null);
+  if(saved.length<2||w<=0||h<=0)return '';
+  const L=18,R=18,T=15,B=16,gap=13,pw=w-L-R,base=h-B;
+  let lo=Math.min(...saved.map(i=>vals[i])),hi=Math.max(...saved.map(i=>vals[i]));
+  if(hi-lo<1e-9){hi+=1;lo-=1}
+  const X=i=>L+i*pw/(N-1),Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo)),P=saved.map(i=>[X(i),Y(vals[i])]),line=monotoneLine(P),id='ovr'+(++ovUid);
+  const top=saved.reduce((a,i)=>vals[i]>vals[a]?i:a),low=saved.reduce((a,i)=>vals[i]<vals[a]?i:a);
+  const anchor=i=>i===0?'start':i===N-1?'end':'middle',nx=i=>i===0?X(i)-4:i===N-1?X(i)+4:X(i),label='font:600 10.5px var(--font);fill:var(--ink2)';
+  let s='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ov-line);stop-opacity:.14"/><stop offset="1" style="stop-color:var(--ov-line);stop-opacity:0"/></linearGradient></defs>';
+  s+='<line x1="'+L+'" x2="'+(w-R)+'" y1="'+base+'" y2="'+base+'" style="stroke:var(--ov-grid)"/>';
+  s+='<path d="'+line+' L'+P.at(-1)[0]+','+base+' L'+P[0][0]+','+base+' Z" fill="url(#'+id+')"/><path d="'+line+'" style="fill:none;stroke:var(--ov-line);stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round"/>';
+  s+=ovText(nx(top),Y(vals[top])-7,ovNum(vals[top]),label,anchor(top));
+  if(low!==top)s+=ovText(nx(low),Y(vals[low])+14,ovNum(vals[low]),label,anchor(low));
+  [top,low].forEach(i=>{if(i!==m)s+='<circle cx="'+X(i)+'" cy="'+Y(vals[i])+'" r="2.6" style="fill:var(--surface);stroke:var(--ov-line);stroke-width:1.4"/>'});
+  if(vals[m]!=null)s+='<circle cx="'+X(m)+'" cy="'+Y(vals[m])+'" r="3.6" style="fill:var(--ov-line);stroke:var(--surface);stroke-width:1.6"/>';
+  STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
+  return ovSvg(w,h,s);
+}}
+const ovBarLabel=(g,y)=>ovText(0,y,esc(g),'font:500 12px var(--font);fill:var(--ink2)','start','.34em');
+// LND FC change by RSL vs the previous saved month, diverging from zero.
+function overviewMoveBars(facts,m,p){return(w,h)=>{
+  if(w<=0||h<=0)return '';
+  const t=facts[m],P=facts[p],L=72,bw=w-L-58,rh=Math.min(52,h/OVERVIEW_RSL.length),z=L+bw/2;
+  const diffs=OVERVIEW_RSL.map(g=>t.b[g].lnd-P.b[g].lnd),top=Math.max(...diffs.map(Math.abs))||1;
+  let s='<line x1="'+z+'" x2="'+z+'" y1="0" y2="'+rh*OVERVIEW_RSL.length+'" style="stroke:var(--line2)"/>';
+  OVERVIEW_RSL.forEach((g,k)=>{
+    const y=k*rh+rh/2,v=diffs[k],len=bw/2*Math.abs(v)/top,level=Math.abs(v/unitDivisor())<.005;
+    s+=ovBarLabel(g,y)+'<rect x="'+(v<0?z-len:z)+'" y="'+(y-5)+'" width="'+Math.max(1,len)+'" height="10" rx="2" style="fill:var(--'+(v<0?'ok':'bad')+')"/>';
+    s+=ovText(w,y,ovSigned(v),'font:600 12px var(--font);fill:var(--'+(level?'ink2':v<0?'ok':'bad')+')','end','.34em');
   });
-  el.html=svg;
+  return ovSvg(w,h,s,'LND FC change by RSL vs '+STATUS.labels[p]);
+}}
+// The first saved month has nothing to compare against, so it shows LND ÷ Exp by RSL.
+function overviewRateBars(t){return(w,h)=>{
+  if(w<=0||h<=0)return '';
+  const L=72,bw=w-L-58,rh=Math.min(52,h/OVERVIEW_RSL.length);
+  let s='';
+  OVERVIEW_RSL.forEach((g,k)=>{
+    const y=k*rh+rh/2,b=t.b[g],r=b.exp?b.lnd/b.exp:0;
+    s+=ovBarLabel(g,y)+'<rect x="'+L+'" y="'+(y-5)+'" width="'+bw+'" height="10" rx="3" style="fill:var(--ov-grid)"/><rect x="'+L+'" y="'+(y-5)+'" width="'+bw*Math.min(1,r)+'" height="10" rx="3" fill="'+OVERVIEW_RATE[g]+'"/>';
+    s+=ovText(w,y,b.exp?ovPct(r):'–','font:600 12px var(--font);fill:var(--ink)','end','.34em');
+  });
+  return ovSvg(w,h,s,'LND ÷ Exp by RSL');
+}}
+
+function overviewHero(facts,m,p,first,plot){
+  const t=facts[m],P=p==null?null:facts[p];
+  const chips=(P?ovChip(ovChange(t.stock,P.stock),'vs '+ovMon(p),true):'')+(m!==first&&p!==first?ovChip(ovChange(t.stock,facts[first].stock),'since '+ovMon(first),true):'');
+  // Stock is a share of the national total; Exposure and LND FC are shares of the row's own stock.
+  const pct=(v,base)=>base?ovShare(v/base):'–';
+  const row=(label,x,cls='',stockPct=pct(x.stock,t.stock))=>'<div class="ov-m'+cls+'"><span>'+esc(label)+'</span><b>'+ovNum(x.stock)+'</b><em>'+stockPct+'</em>'
+    +'<b>'+ovNum(x.exp)+'</b><em>'+pct(x.exp,x.stock)+'</em><b>'+ovNum(x.lnd)+'</b><em>'+pct(x.lnd,x.stock)+'</em></div>';
+  const head='<div class="ov-m h"><span>RSL</span><b>Stock</b><em>% of total</em><b>Exposure</b><em>% of stock</em><b>LND FC</b><em>% of stock</em></div>';
+  return '<section class="ov-hero"><div class="ov-hero-l"><span class="ov-k">National stock</span>'
+    +'<div class="ov-vr"><div class="ov-v">'+ovNum(t.stock)+'<span>'+unitLabel()+'</span></div><div class="ov-ch">'+chips+'</div></div>'
+    +'<div class="ov-ms">'+head+OVERVIEW_RSL.map(g=>row(g,t.b[g])).join('')+row('Total',t,' t','')+'</div></div>'
+    +plot('stock',overviewStockChart(facts,m))+'</section>';
+}
+function overviewRslCard(facts,m,p,g,plot){
+  const t=facts[m],b=t.b[g],vals=facts.map(x=>x?x.b[g].stock:null);
+  const title=g+' stock, '+unitLabel()+'\n'+vals.map((v,i)=>v==null?'':STATUS.labels[i]+'  '+ovNum(v)).filter(Boolean).join('\n');
+  return '<section class="ov-card ov-rc" title="'+esc(title)+'"><div class="ov-rc-h"><span class="ov-rc-n"><i style="background:'+OVERVIEW_SWATCH[g]+'"></i>'+esc(g)+'</span>'
+    +(p==null?'':ovChip(ovChange(b.stock,facts[p].b[g].stock),'vs '+ovMon(p),true))+'</div>'
+    +'<div class="ov-kv"><b>'+ovNum(b.stock)+'</b><span>'+ovShare(t.stock?b.stock/t.stock:null)+' of stock</span></div>'
+    +plot('rsl'+OVERVIEW_RSL.indexOf(g),overviewRslTrend(vals,m))+'</section>';
+}
+function overviewExposureCard(t){
+  const top=Math.max(...OVERVIEW_RSL.map(g=>t.b[g].exp))||1,width=v=>Math.min(100,100*v/top).toFixed(1)+'%';
+  const rows=OVERVIEW_RSL.map(g=>{
+    const b=t.b[g],r=b.exp?b.lnd/b.exp:null;
+    const title=g+' · Stock '+ovNum(b.stock)+' · Exposure '+ovNum(b.exp)+' · LND FC '+ovNum(b.lnd)+' '+unitLabel();
+    return '<div class="ov-br" title="'+esc(title)+'"><div class="ov-br-t"><b>'+esc(g)+'</b><span class="v">'+ovNum(b.lnd)+' <small>of '+ovNum(b.exp)+'</small></span>'
+      +'<span class="ov-chip ov-rate '+(r>.5?'bad':'flat')+'" title="LND ÷ Exp">'+(r==null?'–':ovPct(r))+'</span></div>'
+      +'<div class="ov-track"><i class="exp" style="width:'+width(b.exp)+'"></i><i class="lnd" style="width:'+width(b.lnd)+'"></i></div></div>';
+  }).join('');
+  return '<section class="ov-card"><div class="ov-card-h"><b>Exposure by RSL</b><span class="ov-lg"><span><i class="exp"></i>Exposure</span><span><i class="lnd"></i>LND FC</span></span></div>'+rows+'</section>';
+}
+function overviewMoveText(facts,m,p){
+  const t=facts[m],P=facts[p],diff=g=>t.b[g].lnd-P.b[g].lnd,total=t.lnd-P.lnd;
+  const big=OVERVIEW_RSL.reduce((a,g)=>Math.abs(diff(g))>Math.abs(diff(a))?g:a);
+  const where='the largest move is in <b>'+esc(big)+'</b> RSL ('+ovSigned(diff(big))+').';
+  if(!P.lnd||Math.abs(total/P.lnd)<.005)return 'LND FC is level vs '+ovMon(p)+'; '+where;
+  return 'LND FC '+(total<0?'fell':'rose')+' <b>'+ovNum(Math.abs(total))+' '+unitLabel()+'</b> vs '+ovMon(p)+'; '+where;
+}
+function overviewMovesCard(facts,m,p,plot){
+  if(p==null)return '<section class="ov-card"><div class="ov-card-h"><b>LND ÷ Exp by RSL</b></div>'+plot('moves',overviewRateBars(facts[m]))+'</section>';
+  return '<section class="ov-card"><div class="ov-card-h"><b>LND FC vs '+ovMon(p)+', by RSL</b><span class="ov-meta">'+unitLabel()+'</span></div>'
+    +'<p class="ov-fd">'+overviewMoveText(facts,m,p)+'</p>'+plot('moves',overviewMoveBars(facts,m,p))+'</section>';
+}
+function overviewScorecard(facts,m,p){
+  const t=facts[m],P=p==null?null:facts[p],blank='<span></span>';
+  const row=(label,now,was,chip,num=ovNum)=>'<div class="ov-sc"><span>'+label+'</span><span class="was">'+(P?num(was):'')+'</span><span class="now">'+num(now)+'</span>'+(P&&chip||blank)+'</div>';
+  const ratioDiff=P&&ovRatio(t)!=null&&ovRatio(P)!=null?ovRatio(t)-ovRatio(P):null;
+  return '<section class="ov-card"><div class="ov-card-h"><b>'+(P?'Since '+ovMonthName(p):ovMonthName(m))+'</b><span class="ov-meta">'+unitLabel()+'</span></div>'
+    +'<div class="ov-sc h">'+blank+'<span>'+(P?ovMon(p):'')+'</span><span>'+ovMon(m)+'</span><span>'+(P?'Change':'')+'</span></div>'
+    +row('Stock',t.stock,P?.stock,P&&ovChip(ovChange(t.stock,P.stock),'',true))
+    +row('Shorter-RSL stock',ovShorter(t),P&&ovShorter(P),P&&ovChip(ovChange(ovShorter(t),ovShorter(P)),'',true))
+    +row('Exposure',t.exp,P?.exp,P&&ovChip(ovChange(t.exp,P.exp)))
+    +row('LND FC',t.lnd,P?.lnd,P&&ovChip(ovChange(t.lnd,P.lnd)))
+    +row('LND ÷ Stock',ovRatio(t),P&&ovRatio(P),ovChipPP(ratioDiff),ovShare)
+    +'</section>';
+}
+function overviewMarkup(facts,m,plots){
+  const p=ovPrev(facts,m),first=facts.findIndex(Boolean);
+  const plot=(key,draw)=>{plots[key]=draw;return '<div class="ov-plot" data-ov-plot="'+key+'"></div>'};
+  return overviewHero(facts,m,p,first,plot)
+    +'<div class="ov-rsl">'+OVERVIEW_RSL.map(g=>overviewRslCard(facts,m,p,g,plot)).join('')+'</div>'
+    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)+overviewScorecard(facts,m,p)+'</div>';
+}
+// Month buttons are rebuilt only when the saved months change, so keyboard focus survives redraws.
+function overviewMonthButtons(facts){
+  const seg=$('#overviewMonths'),key=JSON.stringify([STATUS.labels,facts.map(Boolean)]);
+  if(seg.dataset.key===key)return;
+  seg.dataset.key=key;
+  seg.html=STATUS.labels.map((label,i)=>'<button type="button" data-overview-select="'+i+'" aria-label="'+esc(label)+'" aria-pressed="false"'+(facts[i]?'':' disabled')+'>'+esc(ovMon(i))+'</button>').join('');
 }
 function drawOverview(){
-  const data=overviewData((reportUnit==='bdt'?STATUS.total:STATUS.total_kl).m,STATUS.groups);
-  const W=$('#overviewShortChart').clientWidth||700,N=data.length;
-  const R=overviewGutter(W),X=i=>N>1?52+i*(W-52-R)/(N-1):(52+W-R)/2;
-  const bands=data.find(Boolean)?.bands||[];
-  const stock=bands.map((b,j)=>({key:b.group,color:OVERVIEW_COLORS[b.group]||'#bababa',attribute:'data-overview-area',bounds:d=>[d.bands[j].lower,d.bands[j].upper]}));
-  const short=stock.filter(s=>['< 3M','3M - 6M','6M - 10M'].includes(s.key)).map(s=>({...s,attribute:'data-overview-short',labelY:(lo,hi)=>(lo+hi)/2,name:s.key}));
-  const risk=['exposure','lnd'].map(key=>({key,color:OVERVIEW_COLORS[key],attribute:'data-overview-risk',bounds:d=>[0,d[key].value],labelY:(lo,hi,d)=>key==='lnd'?hi/2:(Math.min(d.lnd.value,hi)+hi)/2,name:key==='lnd'?'LND':'Exposure'}));
-  overviewPanel($('#overviewShortChart'),overviewPlotData(data,'total',overviewMode),short,X,'of total stock');
-  overviewPanel($('#overviewRiskChart'),overviewPlotData(data,'long',overviewMode),risk,X,'of &gt;10M stock');
-  $('#overviewShortBasis').textContent=overviewMode==='percent'?'% of total stock':'Magnified · separate scale';
-  $('#overviewRiskBasis').textContent=overviewMode==='percent'?'% of >10M · not stacked':'Separate scale · not stacked';
-  $('#overviewShortChart').setAttribute('aria-label','Shorter-RSL stock stacked in '+(overviewMode==='percent'?'percent of total stock':unitLabel())+', labels show the inspected month');
-  $('#overviewRiskChart').setAttribute('aria-label','Exposure and LND overlapping in '+(overviewMode==='percent'?'percent of greater-than-10-month stock':unitLabel())+', labels show the inspected month');
-  $('#overviewRange').textContent=STATUS.labels[0]+' → '+STATUS.labels.at(-1)+' · all amounts in '+unitLabel();
-  // Preserve focused month buttons when a ResizeObserver refreshes the SVGs.
-  const months=$('#overviewMonths');
-  if(months.dataset.labels!==JSON.stringify(STATUS.labels)){
-    months.html=STATUS.labels.map((label,i)=>'<button type="button" data-overview-select="'+i+'" aria-label="'+esc(label)+'" aria-pressed="false">'+esc(label.split(' ')[0])+'</button>').join('');
-    months.dataset.labels=JSON.stringify(STATUS.labels);
-  }
-  function inspect(i){
-    overviewMonth=i;const d=data[i];
-    $('#overviewTotal').html=(d?amount(d.total)+' '+unitLabel():'No saved snapshot')+'<small>'+esc(STATUS.labels[i])+' · total stock</small>';
-    $('#overviewReadout').html=overviewReadout(d);
-    $$('#overviewMonths button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.overviewSelect===i));
-    $$('.overview-cursor').forEach(cursor=>{cursor.setAttribute('x1',X(i));cursor.setAttribute('x2',X(i))});
-    ['#overviewShortChart','#overviewRiskChart'].forEach(id=>$(id)._paintLabels(i));
-  }
-  $$('.overview-plots [data-overview-month]').forEach(el=>{el.onmouseenter=()=>inspect(+el.dataset.overviewMonth);el.onclick=()=>inspect(+el.dataset.overviewMonth)});
-  $$('#overviewMonths button').forEach(el=>{
-    el.style.left=X(+el.dataset.overviewSelect)+'px';
-    el.onclick=()=>inspect(+el.dataset.overviewSelect);el.onfocus=()=>inspect(+el.dataset.overviewSelect);
-    el.onkeydown=e=>{const delta={ArrowLeft:-1,ArrowRight:1}[e.key];if(!delta)return;e.preventDefault();const next=Math.max(0,Math.min(N-1,+el.dataset.overviewSelect+delta));$('#overviewMonths [data-overview-select="'+next+'"]').focus()};
-  });
-  inspect(Math.max(0,Math.min(overviewMonth,N-1)));
+  const root=$('#r-overview'),source=(reportUnit==='bdt'?STATUS.total:STATUS.total_kl)?.m||[];
+  const facts=overviewFacts(source,STATUS.groups||[]),saved=facts.map((x,i)=>x?i:null).filter(i=>i!=null);
+  overviewMonthButtons(facts);
+  if(!saved.length){root.html='<p class="ov-empty">No saved snapshot</p>';return}
+  if(overviewMonth==null||!facts[overviewMonth])overviewMonth=saved.at(-1);
+  const plots={};
+  root.html=overviewMarkup(facts,overviewMonth,plots);
+  // Charts are drawn after layout so every SVG knows its real size.
+  $$('[data-ov-plot]',root).forEach(el=>{el.html=plots[el.dataset.ovPlot](el.clientWidth,el.clientHeight)});
+  $$('#overviewMonths button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.overviewSelect===overviewMonth));
 }
-$$('#overviewMode button').forEach(button=>button.onclick=()=>{
-  overviewMode=button.dataset.overviewMode;
-  $$('#overviewMode button').forEach(b=>b.setAttribute('aria-pressed',b===button));
-  drawOverview();
+function selectOverviewMonth(i){if(i===overviewMonth)return;overviewMonth=i;drawOverview()}
+document.addEventListener('click',e=>{
+  const el=e.target.closest?.('#overviewMonths [data-overview-select],#r-overview [data-overview-select]');
+  if(el&&!el.disabled)selectOverviewMonth(+el.dataset.overviewSelect);
 });
-new ResizeObserver(()=>{if(curRep==='overview'&&$('#overviewShortChart').clientHeight>0)drawOverview()}).observe($('.overview-plots'));
-document.addEventListener('click',e=>{const info=$('.overview-info');if(!info.contains(e.target))info.open=false});
-$('.overview-info').addEventListener('keydown',e=>{if(e.key==='Escape'){$('.overview-info').open=false;$('.overview-info summary').focus()}});
+$('#overviewMonths').addEventListener('keydown',e=>{
+  const step={ArrowLeft:-1,ArrowRight:1}[e.key];if(!step)return;
+  const buttons=$$('#overviewMonths button:not([disabled])'),next=buttons[buttons.findIndex(b=>+b.dataset.overviewSelect===overviewMonth)+step];
+  if(!next)return;
+  e.preventDefault();selectOverviewMonth(+next.dataset.overviewSelect);next.focus();
+});
+let overviewFrame=0;
+new ResizeObserver(()=>{
+  if(curRep!=='overview'||$('#r-overview').hidden)return;
+  cancelAnimationFrame(overviewFrame);overviewFrame=requestAnimationFrame(drawOverview);
+}).observe($('#r-overview'));
+
 
 /* town / brand status: one spreadsheet renderer with projections of the same facts */
 let statusMetricNames=['stock-bdt','exposure-bdt','lnd-bdt'];

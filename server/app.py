@@ -26,6 +26,7 @@ Every URL is relative to the page, so the app works under a path prefix such as
 
 from __future__ import annotations
 
+import gzip
 import json
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -40,6 +41,20 @@ FALLBACK_HTML = ROOT / "ui" / "index.html"
 ROUTE = re.compile(r"^/api/runs/(?P<id>RUN-\d{4,})(?:/(?P<rest>.*))?$")
 
 
+def _accepts_gzip(header: str) -> bool:
+    for encoding in header.lower().split(','):
+        name, *parameters = encoding.strip().split(';')
+        if name.strip() != 'gzip':
+            continue
+        quality = next((p.split('=', 1)[1].strip() for p in parameters
+                        if p.strip().startswith('q=')), '1')
+        try:
+            return 0 < float(quality) <= 1
+        except ValueError:
+            return False
+    return False
+
+
 def _length(header: str | None) -> int:
     """Content-Length as a non-negative int; anything malformed counts as 0."""
     return int(header) if header and header.isdigit() else 0
@@ -52,6 +67,13 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
 
         # ---- helpers ---------------------------------------------------
         def _send(self, status: int, body: bytes, ctype: str, extra: dict | None = None) -> None:
+            # Large dashboards embed report data. Compress at the app boundary so
+            # mounted previews and normal runs use the same host and API.
+            if ctype.startswith('text/html') and len(body) > 1 << 20:
+                extra = {**(extra or {}), 'Vary': 'Accept-Encoding'}
+                if _accepts_gzip(self.headers.get('Accept-Encoding', '')):
+                    body = gzip.compress(body, compresslevel=6, mtime=0)
+                    extra['Content-Encoding'] = 'gzip'
             self.send_response(status)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
