@@ -61,6 +61,12 @@ The server binds to localhost. Large HTML dashboards are gzip-compressed when th
 
 Saved months retain their own prices. Stock, Exposure and LND FC in a historical row must use the same batch price. Newly calculated reports use the uploaded shelf-life file’s `DB Landing value`; earlier settled snapshots and completed runs are not repriced when a new month is calculated. See [stock valuation](docs/stock-valuation.md).
 
+## Sample data
+
+The sample files and reference workbook are available separately as [fsne-sample-data-v1.zip](https://github.com/1am2syman/fsne-tool/releases/download/sample-data-v1/fsne-sample-data-v1.zip). Access requires permission to this private GitHub repository. Download and extract the ZIP into the repository root so that `sample_input/` and `sample_output/` sit alongside `README.md`. These directories are ignored by Git. The archive's SHA-256 is `688a8acdf6fb126184cdebef60a68ea67a3f28e272dfdbe2f1db81dfd90977f9`.
+
+The app's upload workflow does not require these samples. The sample report, static dashboard build, full sample comparison and tests that use the real sample do require them.
+
 ## Generate the inferred final sample report
 
 ```bash
@@ -133,7 +139,7 @@ Polars' Calamine reader handles worksheet/table data. `openpyxl` is used only to
 
 Exotic named ranges, Excel-specific error cells, quoted hyphens inside history batch identifiers, and 1904-date-system numeric serials are not emulated. Inputs containing these need workbook-specific validation. The date epoch and locale can be adjusted in `src/io.py`.
 
-Sample inputs and a final reference report are supplied in `sample_input/` and `sample_output/`. Tests cover synthetic boundaries and generated Excel/CSV integration; `src.compare_report` checks the complete real sample and Excel serialization. No independent second-period reference or original final formulas are available.
+The optional sample download supplies the inputs and final reference report in `sample_input/` and `sample_output/`. Tests cover synthetic boundaries and generated Excel/CSV integration; `src.compare_report` checks the complete real sample and Excel serialization. No independent second-period reference or original final formulas are available.
 
 ## Verify
 

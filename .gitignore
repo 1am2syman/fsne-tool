@@ -10,6 +10,10 @@ wheels/
 .venv
 .fsne-python/
 
+# Optional sample data (downloaded separately)
+sample_input/
+sample_output/
+
 # Generated run output (rebuild with ui/build.py and `python -m src ...`)
 ui/index.html
 output/*
