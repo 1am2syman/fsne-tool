@@ -14,7 +14,11 @@ Every query in `queries/` has a matching Python module in `src/`:
 
 ## Upload and run in the browser
 
-On Windows, install [uv](https://docs.astral.sh/uv/getting-started/installation/) and double-click `start-fsne.bat` in the repository folder. It installs dependencies, starts the server and opens the app in your default browser. Keep the command window open while using the app; close it to stop the server. Port 8770 must be available. A fresh checkout opens Monthly upload without calculating sample reports, so startup does not depend on matching sample inputs to saved history.
+On 64-bit Windows, install uv and Git and double-click `start-fsne.bat` in the Git checkout. The launcher extracts the bundled Python 3.11 interpreter on first use, installs dependencies, starts the server and opens the app in your default browser. It does not download Python, but installing dependencies requires access to the configured Python package index. Keep the command window open while using the app; close it to stop the server. Port 8770 must be available. A fresh checkout opens Monthly upload without calculating sample reports, so startup does not depend on matching sample inputs to saved history.
+
+To update, close the app and double-click `update.bat`. It pulls from the checkout's configured Git upstream using fast-forward only; if local commits or changes prevent the update, Git reports the problem without resetting them. Start the app again afterward to install any changed dependencies. A Git checkout and access to its remote are required.
+
+The bundled `vendor/python-3.11.16-windows-x86_64.zip` is the Windows x64 install-only stripped build from [python-build-standalone release 20260924](https://github.com/astral-sh/python-build-standalone/releases/tag/20260924), repackaged as a ZIP for Windows extraction. It includes the distribution's license files. The extracted interpreter is stored in the ignored `.fsne-python/` directory.
 
 Alternatively, start the app from the repository checkout:
 
