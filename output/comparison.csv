@@ -1,0 +1,31 @@
+column,rows_checked,null_mismatches,value_mismatches,max_absolute_error,comparison,actual_nulls,expected_nulls
+report_date,27891,0,0,0.0,exact,0,0
+batch_index,27891,0,0,0.0,exact,0,0
+Town,27891,0,0,0.0,exact,0,0
+Brand Name,27891,0,0,0.0,exact,0,0
+parent_material_code,27891,0,0,0.0,exact,0,0
+Material Code,27891,0,0,0.0,exact,0,0
+material_desc,27891,0,0,0.0,exact,0,0
+Batch code,27891,0,0,0.0,exact,0,0
+Expiry Date,27891,0,0,0.0,exact,0,0
+rsl_group,27891,0,0,0.0,exact,0,0
+rsl_days,27891,0,0,0.0,exact,0,0
+total_closing_stock_kl,27891,0,0,3.469446951953614e-18,float_tolerance,0,0
+total_closing_stock_bdt,27891,1529,26362,336251.0637522578,float_tolerance,0,1529
+doh,27891,0,2733,632.4128308775589,float_tolerance,1250,1250
+avg_sec_m,27891,0,2733,1.0424697541111492,float_tolerance,1250,1250
+total_pri_sales,27891,0,0,0.0,float_tolerance,0,0
+total_sec_sales,27891,0,0,0.0,float_tolerance,0,0
+consumable_kl,27891,0,578,0.03251026666666667,float_tolerance,0,0
+consumable_bdt,27891,1529,23281,72104.81780862159,float_tolerance,0,1529
+consumable_kl_2x_rate,27891,0,320,0.05562,float_tolerance,0,0
+rotation_req_kl,27891,0,320,0.05562,float_tolerance,0,0
+rotation_req_bdt,27891,1529,4457,336251.0637522578,float_tolerance,0,1529
+exposure_kl,27891,0,578,0.03251026666666667,float_tolerance,0,0
+exposure_bdt,27891,1529,5497,336251.0637522578,float_tolerance,0,1529
+lnd_fc_kl,27891,0,89,0.011228389522552673,float_tolerance,0,0
+lnd_fc_bdt,27891,1529,2151,312721.791785001,float_tolerance,0,1529
+exposure_kl_%,27891,0,578,1.0,float_tolerance,0,0
+exposure_bdt_%,27891,1881,578,1.0,float_tolerance,352,1529
+lnd_fc_kl_%,27891,0,89,0.34489227557326035,float_tolerance,0,0
+lnd_fc_bdt_%,27891,1881,89,0.34489227557326035,float_tolerance,352,1529

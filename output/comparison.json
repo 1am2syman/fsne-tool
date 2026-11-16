@@ -1,0 +1,27 @@
+{
+  "status": "policy_adjusted_expected_difference",
+  "non_policy_mismatched_cells": 0,
+  "rate_columns_differing": 4,
+  "raw_rates": false,
+  "queue_columns_differing": 9,
+  "valuation_columns_differing": 7,
+  "rows": 27891,
+  "columns": 30,
+  "cells_checked": 836730,
+  "mismatched_cells": 81840,
+  "excel_roundtrip_mismatches": 0,
+  "row_order_matches": true,
+  "reference_unchanged": true,
+  "inputs_unchanged": true,
+  "input_sha256": {
+    "DB Landing for FSNE.xlsx": "75d2ce129c1da668a2c86e892acaf11e0c4b444a1d213f16c335400c651edfc7",
+    "Mode_Sec_Month on Month.xlsb": "3c9d7f6cd9e0a2bd13747ac6064289ab3436baf70ee5c5bbf0922b87da6fb8ff",
+    "PH_FG.xlsx": "c4699b231171111f1c1d7aad0bc70a6a1419682b1fef3eda7c6d0bfaa837c08e",
+    "Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv": "b9342a6cc1e06e48cba430ce1719beee8b2de8b951f79feb2bb494358077806a",
+    "config.xlsx": "16102704d32c13b491a2f92b6f0292468c3de08968cc028228a0c7b6e651af5a"
+  },
+  "reference_sha256": "93b2e9b61e48a04d24d0f6ba02af99ba2c0c70482f79fc8876e42a9f53e69da0",
+  "absolute_tolerance": 1e-08,
+  "relative_tolerance": 1e-12,
+  "inferred_not_authoritative": true
+}
