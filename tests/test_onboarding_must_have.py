@@ -92,9 +92,9 @@ def test_queued_cancel_and_delete_preserve_run_ids(tmp_path):
 
 def test_sales_month_and_pipeline_error_messages(tmp_path):
     with patch("src.secondary.load", return_value=pl.DataFrame({"Month-Year": ["2026-07-01", "2026-08-01"]})):
-        validate_sales_month(tmp_path, "2026-08-30")
-        with TestCase().assertRaisesRegex(RunError, "2026-08.*2026-09"):
-            validate_sales_month(tmp_path, "2026-09-30")
+        validate_sales_month(tmp_path, "2026-09-30")
+        with TestCase().assertRaisesRegex(RunError, "2026-08.*2026-10.*2026-09"):
+            validate_sales_month(tmp_path, "2026-10-31")
     assert "Secondary sales" in pipeline_message("ValueError: Latest run-rate source month does not match stock snapshot")
     assert "technical details" in pipeline_message("RuntimeError: unexpected")
 

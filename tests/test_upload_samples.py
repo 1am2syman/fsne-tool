@@ -20,10 +20,10 @@ def test_downloaded_samples_validate_and_calculate_together(tmp_path):
     for slot, (name, contents, _) in files().items():
         meta = store.save_file(run["id"], slot, name, io.BytesIO(contents), len(contents))
         assert slot in meta["files"]
-    assert store.get(run["id"])["report_date"] == "2026-08-30"
+    assert store.get(run["id"])["report_date"] == "2026-09-30"
     data = store.path(run["id"]) / "input"
     for slot in SLOTS:
-        assert validate_upload(slot, data) == ("2026-08-30" if slot == "config" else None)
+        assert validate_upload(slot, data) == ("2026-09-30" if slot in {"config", "secondary"} else None)
     result = report.build(data)
     assert result.height == 2
     assert result["total_closing_stock_bdt"].to_list() == [500000.0, 450000.0]

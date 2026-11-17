@@ -43,7 +43,7 @@ def _workbook(headers: list[str], rows: list[list], *, config: bool = False) -> 
 def files() -> dict[str, tuple[str, bytes, str]]:
     """slot -> (download filename, contents, MIME type); never use business data."""
     xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    config = _workbook(["variable", "value"], [["starting_date", "2026-08-30"]], config=True)
+    config = _workbook(["variable", "value"], [["starting_date", "2026-09-30"]], config=True)
     hierarchy = _workbook(
         ["material_code", "material_desc", "volume", "parent_material_code"],
         [[1001, "Example product 100 ml", 100, 1000], [1002, "Example product 200 ml", 200, 1000]],

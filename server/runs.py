@@ -12,6 +12,7 @@ Each run lives in ``runs/RUN-0001/``::
 
 from __future__ import annotations
 
+import calendar
 import json
 import os
 import queue
@@ -191,22 +192,41 @@ class Store:
                 if remaining:
                     raise RunError(f"{label}: upload was cut short")
                 report_date = validate_upload(slot, Path(staging))
+                automatic = slot == "secondary" and report_date and (
+                    not meta.get("report_date") or meta.get("configuration_source") == "secondary"
+                )
                 if slot in {"config", "secondary"}:
-                    config_date = report_date if slot == "config" else meta.get("report_date")
+                    config_date = report_date if slot == "config" or automatic else meta.get("report_date")
                     secondary_dir = Path(staging) if slot == "secondary" else folder
                     if config_date and (slot == "secondary" or "secondary" in meta["files"]):
                         validate_sales_month(secondary_dir, config_date)
+                if slot == "config" and report_date:
+                    write_configuration(tmp, report_date)
+                if automatic and report_date:
+                    write_configuration(Path(staging) / "config.xlsx", report_date)
                 for old in folder.glob(f"{stem}.*"):
                     old.unlink()
                 tmp.replace(folder / f"{stem}{ext}")
+                if automatic:
+                    (Path(staging) / "config.xlsx").replace(folder / "config.xlsx")
+                    for old in folder.glob("config.*"):
+                        if old.name != "config.xlsx":
+                            old.unlink()
+                    meta["files"]["config"] = {
+                        "name": "Detected from secondary sales", "size": (folder / "config.xlsx").stat().st_size,
+                        "generated": True,
+                    }
             meta["files"][slot] = {"name": filename[:255], "size": length}
-            if report_date:
+            if report_date and (slot == "config" or automatic):
                 meta["report_date"] = report_date
-                meta["configuration_source"] = "workbook"
+                meta["fsne_month"] = report_date[:7]
+                meta["configuration_source"] = "secondary" if automatic else "workbook"
             self._write(meta)
             return meta
 
-    def configure(self, run_id: str, report_date: str, label: str | None = None) -> dict:
+    def configure(
+        self, run_id: str, report_date: str = "", label: str | None = None, *, fsne_month: str | None = None,
+    ) -> dict:
         """Save form settings as the config workbook consumed by the pipeline.
 
         Validate against uploaded sales before replacing any accepted settings.
@@ -216,6 +236,8 @@ class Store:
             meta = self.get(run_id)
             if meta["status"] != "draft":
                 raise RunError("Settings can only be changed before the run starts")
+            if fsne_month is not None:
+                report_date = fsne_month_end(fsne_month)
             try:
                 if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", report_date):
                     raise ValueError("Expected an ISO date")
@@ -227,15 +249,7 @@ class Store:
                 validate_sales_month(folder, report_date)
             with tempfile.TemporaryDirectory(dir=self.path(run_id)) as staging:
                 target = Path(staging) / "config.xlsx"
-                workbook = Workbook()
-                sheet = workbook.active
-                assert sheet is not None
-                sheet.append(["variable", "value"])
-                sheet.append(["starting_date", report_date])
-                sheet.add_table(Table(displayName="config_table", ref="A1:B2"))
-                workbook.save(target)
-                workbook.close()
-                size = target.stat().st_size
+                size = write_configuration(target, report_date)
                 target.replace(folder / "config.xlsx")
             # Remove a previous macro workbook only after its replacement exists.
             for old in folder.glob("config.*"):
@@ -243,6 +257,7 @@ class Store:
                     old.unlink()
             meta["files"]["config"] = {"name": "Entered in form", "size": size, "generated": True}
             meta["report_date"] = report_date
+            meta["fsne_month"] = report_date[:7]
             meta["configuration_source"] = "form"
             if label is not None:
                 meta["label"] = label.strip()[:80] or "Untitled run"
@@ -260,7 +275,7 @@ class Store:
             if missing:
                 raise RunError("Missing files: " + ", ".join(missing))
             if not meta.get("report_date") or "config" not in meta["files"]:
-                raise RunError("Choose a report date or import a configuration workbook.")
+                raise RunError("Choose an FSNE month or upload secondary sales to detect it.")
             by_date = history_by_date(self.history_paths())
             prior_month = previous_month(meta["report_date"])
             has_previous = any(dt[:7] == prior_month for dt in by_date)
@@ -585,7 +600,7 @@ def link_history(link: Path, target: Path) -> None:
 def pipeline_message(detail: str, step: str | None = None) -> str:
     """Translate recognized pipeline failures; the full traceback stays in the log."""
     known = (
-        ("Latest run-rate source month", "Secondary sales: choose a file whose latest month matches the configuration report month."),
+        ("Latest run-rate source month", "Secondary sales: choose a file ending in the month before the FSNE month."),
         ("Current source report date", "Run configuration: check the report date and choose files for that month."),
         ("Current hierarchy differs", "Product hierarchy: choose the hierarchy that matches the shelf-life report."),
         ("Current inputs do not reproduce", "Shelf-life report: choose the stock report for the configured month."),
@@ -600,6 +615,31 @@ def pipeline_message(detail: str, step: str | None = None) -> str:
     return f"The calculation could not be completed{where}. Check the uploaded files and see the run log for technical details."
 
 
+def fsne_month_end(month: str) -> str:
+    """Resolve the sole month selection to a calendar month-end calculation date."""
+    try:
+        if not isinstance(month, str) or not re.fullmatch(r"\d{4}-\d{2}", month):
+            raise ValueError("Expected YYYY-MM")
+        first = date.fromisoformat(month + "-01")
+        return first.replace(day=calendar.monthrange(first.year, first.month)[1]).isoformat()
+    except (ValueError, TypeError):
+        raise RunError("FSNE month: choose a valid month and year.") from None
+
+
+def write_configuration(target: Path, report_date: str) -> int:
+    """Mark new configurations explicitly; legacy snapshots keep their old date rule."""
+    workbook = Workbook()
+    sheet = workbook.active
+    assert sheet is not None
+    sheet.append(["variable", "value"])
+    sheet.append(["starting_date", report_date])
+    sheet.append(["fsne_month", report_date[:7]])
+    sheet.add_table(Table(displayName="config_table", ref="A1:B3"))
+    workbook.save(target)
+    workbook.close()
+    return target.stat().st_size
+
+
 def validate_sales_month(data_dir: Path, report_date: str) -> None:
     from src.io import date as parse_date
     from src.secondary import load
@@ -607,11 +647,12 @@ def validate_sales_month(data_dir: Path, report_date: str) -> None:
     try:
         months = load(data_dir).select(parse_date("Month-Year").dt.truncate("1mo"))
         latest = months["Month-Year"].max()
-        if latest is None or str(latest)[:7] != report_date[:7]:
+        expected = previous_month(report_date)
+        if latest is None or str(latest)[:7] != expected:
             found = str(latest)[:7] if latest is not None else "no valid month"
             raise RunError(
-                f"Secondary sales: latest month is {found}, but the configuration report month is "
-                f"{report_date[:7]}. Choose files for the same month."
+                f"Secondary sales: latest month is {found}. FSNE month {report_date[:7]} "
+                f"requires sales through {expected}, the previous month."
             )
     except RunError:
         raise
@@ -632,7 +673,11 @@ def validate_upload(slot: str, data_dir: Path) -> str | None:
         elif slot == "secondary":
             frame = secondary.load(data_dir)
             sec_history.transform(frame)
-            run_rate_parent.monthly_sales(frame)
+            latest = run_rate_parent.monthly_sales(frame)["month"].max()
+            if not isinstance(latest, date):
+                raise RunError("Secondary sales: no valid sales month was found.")
+            following = (latest.replace(day=28) + timedelta(days=4)).replace(day=1)
+            return fsne_month_end(following.isoformat()[:7])
         else:
             frame = promote_headers(raw_csvs(list(data_dir.glob("*.csv")), 34))
             missing = [column for column in soh_db.COLUMNS if column not in frame.columns]

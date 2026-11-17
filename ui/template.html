@@ -977,7 +977,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <!-- ONBOARDING -->
 <section class="view on" id="v-onboarding">
   <div class="head">
-    <div><h1>Monthly upload</h1><p class="lede">Add this month’s exports and set the stock snapshot date.</p></div>
+    <div><h1>Monthly upload</h1><p class="lede">Add this month’s exports and choose the FSNE month.</p></div>
     <div class="tabs" role="tablist" id="obTabs">
       <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
       <button class="tab" role="tab" aria-selected="false" data-t="runs">Runs<span class="count" id="runsN"></span></button>
@@ -989,24 +989,24 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <p id="onboardingError" role="alert" class="badc" hidden></p>
   <div id="ob-setup">
     <div class="panel source-panel">
-      <div class="panel-h ob-files-h"><div><h2>Source files</h2><p>Three exports for the report month.</p></div><div class="ob-meter"><span class="ob-segs" aria-hidden="true"><i></i><i></i><i></i></span><p id="fileProg" role="status"></p></div></div>
+      <div class="panel-h ob-files-h"><div><h2>Source files</h2><p>Three exports for the FSNE run.</p></div><div class="ob-meter"><span class="ob-segs" aria-hidden="true"><i></i><i></i><i></i></span><p id="fileProg" role="status"></p></div></div>
       <div id="files"></div>
       <div class="ob-files-foot"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4m-4 4 4-4 4 4M5 14v5h14v-5"/></svg>Drop a file onto its row to add it.</span><span class="ob-draft">Draft saved automatically ·<button id="discardDraft" type="button" hidden>Discard draft</button></span></div>
     </div>
     <div class="panel ob-ticket">
       <p class="ob-run-id" id="ticketRun">New run</p>
       <div class="ob-stamp">
-        <label for="sDate">Stock snapshot date</label>
-        <div class="ob-date"><span id="dateStamp" class="empty" aria-hidden="true">DD MMM YYYY</span><input id="sDate" type="date" required disabled aria-describedby="dateHint"></div>
-        <div class="ob-hint"><small id="dateHint">The day stock was counted.</small><button type="button" id="datePick" disabled>Choose date</button></div>
+        <label for="sDate">FSNE month</label>
+        <div class="ob-date"><span id="dateStamp" class="empty" aria-hidden="true">MMM YYYY</span><input id="sDate" type="month" required disabled aria-describedby="dateHint"></div>
+        <div class="ob-hint"><small id="dateHint">Detected from secondary sales + 1 month.</small><button type="button" id="datePick" disabled>Choose month</button></div>
       </div>
       <label class="ob-field" for="sLabel">Run label<span>optional</span><input id="sLabel" maxlength="80" placeholder="e.g. August 2026 close" disabled></label>
       <div class="ob-perf" aria-hidden="true"></div>
       <ul id="fileChecklist" aria-label="Files for this run"></ul>
       <div class="ob-go"><button class="btn primary" id="runBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5l12 7-12 7z" style="fill:currentColor;stroke:none"/></svg>Start run</button><p id="startReason" aria-live="polite"></p></div>
       <div class="ob-more">
-        <details class="config-import ob-pop" name="setup-options"><summary>Import settings from Excel</summary><div class="ob-pop-body"><p>Optional. Fills the report date from a configuration workbook. You can still change the date.</p><div id="configFile"></div></div></details>
-        <details class="config-about ob-pop" name="setup-options"><summary>About the calculation</summary><div class="ob-pop-body"><p>The report date determines stock age and the sales-history cutoff. Sales rates use all supplied months through that date. Rotation uses twice the average sales rate. Spaces in batch keys are kept as supplied.</p></div></details>
+        <details class="config-import ob-pop" name="setup-options"><summary>Import settings from Excel</summary><div class="ob-pop-body"><p>Optional. Uses the configuration workbook’s report month as the FSNE month. Calculations use month-end.</p><div id="configFile"></div></div></details>
+        <details class="config-about ob-pop" name="setup-options"><summary>About the calculation</summary><div class="ob-pop-body"><p>The FSNE month follows the latest secondary-sales month. Stock age is calculated at the end of the FSNE month; sales history ends in the previous month. Rotation uses twice the average sales rate. Spaces in batch keys are kept as supplied.</p></div></details>
       </div>
     </div>
   </div>

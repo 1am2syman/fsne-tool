@@ -9,14 +9,14 @@
   ];
   const requiredSlots = slots.filter(([slot]) => slot !== 'config');
   const descriptions = {
-    config: 'Fill the report date from a workbook.',
-    secondary: 'Monthly sales through the report month.',
+    config: 'Fill the FSNE month from a workbook.',
+    secondary: 'Monthly sales through the month before FSNE.',
     hierarchy: 'Material codes, products and parent mapping.',
     shelflife: 'Stock, expiry dates and DB Landing value.',
   };
   const help = {
-    config: 'Optional import: fills the report date from config_table. You can edit the date above.',
-    secondary: 'Monthly sales history through the report month, including Month-Year, town, material, batch and sales volume. Example: Mode_Sec_Month on Month.xlsb',
+    config: 'Optional import: uses the month of config_table.starting_date as the FSNE month.',
+    secondary: 'Monthly sales history ending one month before FSNE, including Month-Year, town, material, batch and sales volume. The latest sales month sets the next FSNE month automatically. Example: Mode_Sec_Month on Month.xlsb',
     hierarchy: 'Excel product hierarchy with material code, description, volume and parent material code. Example: PH_FG.xlsx',
     shelflife: 'CSV stock and shelf-life report for the report month, including material, batch, town, expiry, stock and DB Landing value (the source of stock value in BDT). Example: Product Shelflife Report Multiple FSNE  (03-08-2026)  (03-09-2026).csv',
   };
@@ -25,6 +25,7 @@
   let online = false, busy = false, runs = [], polling = false, reloadingReport = false, loadedRun = null, draft = null, invalidSlot = null, trackedRun = null;
   // The ticket stamp spells the month out so 08/09 can never be read the wrong way round.
   const stampText = value => value ? value.slice(8, 10) + ' ' + MONTHS[Number(value.slice(5, 7)) - 1] + ' ' + value.slice(0, 4) : 'DD MMM YYYY';
+  const monthStampText = value => value ? MONTHS[Number(value.slice(5, 7)) - 1] + ' ' + value.slice(0, 4) : 'MMM YYYY';
   const sizeText = bytes => bytes < 1024 ** 2 ? Math.max(1, Math.ceil(bytes / 1024)).toLocaleString('en-GB') + ' KB' : (bytes / 1024 ** 2).toLocaleString('en-GB', {maximumFractionDigits: 1}) + ' MB';
   const dateText = value => value ? new Date(value.slice(0,10) + 'T00:00:00Z').toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}) : '—';
   const basePath = location.pathname.replace(/\/index\.html$/, '').replace(/\/?$/, '/');
@@ -55,9 +56,9 @@
   function startMessage(missing, hasDate) {
     if (!online) return 'Open the live app to start a run.';
     if (busy) return 'Saving and checking your files…';
-    if (invalidSlot === 'config') return 'Check the report date or configuration workbook.';
+    if (invalidSlot === 'config') return 'Check the FSNE month or configuration workbook.';
     if (invalidSlot) return 'Fix the ' + slots.find(s => s[0] === invalidSlot)[1].toLowerCase() + ' file.';
-    if (!hasDate) return 'Add a report date to continue.';
+    if (!hasDate) return 'Upload secondary sales to detect the FSNE month, or choose it.';
     if (missing === 1) return 'Add the ' + requiredSlots.find(([slot]) => !selected.has(slot))[1].toLowerCase() + ' to continue.';
     if (missing) return 'Add ' + missing + ' more files to continue.';
     const median = medianSeconds();
@@ -65,7 +66,7 @@
   }
   function showStamp() {
     const value = $('#sDate').validity.valid ? $('#sDate').value : '';
-    $('#dateStamp').textContent = stampText(value);
+    $('#dateStamp').textContent = monthStampText(value);
     $('#dateStamp').classList.toggle('empty', !value);
   }
   /** Ticket checklist entry for one required file: [row class, short note]. */
@@ -84,14 +85,16 @@
     const missing = requiredSlots.filter(([slot]) => !selected.has(slot)).length;
     const hasDate = !!$('#sDate').value && $('#sDate').validity.valid;
     $('#runBtn').disabled = !online || busy || missing > 0 || !hasDate || !!invalidSlot;
-    $('#dateHint').textContent = !hasDate ? 'The day stock was counted.' : 'Sets stock age and the sales cutoff.';
+    let dateHint = 'Detected from secondary sales + 1 month.';
+    if (hasDate) dateHint = draft?.configuration_source === 'secondary' ? 'Detected from secondary sales · uses month-end.' : 'Calculations use this month’s last day.';
+    $('#dateHint').textContent = dateHint;
     $('#startReason').textContent = startMessage(missing, hasDate);
     $('#discardDraft').hidden = !draft;
     $('#discardDraft').disabled = busy;
     $('#sLabel').disabled = busy || !online;
     $('#sDate').disabled = busy || !online;
     $('#datePick').disabled = busy || !online;
-    $('#datePick').textContent = hasDate ? 'Change' : 'Choose date';
+    $('#datePick').textContent = hasDate ? 'Change' : 'Choose month';
     $('#ticketRun').textContent = draft ? draft.id + ' · Draft' : 'New run';
     $$('#ob-setup input[type="file"]').forEach(input => input.disabled = busy || !online);
     const count = requiredSlots.length - missing;
@@ -143,23 +146,23 @@
       el.classList.toggle('done', !!file && !file.generated);
       const metadata = el.querySelector('.file-meta');
       metadata.hidden = !file;
-      el.querySelector('.file-name').textContent = file?.generated ? 'Using the date entered above.' : file?.name || '';
+      el.querySelector('.file-name').textContent = file?.generated ? 'Using the FSNE month above.' : file?.name || '';
       el.querySelector('.file-upload-status').textContent = file && !file.generated ? sizeText(file.size) + ' · Uploaded' : '';
       metadata.tabIndex = file ? 0 : -1;
       el.querySelector('.file-choose').textContent = file && !file.generated ? 'Replace' : 'Choose file';
     });
     if (!keepFields) {
-      $('#sDate').value = run?.report_date || '';
+      $('#sDate').value = run?.report_date?.slice(0, 7) || '';
       $('#sLabel').value = run && run.label !== 'Untitled run' ? run.label : '';
     }
     controls();
   }
   async function persistSettings() {
     if (!draft) draft = await post('runs', {label: $('#sLabel').value});
-    const report_date = $('#sDate').value;
+    const fsne_month = $('#sDate').value;
     const label = $('#sLabel').value;
-    if (report_date && (draft.report_date !== report_date || draft.label !== (label.trim() || 'Untitled run'))) {
-      draft = await post('runs/' + draft.id + '/config', {report_date, label});
+    if (fsne_month && (draft.report_date?.slice(0, 7) !== fsne_month || !draft.fsne_month || draft.label !== (label.trim() || 'Untitled run'))) {
+      draft = await post('runs/' + draft.id + '/config', {fsne_month, label});
     }
     return draft;
   }
@@ -170,7 +173,7 @@
       await persistSettings();
       if (invalidSlot === 'config') invalidSlot = null;
       showDraft(draft, true); error('');
-      $('#appNotice').textContent = 'Run settings saved for ' + dateText(draft.report_date) + '.';
+      $('#appNotice').textContent = 'FSNE month saved: ' + monthText(draft.report_date.slice(0, 7)) + '.';
       await refresh();
     }).catch(e => {invalidSlot = 'config'; error(e.message); controls();});
   }
@@ -199,10 +202,11 @@
           await persistSettings();
         }
         $('#appNotice').textContent = 'Uploading and checking ' + slots.find(s => s[0] === slot)[1] + '…';
-        const meta = await api('runs/' + draft.id + '/files/' + slot, {method:'PUT',headers:{'X-Filename':encodeURIComponent(file.name)},body:file});
-        if (slot === 'config') $('#sDate').value = meta.report_date;
+        let meta = await api('runs/' + draft.id + '/files/' + slot, {method:'PUT',headers:{'X-Filename':encodeURIComponent(file.name)},body:file});
+        if (slot === 'config') meta = await post('runs/' + draft.id + '/config', {fsne_month: meta.report_date.slice(0, 7), label: $('#sLabel').value});
+        $('#sDate').value = meta.report_date?.slice(0, 7) || '';
         invalidSlot = null; showDraft(meta, true);
-        $('#appNotice').textContent = 'Draft ' + draft.id + ' saved. You can return to it later.';
+        $('#appNotice').textContent = meta.configuration_source === 'secondary' ? 'Draft ' + draft.id + ' saved. FSNE month detected: ' + monthText(meta.report_date.slice(0, 7)) + '.' : 'Draft ' + draft.id + ' saved. You can return to it later.';
         await refresh();
       } catch (e) {error(e.message); $('#appNotice').textContent = 'Upload rejected. Check the file and try again.';}
       finally {busy = false; el.querySelector('input').value = ''; controls();}
@@ -348,7 +352,7 @@
   }
   function runDraft(r) {
     const have = requiredSlots.filter(([slot]) => r.files?.[slot]).length;
-    return `<div class="run-progress"><div class="run-progress-line"><b>${have} of ${requiredSlots.length} source files</b><span>${r.report_date ? 'Report date set' : 'No report date yet'}</span></div>`
+    return `<div class="run-progress"><div class="run-progress-line"><b>${have} of ${requiredSlots.length} source files</b><span>${r.report_date ? 'FSNE month set' : 'No FSNE month yet'}</span></div>`
       + `<div class="run-segs" aria-hidden="true">${requiredSlots.map(([slot]) => `<i class="${r.files?.[slot] ? 'on' : ''}"></i>`).join('')}</div></div>`;
   }
   function runNotices(r) {
@@ -388,7 +392,7 @@
     const by = esc(r.started_by || 'local') + ' · ' + (r.status === 'draft' ? 'draft created ' + esc(stamp(r.created)) : 'started ' + esc(stamp(r.started || r.created)))
       + (r.archived ? ' · archived ' + esc(shortDate(r.archived)) : '');
     return `<section class="run-pane${r.archived ? ' is-archived' : ''}" id="${paneId}" aria-label="Selected run ${esc(r.id)}"><div class="run-pane-top">`
-      + `<p class="run-pane-date${r.report_date ? '' : ' empty'}"><span class="sr-only">Stock snapshot date </span>${esc(stampText(r.report_date))}</p><p class="run-pane-eyebrow">${esc(r.id)}</p></div>`
+      + `<p class="run-pane-date${r.report_date ? '' : ' empty'}"><span class="sr-only">FSNE report date </span>${esc(stampText(r.report_date))}</p><p class="run-pane-eyebrow">${esc(r.id)}</p></div>`
       + `<h2>${esc(r.label)}</h2><p class="run-pane-by">${by}</p>${r.status === 'ok' ? '' : `<p style="margin-top:12px"><span class="run-badge ${badgeClass}">${esc(badge)}</span></p>`}`
       + `${actions}${runNotices(r)}${runBody(r)}</section>`;
   }
@@ -632,8 +636,8 @@
   $('#runBtn').onclick = async () => {
     await pendingSettings;
     if (busy || !online || !draft || invalidSlot || !$('#sDate').value || requiredSlots.some(([slot]) => !selected.has(slot))) return;
-    const previous = runs.find(r => r.status === 'ok' && r.report_date === $('#sDate').value);
-    if (previous && !confirm('A completed run already exists for this report date (' + previous.id + '). Start another run? History changes only when you settle it.')) return;
+    const previous = runs.find(r => r.status === 'ok' && r.report_date?.slice(0, 7) === $('#sDate').value);
+    if (previous && !confirm('A completed run already exists for this FSNE month (' + previous.id + '). Start another run? History changes only when you settle it.')) return;
     busy = true; error(''); controls();
     try {
       await persistSettings();
@@ -661,7 +665,7 @@
       $('#repRun').textContent = HAS_REPORT ? STATUS.labels.at(-1) + ' snapshot' : '';
       $('.who b').textContent = context.user || 'local';
       online = true;
-      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Set a report date and upload three source files to calculate your first run.';
+      $('#appNotice').textContent = loadedRun ? 'Upload your files to calculate a new run.' : HAS_REPORT ? 'Reports currently show the bundled sample. Upload your files to calculate a new run.' : 'No report yet. Upload three source files; secondary sales detects the next FSNE month.';
       await refresh();
       showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
       if (draft) $('#appNotice').textContent = 'Draft ' + draft.id + ' resumed. Continue uploading files or start the run.';

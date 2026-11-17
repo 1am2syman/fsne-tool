@@ -56,7 +56,7 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(run["report_date"], "2026-08-30")
         def start():
             try:
-                return self.store.start(run["id"])["status"]
+                return self.store.start(run["id"], override_unsettled=True)["status"]
             except RunError:
                 return "rejected"
         with concurrent.futures.ThreadPoolExecutor(2) as pool:
@@ -85,7 +85,7 @@ class ServerTests(unittest.TestCase):
         self.store.update(done["id"], status="ok", rows=123)
         self.store.archive(done["id"], True)
         pending = self.uploaded()
-        self.store.start(pending["id"])
+        self.store.start(pending["id"], override_unsettled=True)
         restored = Store(self.store.dir, start_worker=False)
         self.assertIsNotNone(restored.get(done["id"])["archived"])
         self.assertEqual(restored.get(pending["id"])["status"], "bad")
@@ -95,7 +95,7 @@ class ServerTests(unittest.TestCase):
 
     def test_worker_records_a_failure_and_log(self):
         run = self.uploaded()
-        self.store.start(run["id"])
+        self.store.start(run["id"], override_unsettled=True)
         self.store.jobs.put(None)
         with patch.object(self.store, "_execute", side_effect=RunError("Missing Batch code column")):
             self.store._worker()

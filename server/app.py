@@ -7,7 +7,7 @@ Every URL is relative to the page, so the app works under a path prefix such as
     GET    api/runs                   all runs, newest first
     POST   api/runs                   {"label", "archive_previous"} -> new draft run
     PUT    api/runs/<id>/files/<slot> raw body, X-Filename header
-    POST   api/runs/<id>/config       {"report_date", "label"?} -> saved form configuration
+    POST   api/runs/<id>/config       {"fsne_month", "label"?} -> month-end configuration (legacy report_date accepted)
     POST   api/runs/<id>/start        queue the run; explicit override_unsettled for a history gap
     GET    api/runs/<id>              one run
     GET    api/runs/<id>/log          pipeline log (text)
@@ -291,6 +291,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             if rest == "config" and method == "POST":
                 return self._json(store.configure(
                     run_id, str(body.get("report_date", "")), str(body["label"]) if "label" in body else None,
+                    fsne_month=body.get("fsne_month"),
                 ))
             if rest == "start" and method == "POST":
                 return self._json(store.start(

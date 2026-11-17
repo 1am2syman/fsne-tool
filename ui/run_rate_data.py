@@ -1,5 +1,6 @@
 """Rebuild current rates/measures and join them to the matching saved snapshot."""
 from dataclasses import asdict
+from datetime import timedelta
 from pathlib import Path
 
 import polars as pl
@@ -43,13 +44,19 @@ def build_current(data_dir: Path, saved: pl.DataFrame, latest_date, output_dir: 
     rate-dependent quantities are refreshed at saved batch prices; manual
     mitigation labels stay saved. Current report/export pricing stays DB Landing.
     """
-    config_date = starting_date.build(data_dir).item(0, 'starting_date')
+    configuration = starting_date.build(data_dir)
+    config_date = configuration.item(0, 'starting_date')
     if config_date != latest_date:
         raise ValueError('Current source report date differs from latest saved snapshot')
     source = run_rate_parent.source_through(load(data_dir), config_date)
     audit = run_rate_parent.adjustments(source)
-    if audit['month'].max() != config_date.replace(day=1):
-        raise ValueError('Latest run-rate source month does not match stock snapshot')
+    # New FSNE periods use last month's sales. Legacy sample configurations
+    # retain their original same-month convention when rebuilt explicitly.
+    expected_month = config_date.replace(day=1)
+    if 'fsne_month' in configuration.columns:
+        expected_month = (expected_month - timedelta(days=1)).replace(day=1)
+    if audit['month'].max() != expected_month:
+        raise ValueError('Latest run-rate source month does not match the required sales month')
     rates = run_rate_parent.rates_from_adjustments(audit)
     raw_rates = run_rate_parent.raw_rates(source)
     stock = soh_db.build(data_dir, as_of=config_date)
