@@ -571,6 +571,14 @@
       drawRuns();
       $(`#${tab === 'runs' ? 'runsT' : 'archiveT'} [data-select="${CSS.escape(id)}"]`)?.focus({preventScroll: true});
     });
+    $$('[data-open]').forEach(link => link.onclick = e => {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      if (link.pathname !== location.pathname || link.search !== location.search) return;
+      // A fragment-only link does not reload the dashboard or run its startup navigation.
+      e.preventDefault();
+      history.replaceState(history.state, '', link.href);
+      reloadReport();
+    });
     $$('[data-plan]').forEach(b => b.onclick = () => uploadPlan(b.dataset.plan));
     $$('[data-settle]').forEach(b => b.onclick = () => settleMonth(b.dataset.settle));
     $$('[data-reopen]').forEach(b => b.onclick = () => reopenMonth(b.dataset.reopen));

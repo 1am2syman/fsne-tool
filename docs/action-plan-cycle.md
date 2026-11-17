@@ -21,7 +21,7 @@ The state is stored in the run's metadata (state, upload time, uploader, file na
 ## Runs page
 
 - The "Excel" action is renamed "Action plan input file".
-- "Open results" takes the label for the run's state.
+- "Open results" takes the label for the run's state. If that run is already in the browser's address bar, the link reloads its saved dashboard and opens Overview. After pulling this change, refresh the browser; no server restart is needed.
 - "Upload action plan" is available on a completed run that is not settled. Uploading again replaces the previous upload.
 - "Settle month" is available on a completed run that is not settled.
 - "Reopen" is available on a settled run.
