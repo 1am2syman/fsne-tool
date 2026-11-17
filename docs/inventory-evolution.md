@@ -19,15 +19,15 @@ A snapshot is closing stock for its report month and appears as the **next month
 
 Current report forecasts can use refreshed run rates, while evolution uses frozen snapshot measures. Their final amounts can therefore differ, especially for >10M Exposure in loading-watch. Mitigation lenses also leave out good stock and unclassified rows; the chart note shows those excluded amounts.
 
-## Follow a category or band through RSL groups
+## Follow selected stock through RSL groups and categories
 
-Right-click a mitigation category or flow band and choose **Show RSL evolution**. Keyboard users can focus a category or band and press **Shift+F10**.
+Right-click a mitigation category or flow band and choose **Show RSL evolution**. Right-click an RSL group or band and choose **Show category evolution**. The same menu works inside either selected view, so each further drill follows only stock from its parent selection. Keyboard users can focus a node or band and press **Shift+F10**. Clicking without opening the menu locks the highlighted flows.
 
-This view follows the selected quantity, keeping its Exposure/LND measure, units, date, Brand, Parent and Town. The original RSL filter selects the anchor quantity; it does not restrict the selected quantity’s RSL groups in other snapshots. The backend resolves the selection from the complete source flow, independently of truncated hover summaries.
+These views keep the original measure (Exposure, LND FC or Closing stock), units, report date and Town, Parent, Material and Brand scope. The original RSL filter selects the first anchor quantity; it does not restrict that quantity’s RSL groups in other snapshots. The backend resolves every step from complete source flows, independently of truncated hover summaries.
 
-Blended Sales push/Rotation categories retain their selected share. Carry, exit and added bands retain their own conditioning. Later stock increases do not enter the selected quantity. Flow allocation describes the model’s batch-level proportional attribution, not physical tracking of individual items.
+Blended Sales push/Rotation categories retain their selected share. If you select the Sales push half, returning to categories at that anchor still shows only Sales push. Other months use their saved classifications. Carry, exit and added bands retain their own conditioning. Later stock increases do not enter the selected quantity. Category drill-downs explicitly show **Good stock** and **Unclassified** where present, so switching from RSL does not drop part of the selection. Flow allocation describes the model’s batch-level proportional attribution, not physical tracking of individual items.
 
-The RSL view hides the lens and scope controls to keep that selection fixed. **Back to categories** restores the original graph, filters, selected category/band, keyboard focus, spacing and scroll. Back remains available during loading or after an error; **Retry** repeats the selected request. Superseded requests cannot replace the active view after Back or Close.
+Selected views hide the lens and scope controls to keep the selection fixed. The toolbar shows the selection trail; hover it to read the full trail. **Back to categories** or **Back to RSL** restores the immediate parent graph, filters, selected node/band, keyboard focus, spacing and scroll. Back remains available during loading or after an error; **Retry** repeats the complete selected request. Superseded requests cannot replace the active view after Back or Close. A trail supports up to 32 selections; at that limit, go Back to choose another branch.
 
 ## Lenses, display and export
 
@@ -43,11 +43,11 @@ The standalone chart offers Town, Parent, Material, Brand and RSL filters. Each 
 
 Report overlays display **M BDT** or **KL**. Standalone BDT uses **crore BDT**. API graph values are BDT or litres; consumers must apply `unit_div` and `unit_label`, rather than treating raw `unit=kl` values as displayed KL. The report overlay deliberately overrides the BDT divisor to 1,000,000.
 
-**Export CSV** exports the current graph’s flow links, filter scope and report date. In the RSL drill-down it also includes `selection_id` and `selection_month` (the anchor snapshot date). Amount column names identify M BDT, crore BDT or KL.
+**Export CSV** exports the current graph’s flow links, filter scope and report date. Selected views also include `selection_id`, `selection_month` (the latest anchor snapshot date) and the full structured `selection_path`. Amount column names identify M BDT, crore BDT or KL.
 
 ## Runtime and API
 
-- `src/evolution.py` loads saved history, classifies rows, builds flows and selected RSL histories, and caches graph/detail payloads.
+- `src/evolution.py` loads saved history, classifies rows, builds flows and selected histories in both groupings, and caches graph/detail payloads.
 - `ui/template.html` owns report-cell scopes, the dialog and lazy asset loading. Edit this template rather than generated `ui/index.html`.
 - `ui/evolution/page.js` owns filters, data requests, selection state, Back navigation and CSV export.
 - `ui/evolution/refchart.js` and `refchart.css` own the Sankey renderer and interactions. The adapted renderer is maintained here; no external generator is required.
@@ -62,10 +62,14 @@ Run routes start at `/api/runs/<id>/evolution/`. Sample routes start at `/api/ev
 | `filters` | Town, Parent, Brand and RSL catalogs |
 | `<lens>` | Graph summary |
 | `<lens>/detail` | Lineage details for that graph |
-| `<lens>/rsl` | RSL graph for the selected category or band |
-| `<lens>/rsl/detail` | Details for that selected RSL graph |
+| `<lens>/selection` | Selected history, alternating RSL and category grouping at each step |
+| `<lens>/selection/detail` | Details for that selected history |
+| `<lens>/rsl` | Original single-step category-to-RSL route |
+| `<lens>/rsl/detail` | Details for the original single-step route |
 
-Lens IDs are `exposure`, `lnd`, `stock`, `rsl` and `cohort`. Graph and catalog queries accept repeated `town`, `parent`, `material` (exact child code), `brand` and `rsl` values, and optional `as_of=YYYY-MM-DD`. The `filters` route intersects those conditions and returns arrays plus `material_labels` keyed by child code. Graph queries also accept `unit=bdt` or `unit=kl`. RSL drill-down requests also require `selection`, the node/link ID from the category graph built with the same measure, units and scope. URL-encode filter values and IDs. Graph and detail requests must use identical parameters.
+Lens IDs are `exposure`, `lnd`, `stock`, `rsl` and `cohort`. Graph and catalog queries accept repeated `town`, `parent`, `material` (exact child code), `brand` and `rsl` values, and optional `as_of=YYYY-MM-DD`. The `filters` route intersects those conditions and returns arrays plus `material_labels` keyed by child code. Graph queries also accept `unit=bdt` or `unit=kl`.
+
+Selected-history routes require `path`, a URL-encoded JSON array of 1–32 steps. Each step is either `{"node":"category:M2:sales_push"}` or `{"source":"category:M2:sales_push","target":"month:M3"}`. The first step refers to the base lens, and each subsequent step refers to the preceding selected graph. Grouping alternates automatically. RSL node IDs such as `category:M1:rsl:>10M` are passed intact; do not split IDs at `>`. A first-level selection from the RSL view with >10M hidden includes `"hide10":true`, so displayed carry/added bands select only their visible destinations. The synthetic **Transitioned from >10M** source maps to its original >10M carry band with that flag. The legacy `/rsl` route accepts `selection`, the original category node/link ID. Graph and detail requests must use identical parameters. Cache identity includes the complete path.
 
 Parsed history lives in ignored `.cache/evolution/` (override with `FSNE_CACHE_DIR`). Graphs live in `output/evolution/`, or the run’s `output/evolution/`. Input signatures and the schema version invalidate stale payloads. Filtered scopes have bounded cache retention, with active reads protected from eviction. Cache generation does not modify saved reports.
 
@@ -83,9 +87,9 @@ Serve the normal app for interactive charts; a copied static HTML file does not 
 POLARS_MAX_THREADS=2 uv run python -m unittest tests.test_evolution -v
 node --check ui/evolution/page.js
 node --check ui/evolution/refchart.js
-node --test tests/evolution_layout.test.cjs
+node --test tests/evolution_layout.test.cjs tests/evolution_page.test.cjs
 ```
 
-The regression suite covers intersecting scopes, units, report dates, cache isolation, run-scoped HTTP routes, selection quantities, RSL history and exclusion of later growth.
+The regression suite covers intersecting scopes, units, report dates, full-path cache isolation, sample/run HTTP routes, exact forward/reverse/nested quantities, blended anchor shares, good/unclassified stock, >10M identifiers, and exclusion of later growth. Page tests cover parent restoration, delayed responses after Back/Close, Retry and CSV provenance.
 
 For UI changes, validate at widescreen laptop widths. In both BDT and KL, check Exposure and LND from all three action-plan reports, including expanded rows and totals. Drill from a category and a band, compare the anchor to the selected quantity, then verify Back and Close restore their prior views. Include brand/town status cells, keyboard menus, CSV provenance, Retry and a delayed response after Back or Close. Capture and inspect screenshots. Mobile/tablet and `tests/e2e_*` are outside routine UI validation.

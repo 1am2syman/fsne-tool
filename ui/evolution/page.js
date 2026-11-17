@@ -27,7 +27,7 @@
     layoutHeight: 760, cropHeight: true, minHeight: 420,
     unit: { div: 1e7, label: 'Cr' }, pctOnly: false, includeOver10: true, spacing: GAP.start,
     onLock: () => syncSelection(),
-    openRsl: (datum) => openRslSelection(datum),
+    openSelection: (datum) => openSelection(datum),
     detailsReady: () => (current ? current.detailsPromise : Promise.resolve()),
     fillLineage: (records) => { if (current) current.fill(records); },
     lineageRows: (record, kind) => (current ? current.lineageRows(record, kind) : []),
@@ -35,7 +35,13 @@
 
   /* ---------- data ---------- */
   const lensById = (id) => LENSES.find((l) => l.id === id);
-  const activeLens = () => drill ? { ...lensById(state.lens), key: 'selected_rsl_' + lensById(state.lens).key, dimension: 'rsl_group', label: lensById(state.lens).short + ' — Selected RSL evolution' } : lensById(state.lens);
+  const activeLens = () => {
+    const base = lensById(state.lens);
+    if (!drill) return base;
+    const rsl = drill.dimension === 'rsl_group';
+    return { ...base, key: `selected_${rsl ? 'rsl' : 'category'}_${base.key}`, dimension: drill.dimension,
+      label: `${base.id === 'rsl' ? 'Closing stock' : base.short} — Selected ${rsl ? 'RSL' : 'category'} evolution` };
+  };
   const refHeight = () => Math.max(760, Math.floor(Math.min(innerHeight * 0.84, 920) * 64) / 64);
   const clampGap = (v) => Math.max(GAP.min, Math.min(GAP.max, Math.round(+v || GAP.start)));
 
@@ -50,8 +56,8 @@
   }
 
   function entryFor(lens, unit) {
-    const query = filterQuery() + (drill ? '&selection=' + encodeURIComponent(drill.id) : '');
-    const route = lens.id + (drill ? '/rsl' : '');
+    const query = filterQuery() + (drill ? '&path=' + encodeURIComponent(JSON.stringify(drill.path)) : '');
+    const route = lens.id + (drill ? '/selection' : '');
     const key = route + '|' + unit + '|' + query;
     if (cache.has(key)) return cache.get(key);
     const entry = { key, lens, unit, payload: null, detail: null, detailsPromise: null, main: null };
@@ -273,7 +279,14 @@
     $('#evFilters').hidden = Boolean(drill);
     $('#evLens').hidden = Boolean(drill);
     $('#evDrill').hidden = !drill;
-    if (drill) $('#evDrillScope').textContent = drill.label;
+    if (drill) {
+      $('#evDrillScope').textContent = drill.trail.join(' → ');
+      $('#evDrillScope').title = drill.trail.join(' → ');
+      $('#evDrillTitle').textContent = drill.dimension === 'rsl_group' ? 'RSL evolution' : 'Category evolution';
+      const parent = drill.parent.scope;
+      const dimension = parent.drill?.dimension || lensById(parent.lens).dimension;
+      $('#evBack').textContent = dimension === 'rsl_group' ? '← Back to RSL' : '← Back to categories';
+    }
     const ten = $('#evTen');
     ten.hidden = Boolean(drill) || state.lens !== 'rsl';
     ten.setAttribute('aria-pressed', String(!state.hide10));
@@ -293,11 +306,11 @@
       payload = await entry.main;
       if (mySeq !== seq) return;
       // The >10M scope is derived from lineage lists, so wait for them in that one case.
-      if (lens.id === 'rsl' && state.hide10) await entry.detailsPromise;
+      if (!drill && lens.id === 'rsl' && state.hide10) await entry.detailsPromise;
     } catch (error) {
       if (mySeq !== seq) return;
       setStatus(`<div class="evo-state"><h3>Graph unavailable</h3><p>${escapeHtml(error.message)}</p><button class="btn primary" id="evRetry">Retry</button></div>`);
-      $('#evRetry').onclick = () => { cache.delete(entry.key); draw(); };
+      $('#evRetry').onclick = () => { cache.delete(entry.key); return draw(); };
       return;
     }
     if (mySeq !== seq) return;
@@ -314,7 +327,7 @@
       layoutHeight: refHeight(),
       unit: state.reportUnits && state.unit === 'bdt' ? { div: 1e6, label: 'M BDT' } : { div: payload.unit_div, label: payload.unit_label },
       includeOver10: Boolean(drill) || !state.hide10, spacing: state.gap,
-      canDrillRsl: !drill && lens.dimension === 'mitigation_category',
+      drillDepth: drill ? drill.path.length : 0,
     });
     if (!ctrl) ctrl = FSNE.refChart.create(host, DATASETS);
     const visible = ctrl.update({ lens: lens.key, includeOver10: host.includeOver10, spacing: state.gap });
@@ -326,7 +339,9 @@
     }
     if (drill && payload.selection) {
       const selected = payload.selection;
-      $('#evDrillScope').textContent = `${drill.label} · ${selected.month} · ${formatAmount(selected.value, host.unit.div)} ${host.unit.label} ${selected.measure}`;
+      const description = `${drill.trail.join(' → ')} · ${selected.month} · ${formatAmount(selected.value, host.unit.div)} ${host.unit.label} ${selected.measure}`;
+      $('#evDrillScope').textContent = description;
+      $('#evDrillScope').title = description;
     }
     drawNote(payload);
     syncSelection();
@@ -345,7 +360,7 @@
     if (drill) parts.push('Selected stock only; later increases excluded');
     else if (lens.id === 'cohort') parts.push(`outside the cohort ${shown(last.outside || 0)}`);
     else if (lens.dimension === 'mitigation_category') parts.push(`left out: good stock ${shown(last.good || 0)} · unclassified ${shown(last.unclassified || 0)}`);
-    if (lens.id === 'rsl' && state.hide10) parts.push('>10M hidden, shown only where it moved into a lower bucket');
+    if (!drill && lens.id === 'rsl' && state.hide10) parts.push('>10M hidden, shown only where it moved into a lower bucket');
     if (payload.sales_unavailable_months.length) parts.push(`no secondary sales for exits after ${payload.sales_unavailable_months.join(', ')}`);
     $('#evNote').textContent = parts.join(' · ');
   }
@@ -378,7 +393,7 @@
     mounted = true;
     mountFilters();
     $('#evLens').html = LENSES.map((l) => `<button type="button" data-lens="${l.id}" aria-pressed="false" title="${escapeHtml(l.label)}">${escapeHtml(l.short)}</button>`).join('');
-    $('#evBack').onclick = backToCategories;
+    $('#evBack').onclick = backToParent;
     $('#evGap').min = GAP.min; $('#evGap').max = GAP.max;
     $('#evLens').addEventListener('click', (e) => { const b = e.target.closest('button[data-lens]'); if (b && b.dataset.lens !== state.lens) { state.lens = b.dataset.lens; clearLock(); draw(); } });
     $('#evTen').addEventListener('click', () => { state.hide10 = !state.hide10; clearLock(); draw(); });
@@ -437,23 +452,39 @@
     const digits = state.unit === 'kl' ? 6 : 9;
     const quote = (v) => (/[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : v);
     const months = new Map(data.nodes.map((n) => [n.id, n.month || '']));
-    const header = ['lens', 'unit', ...Object.keys(filters).map(key => key + '_filter'), 'as_of', 'selection_id', 'selection_month', 'month', 'source_id', 'source', 'target_id', 'target', state.unit === 'kl' ? 'amount_kl' : state.reportUnits ? 'amount_m_bdt' : 'amount_cr_bdt'];
+    const header = ['lens', 'unit', ...Object.keys(filters).map(key => key + '_filter'), 'as_of', 'selection_id', 'selection_month', 'selection_path', 'month', 'source_id', 'source', 'target_id', 'target', state.unit === 'kl' ? 'amount_kl' : state.reportUnits ? 'amount_m_bdt' : 'amount_cr_bdt'];
     const lines = [header.join(',')].concat(data.links.map((l) => [
-      activeLens().label, state.unit, ...Object.entries(filters).map(([key, values]) => drill && key === 'rsl' ? 'All (selection anchored in ' + (values.join('; ') || 'All') + ')' : values.join('; ') || 'All'), state.asOf || '', current.payload.selection?.id || '', current.payload.selection?.date || '', months.get(l.source) || months.get(l.target), l.source, labels.get(l.source), l.target, labels.get(l.target), (l.value / host.unit.div).toFixed(digits),
+      activeLens().label, state.unit, ...Object.entries(filters).map(([key, values]) => drill && key === 'rsl' ? 'All (selection anchored in ' + (values.join('; ') || 'All') + ')' : values.join('; ') || 'All'), state.asOf || '', current.payload.selection?.id || '', current.payload.selection?.date || '', drill ? JSON.stringify(drill.path) : '', months.get(l.source) || months.get(l.target), l.source, labels.get(l.source), l.target, labels.get(l.target), (l.value / host.unit.div).toFixed(digits),
     ].map(quote).join(',')));
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([lines.join('\n') + '\n'], { type: 'text/csv' }));
-    a.download = `inventory-evolution-${state.lens}${drill ? '-selected-rsl' : ''}-${state.unit}.csv`;
+    a.download = `inventory-evolution-${state.lens}${drill ? '-selected-' + (drill.dimension === 'rsl_group' ? 'rsl' : 'category') : ''}-${state.unit}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
     return data.links.length;
   }
 
-  async function openRslSelection(datum) {
-    if (drill || !current || activeLens().dimension !== 'mitigation_category') return;
+  async function openSelection(datum) {
+    if (!current || (drill && drill.path.length >= 32)) return;
+    const rsl = activeLens().dimension === 'rsl_group';
+    let step;
+    if (datum.kind === 'rsl_downgrade') {
+      const [, source, target] = datum.id.split(':');
+      step = { source: `category:${source}:rsl:>10M`, target: `month:${target}` };
+    } else if (datum.source && datum.target) {
+      const edge = datum.raw_edges?.[0];
+      step = { source: edge?.source || datum.source.id, target: edge?.target || datum.target.id };
+    } else {
+      if (datum.kind !== 'category') return;
+      step = { node: datum.id };
+    }
+    if (!drill && rsl && state.hide10) step.hide10 = true;
+    const label = datum.source ? `${datum.source.label} → ${datum.target.label}` : datum.label;
     const selection = {
-      id: datum.id,
-      label: datum.source ? `${datum.source.label} → ${datum.target.label}` : datum.label,
+      id: datum.id, label,
+      dimension: rsl ? 'mitigation_category' : 'rsl_group',
+      path: [...(drill?.path || []), step],
+      trail: [...(drill?.trail || []), `${datum.month || datum.source?.month || ''} ${label}`.trim()],
       parent: { scope: captureScope(), id: datum.id, x: $('#evScroll').scrollLeft, y: $('#evScroll').scrollTop },
     };
     drill = selection;
@@ -463,15 +494,16 @@
     if (drill === selection) { $('#evScroll').scrollLeft = 0; $('#evScroll').scrollTop = 0; $('#evBack').focus({ preventScroll: true }); }
   }
 
-  async function backToCategories() {
+  async function backToParent() {
     if (!drill) return;
     const parent = drill.parent;
     restoreScope(parent.scope);
+    const restoredDrill = drill;
     const entry = await draw();
-    if (!entry || current !== entry || drill) return;
+    if (!entry || current !== entry || drill !== restoredDrill) return;
     const backSeq = seq;
     try { await ctrl.lockById(parent.id); } catch { /* the source graph remains usable if details fail */ }
-    if (backSeq !== seq || current !== entry || drill) return;
+    if (backSeq !== seq || current !== entry || drill !== restoredDrill) return;
     syncSelection();
     $('#evTip').style.opacity = 0;
     $('#evScroll').scrollLeft = parent.x;
@@ -480,12 +512,12 @@
   }
 
   function captureScope() {
-    return { ...state, bounds: structuredClone(reportScope), filters: Object.fromEntries(Object.entries(filters).map(([key, values]) => [key, [...values]])) };
+    return { ...state, drill: structuredClone(drill), bounds: structuredClone(reportScope), filters: Object.fromEntries(Object.entries(filters).map(([key, values]) => [key, [...values]])) };
   }
 
   function restoreScope(scope) {
     ++seq;
-    drill = null;
+    drill = structuredClone(scope.drill || null);
     clearLock();
     ['lens', 'unit', 'hide10', 'gap', 'asOf', 'reportUnits'].forEach(key => { state[key] = scope[key]; });
     reportScope = structuredClone(scope.bounds || {});
@@ -495,6 +527,7 @@
     $('#evMenu').classList.remove('open');
     document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
     updateFilterLabels();
+    syncToolbar();
   }
 
   FSNE.evolution = {

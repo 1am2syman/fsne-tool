@@ -933,7 +933,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #r-evolution #evFilters[hidden],#r-evolution #evLens[hidden],#r-evolution #evDrill[hidden]{display:none}
 #r-evolution #evDrill{margin:0;gap:12px;min-width:0}
 #r-evolution #evDrill strong{white-space:nowrap;font-size:13px}
-#r-evolution #evDrillScope{font-size:12px;color:var(--ink2);max-width:480px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#r-evolution #evDrillScope{font-size:12px;color:var(--ink2);max-width:480px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 #r-evolution #evFilterClear[hidden]{display:none}
 #evoDialog{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:var(--canvas);color:var(--ink)}
 #evoDialog[open]{display:flex;flex-direction:column}
@@ -1122,7 +1122,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div id="r-evolution" hidden>
     <div class="tools evo-filters" id="evFilters" aria-label="Inventory filters"></div>
     <div class="tools" id="evTools">
-      <div id="evDrill" class="tools" hidden><button class="btn" id="evBack" type="button">← Back to categories</button><strong>RSL evolution</strong><span id="evDrillScope"></span></div>
+      <div id="evDrill" class="tools" hidden><button class="btn" id="evBack" type="button">← Back</button><strong id="evDrillTitle">RSL evolution</strong><span id="evDrillScope"></span></div>
       <div class="seg" id="evLens" role="group" aria-label="Lens"></div>
       <button class="btn" id="evTen" type="button" aria-pressed="true" hidden title="Hidden stock re-enters as “Transitioned from >10M”">Show &gt;10M</button>
       <span class="sp"></span>

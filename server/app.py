@@ -133,9 +133,9 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             return self._send(200, path.read_bytes(), ctype, headers)
 
         def _evolution(self, run_id: str | None, rest: str, query: str) -> None:
-            """Inventory graphs: <lens>[/rsl][/detail], with a stable selection for RSL drill-down."""
+            """Inventory graphs and replayable selected histories, with lazy trace details."""
             lens, _, part = rest.partition("/")
-            if (lens != "filters" and not EVOLUTION.match(lens)) or part not in {"", "detail", "rsl", "rsl/detail"} or (lens == "filters" and part):
+            if (lens != "filters" and not EVOLUTION.match(lens)) or part not in {"", "detail", "rsl", "rsl/detail", "selection", "selection/detail"} or (lens == "filters" and part):
                 return self._error(404, "Not found")
             params = parse_qs(query)
             unit = params.get("unit", ["bdt"])[0]
@@ -150,7 +150,14 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             try:
                 if lens == "filters":
                     return self._json(evolution.filter_options(history, data, out, filters, as_of=as_of))
-                with evolution.cached_artifact(history, data, out, lens, unit, filters, as_of=as_of, selection=selection) as path:
+                selection_path = None
+                if part.startswith("selection"):
+                    try:
+                        selection_path = json.loads(params.get("path", [""])[0])
+                    except (ValueError, RecursionError) as exc:
+                        raise evolution.InvalidFilter("Invalid drill-down path") from exc
+                    selection_path = evolution.validate_selection_path(selection_path)
+                with evolution.cached_artifact(history, data, out, lens, unit, filters, as_of=as_of, selection=selection, selection_path=selection_path) as path:
                     if part.endswith("detail"):
                         path = evolution.artifact_path(path.parent, lens, unit, "detail")
                     return self._cached(path, "application/json", {"Content-Encoding": "gzip"})

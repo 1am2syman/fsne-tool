@@ -45,6 +45,8 @@ CATEGORIES = [
     ("incorrect_stock", "Incorrect stock", "#f2994a"),
     ("tbc", "TBC", "#f2c94c"),
     ("not_actionable", "Not actionable", "#27ae60"),
+    ("good_stock", "Good stock", "#059669"),
+    ("unclassified", "Unclassified", "#64748B"),
 ]
 CATEGORY_ORDER = {key: i + 1 for i, (key, _, _) in enumerate(CATEGORIES)}
 CATEGORY_INFO = {key: (label, color) for key, label, color in CATEGORIES}
@@ -67,7 +69,8 @@ LENSES = [
 LENS_BY_ID = {lens["id"]: lens for lens in LENSES}
 UNITS = {"bdt": {"div": CR, "label": "Cr", "title": "Cr BDT", "scale": 1.0}, "kl": {"div": 1000.0, "label": "KL", "title": "KL", "scale": 1000.0}}
 
-SCHEMA = 14
+SCHEMA = 15
+MAX_SELECTION_DEPTH = 32
 FILTER_KEYS = ("town", "parent", "material", "brand", "rsl")
 MIN_LINK = 0.5  # a link below half a BDT (or half a litre) is rounding noise; the cut is made after summing the link
 LINEAGE_FLOOR = {"bdt": 100.0, "kl": 0.12}  # smaller lineage slivers stay in totals but not in the hover-trace lists
@@ -428,19 +431,52 @@ def _flow_rows(prep: Prepared, lens: dict, unit: str, long: pl.DataFrame) -> tup
     return links, transitions, attrs
 
 
-def _selection_rows(prep: Prepared, lens: dict, unit: str, selection: str) -> tuple[pl.DataFrame, int, str, str, pl.DataFrame]:
-    """Resolve a visible node/band against unrounded source flows, never the truncated hover lists."""
-    if lens["rsl"]:
-        raise InvalidFilter("Choose a mitigation category or band for RSL evolution")
-    long, _ = _category_rows(prep, lens, unit)
+def validate_selection_path(path: object) -> list[dict]:
+    """Only selectors are accepted from clients; quantities are resolved from saved history."""
+    if not isinstance(path, list) or not 1 <= len(path) <= MAX_SELECTION_DEPTH:
+        raise InvalidFilter(f"Choose between 1 and {MAX_SELECTION_DEPTH} drill-down steps")
+    result = []
+    for step in path:
+        if not isinstance(step, dict):
+            raise InvalidFilter("Invalid drill-down step")
+        fields = set(step) - {"hide10"}
+        if fields not in ({"node"}, {"source", "target"}) or any(
+            not isinstance(step[key], str) or not 0 < len(step[key]) <= 240 for key in fields
+        ) or ("hide10" in step and not isinstance(step["hide10"], bool)):
+            raise InvalidFilter("Choose a category, RSL group or flow band")
+        result.append({key: step[key] for key in sorted(fields)})
+        if step.get("hide10"):
+            result[-1]["hide10"] = True
+    return result
+
+
+def _history_rows(prep: Prepared, lens: dict, unit: str) -> pl.DataFrame:
+    """Keep both monthly classifications, including stock omitted by mitigation overviews."""
+    rows = prep.frame.filter(pl.col(f"{lens['base']}_{unit}") > EPS).select(
+        "b", "j", "rsl", pl.col("mit").fill_null("unclassified"), pl.col(f"{lens['base']}_{unit}").alias("v"),
+    )
+    plain = rows.filter(pl.col("mit") != "blended")
+    blended = rows.filter(pl.col("mit") == "blended")
+    halves = [blended.with_columns(pl.lit(cat).alias("mit"), pl.col("v") * 0.5) for cat in ("sales_push", "rotation")]
+    return pl.concat([plain, *halves]).group_by("b", "j", "rsl", "mit").agg(pl.col("v").sum())
+
+
+def _group_history(history: pl.DataFrame, rsl: bool) -> pl.DataFrame:
+    cat = "rsl:" + pl.col("rsl") if rsl else pl.col("mit")
+    return history.select("b", "j", cat.alias("cat"), "v").group_by("b", "j", "cat").agg(pl.col("v").sum())
+
+
+def _selection_rows(prep: Prepared, lens: dict, unit: str, step: dict, long: pl.DataFrame) -> tuple[pl.DataFrame, int, str, str]:
+    """Resolve a visible node/band against unrounded source flows, never the hover lists."""
     if long.is_empty():
         raise InvalidFilter("The selection has no stock in this report scope")
-    links, _, attrs = _flow_rows(prep, lens, unit, long)
-    source, separator, target = selection.partition(">")
+    links, transitions, attrs = _flow_rows(prep, lens, unit, long)
+    source = step["source"] if "source" in step else step["node"]
+    target = step.get("target")
     mode = "present"
-    if not separator:
-        if not re.fullmatch(r"category:M\d+:[a-z_]+", source):
-            raise InvalidFilter("Choose a category or flow band")
+    if target is None:
+        if not re.fullmatch(r"category:M\d+:.+", source):
+            raise InvalidFilter("Choose a category, RSL group or flow band")
         selected = links.filter(pl.col("t") == source)
         anchor_id = source
     else:
@@ -451,31 +487,32 @@ def _selection_rows(prep: Prepared, lens: dict, unit: str, selection: str) -> tu
         elif source.startswith("category:"):
             mode = "carried" if target.startswith("month:") else "exited"
         elif not source.startswith("month:"):
-            raise InvalidFilter("Choose a category or flow band")
+            raise InvalidFilter("Choose a category, RSL group or flow band")
+        # Hiding >10M replaces some visible bands with only their non->10M destinations.
+        if step.get("hide10") and lens["rsl"] and mode in {"carried", "added"}:
+            selected = transitions.filter(
+                (pl.col("s") == source) & (pl.col("junction") == target) & ~pl.col("t").str.ends_with(":rsl:>10M")
+            )
     selected = selected.filter(pl.col("val") > EPS)
     if selected.is_empty() or selected["val"].sum() < MIN_LINK:
         raise InvalidFilter("This category or band is not present in the selected report scope")
     anchor = int(anchor_id.split(":")[1][1:]) - 1
     amounts = selected.join(attrs.select("lid", "b"), on="lid").group_by("b").agg((pl.col("val").sum() / UNITS[unit]["scale"]).alias("selected"))
-    category = source.split(":")[-1] if source.startswith("category:") else target.split(":")[-1]
-    label = CATEGORY_INFO.get(category, ("Added/New" if mode == "added" else "Flow", ""))[0]
-    return amounts, anchor, mode, label, long
+    category_id = source if source.startswith("category:") else target or ""
+    category = category_id.split(":", 2)[-1]
+    label = category[4:] if category.startswith("rsl:") else CATEGORY_INFO.get(category, ("Added/New" if mode == "added" else "Flow", ""))[0]
+    return amounts, anchor, mode, label
 
 
-def _selected_rsl_rows(full: Prepared, source: Prepared, lens: dict, unit: str, selection: str) -> tuple[pl.DataFrame, dict]:
-    """Allocate the selected quantity to existing inventory layers; later growth never enters.
+def _allocate_selection(raw: pl.DataFrame, source_long: pl.DataFrame, amounts: pl.DataFrame, anchor: int, mode: str, months: int) -> pl.DataFrame:
+    """Allocate within the parent's quantity history; later growth never enters.
 
-    Before the anchor, only the selected surviving quantity is shown from each layer's birth.
-    A carry band conditions survival through its transition. An exit from the report's RSL
-    filter is split into actual measure reduction and stock that merely entered another RSL.
+    Before the anchor, show only the selected surviving quantity from each layer's birth.
+    Carry bands condition survival; scope exits distinguish a real reduction from an RSL move.
     """
-    amounts, anchor, mode, label, source_long = _selection_rows(source, lens, unit, selection)
-    raw = full.frame.filter(pl.col(f"{lens['base']}_{unit}") > EPS).select(
-        "b", "j", ("rsl:" + pl.col("rsl")).alias("cat"), pl.col(f"{lens['base']}_{unit}").alias("v"),
-    ).group_by("b", "j", "cat").agg(pl.col("v").sum())
-    wide = _wide_totals(raw, full.months)
-    source_wide = _wide_totals(source_long, full.months)
-    layers = _layers(wide, full.months)
+    wide = _wide_totals(raw, months)
+    source_wide = _wide_totals(source_long, months)
+    layers = _layers(wide, months)
     pools = layers.filter(pl.col("j") == anchor).select("b", "e", pl.col("alive").alias("anchor_alive"))
     totals = wide.select("b", pl.col(f"T{anchor}").alias("total"), pl.col(f"K{anchor}").alias("keep"))
     if anchor:
@@ -505,27 +542,77 @@ def _selected_rsl_rows(full: Prepared, source: Prepared, lens: dict, unit: str, 
         pl.when(pl.col("j") <= anchor).then(pl.col("allocation")).otherwise(
             pl.col("allocation") * pl.col("survival") * pl.col("alive") / pl.col("next_alive").clip(lower_bound=EPS)).alias("selected_v")
     ).group_by("b", "j").agg(pl.col("selected_v").sum())
-    mix = raw.with_columns((pl.col("v") / pl.col("v").sum().over("b", "j")).alias("share"))
-    long = mix.join(chosen, on=["b", "j"]).select("b", "j", "cat", (pl.col("share") * pl.col("selected_v")).alias("v")).filter(pl.col("v") > EPS)
-    info = {"id": selection, "label": label, "kind": "band" if ">" in selection else "category", "mode": mode,
-            "anchor": f"M{anchor + 1}", "month": month_labels(full.dates)[anchor], "date": full.dates[anchor].isoformat(),
-            "value": round(amounts["selected"].sum() * UNITS[unit]["scale"], 2), "measure": lens["short"]}
-    return long, info
+    return chosen
+
+
+def _condition_history(history: pl.DataFrame, lens: dict, step: dict, anchor: int, mode: str, anchor_rsl: list[str]) -> pl.DataFrame:
+    """Retain prior conditions and the selected classification at this step's anchor."""
+    source = step["source"] if "source" in step else step["node"]
+    target = step.get("target", "")
+    category_id = source if source.startswith("category:") else target
+    keep = pl.lit(True)
+    if category_id.startswith("category:"):
+        category = category_id.split(":", 2)[2]
+        matches = pl.col("rsl") == category[4:] if lens["rsl"] else pl.col("mit") == category
+        keep = keep & ((pl.col("j") != anchor) | matches)
+    if anchor_rsl:
+        keep = keep & ((pl.col("j") != anchor) | pl.col("rsl").is_in(anchor_rsl))
+    if step.get("hide10") and lens["rsl"] and mode in {"carried", "added"}:
+        destination = anchor + 1 if mode == "carried" else anchor
+        keep = keep & ((pl.col("j") != destination) | (pl.col("rsl") != ">10M"))
+    return history.filter(keep)
+
+
+def _selected_lens(lens: dict, rsl: bool) -> dict:
+    grouping = "rsl" if rsl else "category"
+    measure = "Closing stock" if lens["id"] == "rsl" else lens["short"]
+    return {**lens, "key": f"selected_{grouping}_" + lens["key"],
+            "label": measure + (" — Selected RSL evolution" if rsl else " — Selected category evolution"),
+            "rsl": rsl, "split": False, "cohort": False}
+
+
+def build_selection_path(prep: Prepared, lens: dict, unit: str, filters: dict[str, list[str]], path: list[dict]) -> dict:
+    """Replay exact selections on their parent histories, alternating the displayed grouping."""
+    path = validate_selection_path(path)
+    source = prep.scoped(filters)
+    full = prep.scoped({key: values for key, values in filters.items() if key != "rsl"})
+    history = _history_rows(full, lens, unit)
+    long, _ = _category_rows(source, lens, unit)
+    current_lens = lens
+    selections = []
+    for index, step in enumerate(path):
+        amounts, anchor, mode, label = _selection_rows(full, current_lens, unit, step, long)
+        chosen = _allocate_selection(_group_history(history, current_lens["rsl"]), long, amounts, anchor, mode, full.months)
+        conditioned = _condition_history(history, current_lens, step, anchor, mode, filters.get("rsl", []) if index == 0 else [])
+        mix = conditioned.with_columns((pl.col("v") / pl.col("v").sum().over("b", "j")).alias("share"))
+        history = mix.join(chosen, on=["b", "j"]).select(
+            "b", "j", "rsl", "mit", (pl.col("share") * pl.col("selected_v")).alias("v"),
+        ).filter(pl.col("v") > EPS)
+        identifier = step.get("node") or step["source"] + ">" + step["target"]
+        selections.append({"id": identifier, "label": label, "kind": "category" if "node" in step else "band", "mode": mode,
+                           "anchor": f"M{anchor + 1}", "month": month_labels(full.dates)[anchor], "date": full.dates[anchor].isoformat(),
+                           "value": round(amounts["selected"].sum() * UNITS[unit]["scale"], 2),
+                           "measure": "Closing stock" if lens["id"] == "rsl" else lens["short"]})
+        current_lens = _selected_lens(lens, not current_lens["rsl"])
+        long = _group_history(history, current_lens["rsl"])
+    links, transitions, attrs = _flow_rows(full, current_lens, unit, long)
+    payload = _assemble(full, current_lens, unit, links, transitions, attrs, [{} for _ in full.dates], UNITS[unit]["scale"])
+    payload["metadata"]["lens"]["tooltip_mix_mode"] = "none"
+    payload["metadata"]["lens"]["included_good_stock_policy"] = "included"
+    payload["selection"] = selections[-1]
+    payload["selections"] = selections
+    payload["selection_path"] = path
+    payload["anchor_filters"] = filters
+    return payload
 
 
 def build_selection(prep: Prepared, lens: dict, unit: str, filters: dict[str, list[str]], selection: str) -> dict:
-    """RSL evolution of an exact selection; the report RSL condition is used only to select it."""
-    source = prep.scoped(filters)
-    full = prep.scoped({key: values for key, values in filters.items() if key != "rsl"})
-    long, info = _selected_rsl_rows(full, source, lens, unit, selection)
-    selected_lens = {**lens, "key": "selected_rsl_" + lens["key"], "label": lens["short"] + " — Selected RSL evolution",
-                     "rsl": True, "split": False, "cohort": False}
-    links, transitions, attrs = _flow_rows(full, selected_lens, unit, long)
-    payload = _assemble(full, selected_lens, unit, links, transitions, attrs, [{} for _ in full.dates], UNITS[unit]["scale"])
-    payload["metadata"]["lens"]["tooltip_mix_mode"] = "none"
-    payload["selection"] = info
-    payload["anchor_filters"] = filters
-    return payload
+    """The original category-to-RSL endpoint accepts one legacy node/band identifier."""
+    if lens["rsl"]:
+        raise InvalidFilter("Choose a mitigation category or band for RSL evolution")
+    parts = re.split(r">(?=(?:category|month|outcome):)", selection, maxsplit=1)
+    step = {"node": selection} if len(parts) == 1 else {"source": parts[0], "target": parts[1]}
+    return build_selection_path(prep, lens, unit, filters, [step])
 
 
 def _split_exits(prep: Prepared, wide: pl.DataFrame, exits: pl.DataFrame, unit: str) -> pl.DataFrame:
@@ -860,7 +947,7 @@ def _prune_scopes(root: Path, keep: Path) -> None:
 
 
 @contextlib.contextmanager
-def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_dir: str | Path, lens: str, unit: str, filters: dict[str, list[str]] | None = None, *, as_of: str | None = None, selection: str | None = None):
+def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_dir: str | Path, lens: str, unit: str, filters: dict[str, list[str]] | None = None, *, as_of: str | None = None, selection: str | None = None, selection_path: list[dict] | None = None):
     """Lease a payload through the response read, protecting it from concurrent cache eviction."""
     if lens not in LENS_BY_ID or unit not in UNITS:
         raise ValueError("Unknown lens or unit")
@@ -868,7 +955,11 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
     cutoff = _report_cutoff(as_of)
     if selection is not None and (not selection or len(selection) > 240):
         raise InvalidFilter("Invalid category or band selection")
-    scoped_request = bool(filters or cutoff or selection)
+    if selection_path is not None:
+        selection_path = validate_selection_path(selection_path)
+        if selection is not None:
+            raise InvalidFilter("Choose one selection format")
+    scoped_request = bool(filters or cutoff or selection or selection_path)
     base = Path(out_dir).resolve()
     history_dir = Path(history_dir)
     data_dir = Path(data_dir) if data_dir else None
@@ -883,7 +974,7 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
         base.mkdir(parents=True, exist_ok=True)
         _reset_if_stale(base, signature)
         if scoped_request:
-            scope = hashlib.blake2b(json.dumps({"filters": filters, "as_of": as_of, "selection": selection}, sort_keys=True).encode(), digest_size=12).hexdigest()
+            scope = hashlib.blake2b(json.dumps({"filters": filters, "as_of": as_of, "selection": selection, "selection_path": selection_path}, sort_keys=True).encode(), digest_size=12).hexdigest()
             out = base / "filtered" / scope
             out.mkdir(parents=True, exist_ok=True)
             _reset_if_stale(out, signature)
@@ -896,11 +987,13 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
             with key_lock:  # one cold build per lens and unit; ready payloads bypass the build lock
                 if not target.exists():
                     prep = _prepared(history_dir, data_dir, signature)
-                    if selection:
+                    if selection_path:
+                        payload = build_selection_path(prep.scoped({}, cutoff), LENS_BY_ID[lens], unit, filters, selection_path)
+                    elif selection:
                         payload = build_selection(prep.scoped({}, cutoff), LENS_BY_ID[lens], unit, filters, selection)
                     else:
                         payload = build_lens(prep.scoped(filters, cutoff) if scoped_request else prep, LENS_BY_ID[lens], unit)
-                    payload["filters"] = {key: values for key, values in filters.items() if not selection or key != "rsl"}
+                    payload["filters"] = {key: values for key, values in filters.items() if not (selection or selection_path) or key != "rsl"}
                     payload["as_of"] = as_of
                     _write_payload(out, payload, lens, unit)
         yield target

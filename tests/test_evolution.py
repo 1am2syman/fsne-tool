@@ -10,6 +10,7 @@ import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import urlencode
 
 import polars as pl
 
@@ -269,6 +270,103 @@ class EvolutionSelectionTests(unittest.TestCase):
         with self.assertRaises(evo.InvalidFilter):
             self.graph(lens='rsl')
 
+    def path_graph(self, path, *, lens='exposure', unit='bdt', filters=None, cutoff=None):
+        return evo.build_selection_path(self.prep.scoped({}, cutoff), evo.LENS_BY_ID[lens], unit,
+                                        self.filters if filters is None else filters, path)
+
+    def category_value(self, payload, month, category):
+        return sum(link['value'] for link in payload['links'] if link['target'] == f'category:M{month}:{category}')
+
+    def test_rsl_node_shows_categories_without_admitting_later_growth(self):
+        path = [{'node': 'category:M2:rsl:3M–6M'}]
+        payload = self.path_graph(path, lens='rsl')
+        self.assert_totals(payload, [400, 1000, 600, 600])
+        self.assertEqual(self.category_value(payload, 2, 'sales_push'), 500)
+        self.assertEqual(self.category_value(payload, 2, 'rotation'), 500)
+        self.assertEqual(self.category_value(payload, 4, 'good_stock'), 600)
+        self.assertEqual(payload['metadata']['lens']['category_dimension'], 'mitigation_category')
+        self.assertEqual(payload['metadata']['lens']['included_good_stock_policy'], 'included')
+        self.assertEqual(payload['selection_path'], path)
+
+    def test_reverse_keeps_unclassified_stock_and_can_drill_it_again(self):
+        self.prep.frame = self.prep.frame.with_columns(
+            pl.when((pl.col('batch') == 'a') & (pl.col('j') == 2)).then(None).otherwise(pl.col('mit')).alias('mit'))
+        path = [{'node': 'category:M2:rsl:3M–6M'}]
+        payload = self.path_graph(path, lens='rsl')
+        self.assertEqual(self.category_value(payload, 3, 'unclassified'), 600)
+        nested = self.path_graph(path + [{'node': 'category:M3:unclassified'}], lens='rsl')
+        self.assert_totals(nested, [240, 600, 600, 600])
+        self.assertEqual(nested['metadata']['lens']['category_dimension'], 'rsl_group')
+
+    def test_round_trip_preserves_selected_blended_category_at_its_anchor(self):
+        path = [{'node': 'category:M2:sales_push'}, {'node': 'category:M2:rsl:3M–6M'}]
+        payload = self.path_graph(path)
+        self.assert_totals(payload, [200, 500, 300, 300])
+        self.assertEqual(self.category_value(payload, 2, 'sales_push'), 500)
+        self.assertEqual(self.category_value(payload, 2, 'rotation'), 0)
+        self.assertEqual(self.category_value(payload, 3, 'sales_push'), 150)
+        self.assertEqual(self.category_value(payload, 3, 'rotation'), 150)
+        self.assertEqual(len(payload['selections']), 2)
+
+    def test_nested_selection_narrows_parent_and_retains_previous_conditions(self):
+        path = [{'node': 'category:M2:sales_push'}, {'node': 'category:M3:rsl:<3M'},
+                {'node': 'category:M3:rotation'}, {'node': 'category:M2:rsl:3M–6M'}]
+        payload = self.path_graph(path[:1])
+        for length in range(2, len(path) + 1):
+            parent = payload
+            payload = self.path_graph(path[:length])
+            for month in range(1, 5):
+                self.assertLessEqual(opening(payload, month), opening(parent, month))
+        self.assert_totals(payload, [60, 150, 150, 150])
+        self.assertEqual(self.category_value(payload, 2, 'sales_push'), 150)
+        self.assertEqual(self.category_value(payload, 2, 'rotation'), 0)
+        self.assertEqual(self.category_value(payload, 3, 'rotation'), 150)
+        self.assertEqual(self.category_value(payload, 3, 'sales_push'), 0)
+
+    def test_rsl_band_carry_exit_and_over_10m_identifiers_are_exact(self):
+        carry = self.path_graph([{'source': 'category:M2:rsl:3M–6M', 'target': 'month:M3'}], lens='rsl')
+        self.assert_totals(carry, [240, 600, 600, 600])
+        exited = self.path_graph([{'source': 'category:M2:rsl:3M–6M', 'target': 'outcome:M2:sales_unavailable'}], lens='rsl')
+        self.assert_totals(exited, [160, 400, 0, 0])
+        for step in [{'node': 'category:M1:rsl:>10M'},
+                     {'source': 'month:M1', 'target': 'category:M1:rsl:>10M'},
+                     {'source': 'category:M1:rsl:>10M', 'target': 'month:M2', 'hide10': True}]:
+            with self.subTest(step=step):
+                payload = self.path_graph([step], lens='rsl')
+                self.assert_totals(payload, [400, 400, 240, 240])
+                self.assertEqual(payload['selection']['kind'], 'category' if 'node' in step else 'band')
+
+    def test_nested_bands_keep_only_the_selected_carry_or_exit(self):
+        prefix = [{'node': 'category:M2:sales_push'}]
+        for outcome, expected in [('month:M3', [120, 300, 300, 300]),
+                                  ('outcome:M2:resolved', [80, 200, 0, 0])]:
+            with self.subTest(outcome=outcome):
+                payload = self.path_graph(prefix + [{'source': 'category:M2:rsl:3M–6M', 'target': outcome}])
+                self.assert_totals(payload, expected)
+                self.assertEqual(self.category_value(payload, 2, 'rotation'), 0)
+
+    def test_reverse_and_nested_units_report_bounds_and_tiny_lineages(self):
+        for lens, path in [('exposure', [{'node': 'category:M2:sales_push'}, {'node': 'category:M3:rsl:<3M'}]),
+                           ('lnd', [{'node': 'category:M2:sales_push'}, {'node': 'category:M3:rsl:<3M'}]),
+                           ('rsl', [{'node': 'category:M2:rsl:3M–6M'}])]:
+            for unit, scale in [('bdt', 1), ('kl', 10)]:
+                with self.subTest(lens=lens, unit=unit), patch.dict(evo.LINEAGE_FLOOR, {'bdt': 1e9, 'kl': 1e9}):
+                    payload = self.path_graph(path, lens=lens, unit=unit,
+                                              filters={**self.filters, 'rsl': ['3M–6M']}, cutoff=dt.date(2026, 8, 30))
+                    totals = [400, 1000, 600] if lens == 'rsl' else [120, 300, 300]
+                    ratio = .5 if lens == 'lnd' else 1
+                    self.assert_totals(payload, [v * scale * ratio for v in totals])
+                    self.assertTrue(all(not link['li'] for link in payload['links']))
+
+    def test_invalid_paths_and_selections_outside_parent_fail(self):
+        for path in [None, {}, [], [None], [{'node': 2}], [{'node': 'category:M1:sales_push', 'value': 500}],
+                     [{'source': 'month:M1'}], [{'node': 'month:M1'}], [{'node': 'category:M2:sales_push', 'hide10': 'yes'}],
+                     [{'node': 'category:M2:sales_push'}] * 33,
+                     [{'node': 'category:M2:sales_push'}, {'node': 'category:M2:rsl:>10M'}],
+                     [{'node': 'category:M2:sales_push'}, {'node': 'category:M2:rsl:3M–6M'}, {'node': 'category:M2:rotation'}]]:
+            with self.subTest(path=path), self.assertRaises(evo.InvalidFilter):
+                self.path_graph(path)
+
     def test_selected_http_main_detail_cache_and_validation_for_saved_run(self):
         store = Store(self.root / 'runs', self.history, start_worker=False)
         run = store.create('Selected RSL evolution')
@@ -307,6 +405,36 @@ class EvolutionSelectionTests(unittest.TestCase):
                 self.assertEqual(response.status, 400)
                 response.read()
                 conn.close()  # rejected requests deliberately close the server connection
+            for root, path, expected in [
+                ('exposure', [{'node': 'category:M2:sales_push'}, {'node': 'category:M2:rsl:3M–6M'}], 'sales_push'),
+                ('exposure', [{'node': 'category:M2:rotation'}, {'node': 'category:M2:rsl:3M–6M'}], 'rotation'),
+                ('rsl', [{'node': 'category:M2:rsl:3M–6M'}], 'sales_push'),
+                ('rsl', [{'node': 'category:M1:rsl:>10M'}], 'sales_push'),
+            ]:
+                for prefix in [f"/api/runs/{run['id']}/evolution/", '/api/evolution/']:
+                    for part in ['selection', 'selection/detail', 'selection']:
+                        scoped_query = '?'+urlencode({'unit': 'bdt', **{key: values[0] for key, values in self.filters.items()},
+                                                     'as_of': '2026-08-30', 'path': json.dumps(path)})
+                        conn.request('GET', prefix + root + '/' + part + scoped_query)
+                        response = conn.getresponse()
+                        self.assertEqual(response.status, 200)
+                        selected_payload = json.loads(gzip.decompress(response.read()))
+                        if part.endswith('detail'):
+                            self.assertTrue(selected_payload['links'])
+                        else:
+                            self.assertEqual(selected_payload['selection_path'], path)
+                            self.assertEqual(selected_payload['as_of'], '2026-08-30')
+                            expected_total = 400 if path[0]['node'].endswith('>10M') else 1000 if root == 'rsl' else 500
+                            self.assertEqual(selected_payload['selections'][0]['value'], expected_total)
+                            self.assertGreater(self.category_value(selected_payload, 2, expected), 0)
+                            if root == 'exposure':
+                                self.assertEqual(self.category_value(selected_payload, 2, 'rotation' if expected == 'sales_push' else 'sales_push'), 0)
+            for path in ['', 'not-json', 'null', '{}', '[]', '[{"node": "month:M2"}]', '[{"node": "category:M2:rsl:3M–6M", "value": 3}]']:
+                conn.request('GET', route + '/selection?' + urlencode({'path': path}))
+                response = conn.getresponse()
+                self.assertEqual(response.status, 400)
+                response.read()
+                conn.close()
             conn.request('GET', route + query)
             response = conn.getresponse()
             self.assertEqual(json.loads(gzip.decompress(response.read()))['links'], original['links'])

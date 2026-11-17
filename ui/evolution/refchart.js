@@ -146,10 +146,12 @@
     function showDrilldownContextMenu(event, d, reason = '') {
       event.preventDefault();
       event.stopPropagation();
-      if (host.openRsl && host.canDrillRsl && (isSupportedDrilldownNode(d) || (d.source && d.target))) {
+      if (host.openSelection && (isSupportedDrilldownNode(d) || d.kind === 'rsl_downgrade' || (d.source && d.target))) {
         const title = d.source ? `${d.source.label} → ${d.target.label}` : d.label;
-        drilldownContextMenu.html(`<div class="drilldown-context-title">${escapeHtml(title)}</div><button type="button" role="menuitem">Show RSL evolution</button>`).classed('open', true);
-        drilldownContextMenu.select('button').on('click', () => { hideDrilldownContextMenu(); host.openRsl(d); });
+        const atLimit = host.drillDepth >= 32;
+        const action = isRslGroupLens() ? 'Show category evolution' : 'Show RSL evolution';
+        drilldownContextMenu.html(`<div class="drilldown-context-title">${escapeHtml(title)}</div>${atLimit ? '<div class="drilldown-context-detail">Go back to choose another selection.</div>' : ''}<button type="button" role="menuitem" ${atLimit ? 'disabled' : ''}>${action}</button>`).classed('open', true);
+        if (!atLimit) drilldownContextMenu.select('button').on('click', () => { hideDrilldownContextMenu(); host.openSelection(d); });
         placeDrilldownContextMenu(event);
         drilldownContextMenu.select('button').node().focus({preventScroll: true});
         return;
@@ -452,10 +454,12 @@
         ? [['>10M', '>10M'], ['6M–10M', '6M–10M'], ['3M–6M', '3M–6M'], ['<3M', '<3M'], ['Unknown', 'Unknown']]
         : [[RSL_DOWNGRADE_CATEGORY, RSL_DOWNGRADE_LABEL], ['6M–10M', '6M–10M'], ['3M–6M', '3M–6M'], ['<3M', '<3M'], ['Unknown', 'Unknown']];
       const mitigationExitItems = splitExitLens ? [['sec_sales', 'Sec Sales'], ['rotated_adjusted', 'Rotated/Adjusted']] : [['resolved', 'Resolved/Reduced']];
+      const extraCategories = [['good_stock', 'Good stock'], ['unclassified', 'Unclassified']]
+        .filter(([key]) => (DATA.nodes || []).some(node => node.category === key));
       const items = rslLens
         ? [['month', 'Month total hub'], ...rslCategoryItems, ['added', 'Added/Increased'], ...(splitExitLens ? mitigationExitItems : [['resolved', 'Reduced/Exited']])]
-        : [['month', 'Month total hub'], ['sales_push', 'Sales push'], ['rotation', 'Rotation'], ['strategic_misc', 'Strategic Misc'], ['incorrect_stock', 'Incorrect stock'], ['tbc', 'TBC'], ['not_actionable', 'Not actionable'], ['added', 'Added/New'], ...mitigationExitItems];
-      const color = {month:'#23395d', sales_push:'#2f80ed', rotation:'#9b51e0', incorrect_stock:'#f2994a', tbc:'#f2c94c', strategic_misc:'#8b5cf6', not_actionable:'#27ae60', added:'#eb5757', resolved:'#00a896', sec_sales:'#00A896', rotated_adjusted:'#64748B', sales_unavailable:'#94A3B8', ...RSL_COLORS};
+        : [['month', 'Month total hub'], ['sales_push', 'Sales push'], ['rotation', 'Rotation'], ['strategic_misc', 'Strategic Misc'], ['incorrect_stock', 'Incorrect stock'], ['tbc', 'TBC'], ['not_actionable', 'Not actionable'], ...extraCategories, ['added', 'Added/New'], ...mitigationExitItems];
+      const color = {month:'#23395d', sales_push:'#2f80ed', rotation:'#9b51e0', incorrect_stock:'#f2994a', tbc:'#f2c94c', strategic_misc:'#8b5cf6', not_actionable:'#27ae60', good_stock:'#059669', unclassified:'#64748B', added:'#eb5757', resolved:'#00a896', sec_sales:'#00A896', rotated_adjusted:'#64748B', sales_unavailable:'#94A3B8', ...RSL_COLORS};
       if ((DATA.nodes || []).some(node => node.kind === 'sales_unavailable')) items.push(['sales_unavailable', 'Sales unavailable']);
       d3.select(host.legend).selectAll('span').data(items).join('span')
         .html(d => `<i class="swatch${d[0] === 'sales_unavailable' ? ' hatch' : ''}" style="background:${color[d[0]]}"></i>${d[1]}`);
