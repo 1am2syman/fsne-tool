@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import logging
 import re
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -167,6 +168,9 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 return self._error(404, str(exc))
             except FileNotFoundError as exc:
                 raise RunError("No saved reports to chart") from exc
+            except PermissionError:
+                logging.getLogger(__name__).exception("Evolution file access was denied")
+                return self._error(500, "Graph file access was denied. Check the FSNE command window for the file and operation. Close other FSNE instances and retry; if it persists, check folder permissions.")
 
         def _body_json(self) -> dict:
             length = _length(self.headers.get("Content-Length"))

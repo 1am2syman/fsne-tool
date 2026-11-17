@@ -100,6 +100,115 @@ class EvolutionScopeTests(unittest.TestCase):
             with self.assertRaises(evo.InvalidFilter), evo.cached_artifact(self.history, None, out, 'lnd', 'bdt', filters, as_of=as_of):
                 self.fail('invalid request was accepted')
 
+    def test_upgrade_serves_new_graphs_without_deleting_locked_legacy_caches(self):
+        out = self.root / 'graphs'
+        out.mkdir()
+        legacy = out / 'filtered' / 'old-scope'
+        legacy.mkdir(parents=True)
+        old_graph = legacy / 'exposure.bdt.json.gz'
+        old_graph.write_bytes(b'old cache, not current graph data')
+        (out / 'manifest.json').write_text('{"signature":"old","schema":14}')
+        native_unlink = Path.unlink
+
+        def deny_cache_deletion(path, *args, **kwargs):
+            if path.suffix in {'.gz', '.parquet'}:
+                raise PermissionError(13, 'Access is denied', str(path))
+            return native_unlink(path, *args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as parsed, patch.dict('os.environ', {'FSNE_CACHE_DIR': parsed}):
+            # Seed parsed history as if it had been read by the previous version.
+            with patch.object(evo, 'SCHEMA', 14):
+                evo.load_history(self.history)
+            with patch.object(Path, 'unlink', deny_cache_deletion), patch.object(
+                evo.shutil, 'rmtree', side_effect=PermissionError(13, 'Access is denied', str(legacy))
+            ):
+                for schema, expected in [(15, 1800), (16, 3600)]:
+                    with patch.object(evo, 'SCHEMA', schema):
+                        if schema == 16:
+                            self.raw = self.raw.with_columns(pl.col('exposure_bdt') * 2)
+                            self.raw.write_excel(self.history / 'snapshots.xlsx')
+                        with evo.cached_artifact(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand A']}) as path:
+                            payload = json.loads(gzip.decompress(path.read_bytes()))
+                            self.assertEqual(opening(payload, 3), expected)
+                            detail = evo.artifact_path(path.parent, 'exposure', 'bdt', 'detail')
+                            self.assertEqual(set(json.loads(gzip.decompress(detail.read_bytes()))['links']),
+                                             {link['id'] for link in payload['links']})
+                            # A second request must reuse the new cache, never the stale one.
+                            with evo.cached_artifact(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand A']}) as again:
+                                self.assertEqual(again, path)
+                self.assertEqual(old_graph.read_bytes(), b'old cache, not current graph data')
+
+    def test_locked_cache_retention_and_timestamp_do_not_break_ready_graphs(self):
+        out = self.root / 'graphs'
+        evo.ensure(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand A']})
+        with patch.object(evo, 'MAX_FILTER_SCOPES', 1), patch.object(
+            evo.os, 'utime', side_effect=PermissionError('Directory timestamp denied')
+        ), patch.object(evo.shutil, 'rmtree', side_effect=PermissionError('Old cache is open')):
+            for brand in ['Brand B', 'Brand A']:
+                path = evo.ensure(self.history, None, out, 'exposure', 'bdt', {'brand': [brand]})
+                self.assertTrue(json.loads(gzip.decompress(path.read_bytes()))['nodes'])
+        self.assertFalse(evo._ACTIVE_SCOPES)
+
+    def test_required_permission_error_is_logged_and_explained_over_http(self):
+        store = Store(self.root / 'runs', self.history, start_worker=False)
+        server = make_server(store, port=0)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        conn = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=10)
+        self.addCleanup(conn.close)
+        error = PermissionError(13, 'Access is denied', 'private-folder/locked-cache.tmp')
+        with patch.object(evo, 'cached_artifact', side_effect=error), self.assertLogs('server.app', level='ERROR') as logged:
+            conn.request('GET', '/api/evolution/exposure')
+            response = conn.getresponse()
+            self.assertEqual(response.status, 500)
+            message = json.loads(response.read())['error']
+            self.assertIn('command window', message)
+            self.assertNotIn('private-folder', message)
+            self.assertIn('locked-cache.tmp', '\n'.join(logged.output))
+            self.assertIn('PermissionError', '\n'.join(logged.output))
+
+    def test_warm_build_and_http_cache_share_fresh_generation(self):
+        out = self.root / 'graphs'
+        with tempfile.TemporaryDirectory() as parsed, patch.dict('os.environ', {'FSNE_CACHE_DIR': parsed}):
+            first = evo.build_all(self.history, None, out, units=('bdt',))
+            self.assertFalse(first['cached'])
+            self.assertTrue(evo.build_all(self.history, None, out, units=('bdt',))['cached'])
+            with patch.object(evo, '_write_payload', side_effect=AssertionError('Warm graph should be reused')):
+                path = evo.ensure(self.history, None, out, 'exposure', 'bdt')
+                self.assertEqual(opening(json.loads(gzip.decompress(path.read_bytes())), 3), 4200)
+                self.assertIn('Brand A', evo.filter_options(self.history, None, out)['brand'])
+            previous = path
+            with patch.object(evo, 'SCHEMA', evo.SCHEMA + 1), patch.object(
+                evo.shutil, 'rmtree', side_effect=PermissionError('Old graph is open')
+            ):
+                self.assertFalse(evo.build_all(self.history, None, out, units=('bdt',))['cached'])
+                path = evo.ensure(self.history, None, out, 'exposure', 'bdt')
+                self.assertNotEqual(previous, path)
+                self.assertTrue(previous.exists())
+
+    def test_required_write_failure_cannot_return_stale_graph_and_can_be_retried(self):
+        out = self.root / 'graphs'
+        previous = evo.ensure(self.history, None, out, 'exposure', 'bdt')
+        with patch.object(evo, 'SCHEMA', evo.SCHEMA + 1):
+            with patch.object(evo, '_write_gz', side_effect=PermissionError('New cache write denied')), \
+                    self.assertRaisesRegex(PermissionError, 'New cache write denied'):
+                evo.ensure(self.history, None, out, 'exposure', 'bdt')
+            self.assertFalse(evo._ACTIVE_SCOPES)
+            path = evo.ensure(self.history, None, out, 'exposure', 'bdt')
+            self.assertNotEqual(path, previous)
+            self.assertTrue(json.loads(gzip.decompress(path.read_bytes()))['nodes'])
+
+    def test_active_graph_is_not_pruned_while_another_scope_is_built(self):
+        out = self.root / 'graphs'
+        with patch.object(evo, 'MAX_FILTER_SCOPES', 1):
+            with evo.cached_artifact(self.history, None, out, 'exposure', 'bdt') as active:
+                other = evo.ensure(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand A']})
+                self.assertTrue(active.exists())
+                self.assertTrue(other.exists())
+            evo.ensure(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand B']})
+            self.assertFalse(active.exists())
+
     def test_material_filter_uses_exact_child_code_and_preserves_measure(self):
         scope = self.prep.scoped({'material': ['1001'], 'brand': ['Brand A']})
         for unit, expected in [('bdt', 600), ('kl', 6000)]:

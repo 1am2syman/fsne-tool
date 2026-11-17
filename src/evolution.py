@@ -151,10 +151,12 @@ def load_history(history_dir: str | Path, cache_dir: Path | None = None) -> pl.D
         frames.append(frame)
         for stale in cache.glob(f"{owner}-{path.stem}-*.parquet"):
             if stale != target:
-                stale.unlink(missing_ok=True)
+                with contextlib.suppress(FileNotFoundError, PermissionError):
+                    stale.unlink(missing_ok=True)
     for old in cache.glob("*.parquet"):  # this module's own files from before the per-path prefix: <report stem>-<20 hex>.parquet
         if re.fullmatch(r"\d{4}_\d{2}_\d{2}-[0-9a-f]{20}\.parquet", old.name):
-            old.unlink(missing_ok=True)
+            with contextlib.suppress(FileNotFoundError, PermissionError):
+                old.unlink(missing_ok=True)
     history = pl.concat(frames, how="vertical_relaxed").filter(pl.col("date").is_not_null() & (pl.col("batch") != ""))
     return history
 
@@ -887,18 +889,6 @@ def _read_manifest(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def _reset_if_stale(out: Path, signature: str) -> None:
-    """Drop payloads built from other inputs."""
-    manifest = out / "manifest.json"
-    if _read_manifest(manifest).get("signature") == signature:
-        return
-    for stale in out.glob("*.json.gz"):
-        stale.unlink(missing_ok=True)
-    with contextlib.suppress(FileNotFoundError):
-        shutil.rmtree(out / "filtered")
-    _write_text_atomic(manifest, json.dumps({"signature": signature, "schema": SCHEMA}))
-
-
 def _report_cutoff(as_of: str | None) -> dt.date | None:
     try:
         return dt.date.fromisoformat(as_of) if as_of else None
@@ -910,7 +900,7 @@ def filter_options(history_dir: Path, data_dir: Path | None, out_dir: Path, filt
     """Catalogs for the matching report scope, including exact child material codes."""
     cutoff = _report_cutoff(as_of)
     signature = _signature(history_dir, data_dir)
-    manifest = _read_manifest(out_dir / "manifest.json")
+    manifest = _read_manifest(out_dir / "cached" / signature / "manifest.json")
     if not filters and not cutoff and manifest.get("signature") == signature and "filters" in manifest:
         return manifest["filters"]
     prep = _prepared(history_dir, data_dir, signature)
@@ -935,15 +925,36 @@ def _filter_catalog(prep: Prepared, *, scoped: bool = False) -> dict:
 
 
 def _prune_scopes(root: Path, keep: Path) -> None:
-    """Under _LOCK: bound ready scopes by recent use; a serving or building scope is leased."""
-    scopes = [p for p in root.iterdir() if p.is_dir()]
-    excess = len(scopes) - MAX_FILTER_SCOPES
-    if excess <= 0:
-        return
-    candidates = [p for p in scopes if p != keep and p not in _ACTIVE_SCOPES]
-    for old in sorted(candidates, key=lambda p: p.stat().st_mtime_ns)[:excess]:
-        with contextlib.suppress(FileNotFoundError):
-            shutil.rmtree(old)
+    """Under _LOCK: retention is optional; Windows may hold old cache files open."""
+    with contextlib.suppress(FileNotFoundError, PermissionError):
+        scopes = [p for p in root.iterdir() if p.is_dir()]
+        excess = len(scopes) - MAX_FILTER_SCOPES
+        if excess <= 0:
+            return
+        candidates = [p for p in scopes if p != keep and p not in _ACTIVE_SCOPES]
+        for old in sorted(candidates, key=lambda p: p.stat().st_mtime_ns)[:excess]:
+            try:
+                shutil.rmtree(old)
+            except (FileNotFoundError, PermissionError):
+                continue
+
+
+@contextlib.contextmanager
+def _lease_cache(out: Path):
+    """Keep current files leased; a new input signature never replaces old files."""
+    with _LOCK:
+        out.mkdir(parents=True, exist_ok=True)
+        with contextlib.suppress(PermissionError):
+            os.utime(out, None)  # retention hint, not a prerequisite for reading a graph
+        _ACTIVE_SCOPES[out] = _ACTIVE_SCOPES.get(out, 0) + 1
+    try:
+        yield out
+    finally:
+        with _LOCK:
+            _ACTIVE_SCOPES[out] -= 1
+            if not _ACTIVE_SCOPES[out]:
+                del _ACTIVE_SCOPES[out]
+            _prune_scopes(out.parent, keep=out)
 
 
 @contextlib.contextmanager
@@ -969,19 +980,14 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
         for name, values in filters.items():
             if not set(values).issubset(catalog[name]):
                 raise InvalidFilter(f"Unknown {name} filter value")
-    out = base
-    with _LOCK:
-        base.mkdir(parents=True, exist_ok=True)
-        _reset_if_stale(base, signature)
-        if scoped_request:
-            scope = hashlib.blake2b(json.dumps({"filters": filters, "as_of": as_of, "selection": selection, "selection_path": selection_path}, sort_keys=True).encode(), digest_size=12).hexdigest()
-            out = base / "filtered" / scope
-            out.mkdir(parents=True, exist_ok=True)
-            _reset_if_stale(out, signature)
-            os.utime(out, None)
-            _ACTIVE_SCOPES[out] = _ACTIVE_SCOPES.get(out, 0) + 1
-        key_lock = _KEY_LOCKS.setdefault(f"{out}|{lens}|{unit}", threading.Lock())
-    try:
+    scope = signature
+    if scoped_request:
+        scope = hashlib.blake2b(json.dumps({"signature": signature, "filters": filters, "as_of": as_of, "selection": selection, "selection_path": selection_path}, sort_keys=True).encode(), digest_size=12).hexdigest()
+    # Legacy root/filtered caches are never read or deleted during an upgrade.
+    out = base / "cached" / scope
+    with _lease_cache(out):
+        with _LOCK:
+            key_lock = _KEY_LOCKS.setdefault(f"{out}|{lens}|{unit}", threading.Lock())
         target = artifact_path(out, lens, unit)
         if not target.exists():
             with key_lock:  # one cold build per lens and unit; ready payloads bypass the build lock
@@ -997,13 +1003,6 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
                     payload["as_of"] = as_of
                     _write_payload(out, payload, lens, unit)
         yield target
-    finally:
-        if scoped_request:
-            with _LOCK:
-                _ACTIVE_SCOPES[out] -= 1
-                if not _ACTIVE_SCOPES[out]:
-                    del _ACTIVE_SCOPES[out]
-                _prune_scopes(base / "filtered", keep=out)
 
 
 def ensure(history_dir: str | Path, data_dir: str | Path | None, out_dir: str | Path, lens: str, unit: str, filters: dict[str, list[str]] | None = None) -> Path:
@@ -1022,32 +1021,30 @@ def _write_payload(out: Path, payload: dict, lens: str, unit: str) -> None:
 def build_all(history_dir: str | Path, data_dir: str | Path | None, out_dir: str | Path, units: tuple[str, ...] = ("bdt", "kl")) -> dict:
     """Write every lens and unit as gzip JSON; skip work when the inputs are unchanged."""
     started = time.perf_counter()
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
     history_dir = Path(history_dir)
     data_dir = Path(data_dir) if data_dir else None
     signature = _signature(history_dir, data_dir)
-    with _LOCK:
-        _reset_if_stale(out, signature)
-    manifest_path = out / "manifest.json"
-    manifest = _read_manifest(manifest_path)
-    if manifest.get("signature") == signature and manifest.get("snapshots") and all(artifact_path(out, spec["id"], u).exists() for spec in LENSES for u in units):
-        return {**manifest, "cached": True}
-    prep = Prepared(load_history(history_dir), load_sales(data_dir))
-    timings = {}
-    for lens in LENSES:
-        for unit in units:
-            payload = build_lens(prep, lens, unit)
-            timings[f"{lens['id']}.{unit}"] = payload.get("_compute_s")
-            _write_payload(out, payload, lens["id"], unit)
-    manifest = {
-        "signature": signature, "schema": SCHEMA, "snapshots": [d.isoformat() for d in prep.dates],
-        "lenses": [{k: lens[k] for k in ("id", "key", "label", "short", "rsl", "split", "cohort")} for lens in LENSES],
-        "filters": _filter_catalog(prep),
-        "has_sales": prep.sales is not None, "build_s": round(time.perf_counter() - started, 3), "timings": timings,
-    }
-    _write_text_atomic(manifest_path, json.dumps(manifest))
-    return {**manifest, "cached": False}
+    out = Path(out_dir).resolve() / "cached" / signature
+    with _lease_cache(out):
+        manifest_path = out / "manifest.json"
+        manifest = _read_manifest(manifest_path)
+        if manifest.get("signature") == signature and manifest.get("snapshots") and all(artifact_path(out, spec["id"], u).exists() for spec in LENSES for u in units):
+            return {**manifest, "cached": True}
+        prep = Prepared(load_history(history_dir), load_sales(data_dir))
+        timings = {}
+        for lens in LENSES:
+            for unit in units:
+                payload = build_lens(prep, lens, unit)
+                timings[f"{lens['id']}.{unit}"] = payload.get("_compute_s")
+                _write_payload(out, payload, lens["id"], unit)
+        manifest = {
+            "signature": signature, "schema": SCHEMA, "snapshots": [d.isoformat() for d in prep.dates],
+            "lenses": [{k: lens[k] for k in ("id", "key", "label", "short", "rsl", "split", "cohort")} for lens in LENSES],
+            "filters": _filter_catalog(prep),
+            "has_sales": prep.sales is not None, "build_s": round(time.perf_counter() - started, 3), "timings": timings,
+        }
+        _write_text_atomic(manifest_path, json.dumps(manifest))
+        return {**manifest, "cached": False}
 
 
 def main() -> None:
