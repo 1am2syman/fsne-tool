@@ -93,16 +93,20 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 if _accepts_gzip(self.headers.get('Accept-Encoding', '')):
                     body = _gzipped(body)
                     extra['Content-Encoding'] = 'gzip'
-            self.send_response(status)
-            self.send_header("Content-Type", ctype)
-            self.send_header("Content-Length", str(len(body)))
-            if "Cache-Control" not in (extra or {}):
-                self.send_header("Cache-Control", "no-store")
-            for k, v in (extra or {}).items():
-                self.send_header(k, v)
-            self.end_headers()
-            if self.command != "HEAD":
-                self.wfile.write(body)
+            try:
+                self.send_response(status)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(body)))
+                if "Cache-Control" not in (extra or {}):
+                    self.send_header("Cache-Control", "no-store")
+                for k, v in (extra or {}).items():
+                    self.send_header(k, v)
+                self.end_headers()
+                if self.command != "HEAD":
+                    self.wfile.write(body)
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+                # The client is gone; a second response would fail on the same socket.
+                self.close_connection = True
 
         def _json(self, payload: object, status: int = 200) -> None:
             self._send(status, json.dumps(payload).encode(), "application/json")
@@ -168,9 +172,6 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 return self._error(404, str(exc))
             except FileNotFoundError as exc:
                 raise RunError("No saved reports to chart") from exc
-            except PermissionError:
-                logging.getLogger(__name__).exception("Evolution file access was denied")
-                return self._error(500, "Graph file access was denied. Check the FSNE command window for the file and operation. Close other FSNE instances and retry; if it persists, check folder permissions.")
 
         def _body_json(self) -> dict:
             length = _length(self.headers.get("Content-Length"))
@@ -229,13 +230,17 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 if m:
                     return self._run_route(method, m["id"], m["rest"] or "", query)
                 return self._error(404, "Not found")
-            except (BrokenPipeError, ConnectionResetError):
+            except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
                 self.close_connection = True
                 return None
             except RunError as exc:
                 status = 404 if str(exc) == "Unknown run" else 400
                 return self._error(status, str(exc))
+            except PermissionError:
+                logging.getLogger(__name__).exception("File access denied during %s %s", method, url)
+                return self._error(500, "File access was denied. Check the FSNE command window for the file and operation. Close other FSNE instances and retry; if it persists, check folder permissions.")
             except Exception as exc:  # noqa: BLE001 - last resort, never leak a traceback to the page
+                logging.getLogger(__name__).exception("Server error during %s %s", method, url)
                 return self._error(500, f"Server error: {exc.__class__.__name__}")
 
         def _page(self, query: str) -> None:

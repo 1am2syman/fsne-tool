@@ -9,7 +9,7 @@ import threading
 import unittest
 from datetime import date
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import openpyxl
 import polars as pl
@@ -165,6 +165,61 @@ class ServerTests(unittest.TestCase):
         response = conn.getresponse()
         self.assertEqual(response.status, 201)
         self.assertEqual(json.loads(response.read())["status"], "draft")
+
+    def test_disconnect_during_response_does_not_send_a_second_response(self):
+        server = make_server(self.store, port=0)
+        self.addCleanup(server.server_close)
+
+        def disconnecting_writer(error_type, fail_at):
+            writes = []
+
+            def write(data):
+                writes.append(data)
+                if len(writes) >= fail_at:
+                    raise error_type('Simulated client disconnect')
+                return len(data)
+
+            return writes, Mock(write=write)
+
+        handler_class = server.RequestHandlerClass
+        assert isinstance(handler_class, type)
+        for error_type in (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
+            for fail_at in (1, 2):  # header flush, then body write
+                for route in ('page', 'not-found', 'rejected'):
+                    with self.subTest(error=error_type.__name__, fail_at=fail_at, route=route):
+                        handler = object.__new__(handler_class)
+                        handler.command = 'GET'
+                        handler.path = '/missing' if route == 'not-found' else '/'
+                        handler.request_version = 'HTTP/1.1'
+                        handler.requestline = 'GET ' + handler.path + ' HTTP/1.1'
+                        handler.headers = {}
+                        handler.close_connection = False
+                        writes, handler.wfile = disconnecting_writer(error_type, fail_at)
+                        page = Mock(side_effect=RunError('Rejected request')) if route == 'rejected' else \
+                            Mock(side_effect=lambda _, handler=handler: handler._send(200, b'dashboard', 'text/html'))
+                        with patch.object(handler, '_page', page), \
+                                patch.object(handler, '_error', wraps=handler._error) as send_error:
+                            handler.do_GET()
+                        self.assertTrue(handler.close_connection)
+                        self.assertEqual(len(writes), fail_at)
+                        self.assertEqual(send_error.call_count, 0 if route == 'page' else 1)
+
+    def test_permission_failure_before_graph_builder_is_logged(self):
+        server = make_server(self.store, port=0)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        conn = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=5)
+        self.addCleanup(conn.close)
+        error = PermissionError(13, 'Access is denied', 'private-run/meta.json')
+        with patch.object(self.store, 'get', side_effect=error), self.assertLogs('server.app', level='ERROR') as logged:
+            conn.request('GET', '/api/runs/RUN-0001/evolution/exposure')
+            response = conn.getresponse()
+            self.assertEqual(response.status, 500)
+            message = json.loads(response.read())['error']
+            self.assertIn('command window', message)
+            self.assertNotIn('private-run', message)
+            self.assertIn('private-run/meta.json', '\n'.join(logged.output))
 
     def test_http_roundtrip_error_controls_and_download_guard(self):
         server = make_server(self.store, port=0)
