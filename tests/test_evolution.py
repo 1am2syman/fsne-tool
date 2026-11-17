@@ -29,6 +29,8 @@ def history_rows() -> pl.DataFrame:
             stock = multiplier * (1000 - month * 50)
             rows.append({'report_date': dt.date(2026, month, 28), 'batch_index': batch,
                          'Brand Name': brand, 'parent_material_code': parent, 'Town': town,
+                         'Material Code': {'a': '1001', 'b': '1002', 'c': '1003'}[batch],
+                         'material_desc': 'Pack ' + batch,
                          'rsl_group': band, 'mitigation_status': 'Actionable', 'action_plan': 'Sales push',
                          'total_closing_stock_bdt': stock, 'total_closing_stock_kl': stock / 100,
                          'exposure_bdt': stock, 'exposure_kl': stock / 100,
@@ -97,6 +99,27 @@ class EvolutionScopeTests(unittest.TestCase):
             with self.assertRaises(evo.InvalidFilter), evo.cached_artifact(self.history, None, out, 'lnd', 'bdt', filters, as_of=as_of):
                 self.fail('invalid request was accepted')
 
+    def test_material_filter_uses_exact_child_code_and_preserves_measure(self):
+        scope = self.prep.scoped({'material': ['1001'], 'brand': ['Brand A']})
+        for unit, expected in [('bdt', 600), ('kl', 6000)]:
+            payload = evo.build_lens(scope, evo.LENS_BY_ID['exposure'], unit)
+            self.assertEqual(opening(payload, 3), expected)
+        self.assertEqual(scope.frame['batch'].unique().to_list(), ['a'])
+
+    def test_catalog_options_intersect_scope_and_report_date(self):
+        out = self.root / 'graphs'
+        catalog = evo.filter_options(self.history, None, out, {'brand': ['Brand A'], 'parent': ['101']}, as_of='2026-07-30')
+        self.assertEqual(catalog['town'], ['Dhaka'])
+        self.assertEqual(catalog['material'], ['1001'])
+        self.assertEqual(catalog['material_labels']['1001'], 'Pack a · 1001')
+        self.assertEqual(catalog['rsl'], ['6M–10M', '3M–6M'])
+        empty = evo.filter_options(self.history, None, out, {'brand': ['Brand B'], 'parent': ['102']})
+        self.assertEqual(empty['town'], [])
+        early = evo.filter_options(self.history, None, out, as_of='2026-01-01')
+        self.assertEqual(early['material'], [])
+        with self.assertRaises(evo.InvalidFilter):
+            evo.filter_options(self.history, None, out, as_of='bad-date')
+
     def test_empty_intersection_and_date_before_history_are_empty_graphs(self):
         for scope in [self.prep.scoped({'brand': ['Brand B'], 'parent': ['102']}),
                       self.prep.scoped({}, dt.date(2026, 1, 1))]:
@@ -128,6 +151,18 @@ class EvolutionScopeTests(unittest.TestCase):
                     self.assertEqual(payload['filters'], {'brand': ['Brand A'], 'rsl': ['3M–6M']})
                     self.assertEqual(len(payload['months']), 2)
                     self.assertEqual(opening(payload, 2), 975)
+            for prefix in [f"/api/runs/{run['id']}/evolution/", '/api/evolution/']:
+                conn.request('GET', prefix + 'filters?brand=Brand+A&parent=101&as_of=2026-07-30')
+                response = conn.getresponse()
+                self.assertEqual(response.status, 200)
+                catalog = json.loads(response.read())
+                self.assertEqual(catalog['town'], ['Dhaka'])
+                self.assertEqual(catalog['material'], ['1001'])
+                conn.request('GET', prefix + 'exposure?material=1001')
+                response = conn.getresponse()
+                self.assertEqual(response.status, 200)
+                payload = json.loads(gzip.decompress(response.read()))
+                self.assertEqual(opening(payload, 3), 600)
             conn.request('GET', f"/api/runs/{run['id']}/evolution/lnd?rsl=invalid")
             response = conn.getresponse()
             self.assertEqual(response.status, 400)

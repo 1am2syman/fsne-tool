@@ -67,8 +67,8 @@ LENSES = [
 LENS_BY_ID = {lens["id"]: lens for lens in LENSES}
 UNITS = {"bdt": {"div": CR, "label": "Cr", "title": "Cr BDT", "scale": 1.0}, "kl": {"div": 1000.0, "label": "KL", "title": "KL", "scale": 1000.0}}
 
-SCHEMA = 13
-FILTER_KEYS = ("town", "parent", "brand", "rsl")
+SCHEMA = 14
+FILTER_KEYS = ("town", "parent", "material", "brand", "rsl")
 MIN_LINK = 0.5  # a link below half a BDT (or half a litre) is rounding noise; the cut is made after summing the link
 LINEAGE_FLOOR = {"bdt": 100.0, "kl": 0.12}  # smaller lineage slivers stay in totals but not in the hover-trace lists
 _NUMBERS = ["total_closing_stock_bdt", "total_closing_stock_kl", "exposure_bdt", "exposure_kl", "lnd_fc_bdt", "lnd_fc_kl"]
@@ -104,6 +104,7 @@ def _normalise(frame: pl.DataFrame) -> pl.DataFrame:
         _text(frame, ("Town",)).fill_null("Unknown town").alias("town"),
         _text(frame, ("parent_material_code",)).fill_null("Unknown parent").alias("parent"),
         _text(frame, ("material_desc",)).fill_null("").alias("material"),
+        _text(frame, ("Material Code", "material_code")).fill_null("").alias("material_code"),
         _text(frame, ("Batch code",)).fill_null("").alias("batch_code"),
         _text(frame, ("rsl_group",)).alias("rsl_text"),
         pl.col("rsl_days").cast(pl.Float64, strict=False).alias("rsl_days") if "rsl_days" in frame.columns else pl.lit(None, dtype=pl.Float64).alias("rsl_days"),
@@ -252,7 +253,7 @@ class Prepared:
             scoped.dates = [date for date in self.dates if date <= as_of]
             scoped.frame = scoped.frame.filter(pl.col("date") <= as_of)
         for name, values in filters.items():
-            scoped.frame = scoped.frame.filter(pl.col(name).is_in(values))
+            scoped.frame = scoped.frame.filter(pl.col("material_code" if name == "material" else name).is_in(values))
         return scoped
 
     @property
@@ -811,17 +812,39 @@ def _reset_if_stale(out: Path, signature: str) -> None:
     _write_text_atomic(manifest, json.dumps({"signature": signature, "schema": SCHEMA}))
 
 
-def filter_options(history_dir: Path, data_dir: Path | None, out_dir: Path) -> dict:
-    """Small catalogs shared by the report shortcut and the evolution dropdowns."""
+def _report_cutoff(as_of: str | None) -> dt.date | None:
+    try:
+        return dt.date.fromisoformat(as_of) if as_of else None
+    except ValueError as exc:
+        raise InvalidFilter("Invalid report date; use YYYY-MM-DD") from exc
+
+
+def filter_options(history_dir: Path, data_dir: Path | None, out_dir: Path, filters: dict[str, list[str]] | None = None, *, as_of: str | None = None) -> dict:
+    """Catalogs for the matching report scope, including exact child material codes."""
+    cutoff = _report_cutoff(as_of)
     signature = _signature(history_dir, data_dir)
     manifest = _read_manifest(out_dir / "manifest.json")
-    if manifest.get("signature") == signature and "filters" in manifest:
+    if not filters and not cutoff and manifest.get("signature") == signature and "filters" in manifest:
         return manifest["filters"]
-    return _filter_catalog(_prepared(history_dir, data_dir, signature))
+    prep = _prepared(history_dir, data_dir, signature)
+    return _filter_catalog(prep.scoped(filters or {}, cutoff), scoped=bool(filters or cutoff))
 
 
-def _filter_catalog(prep: Prepared) -> dict:
-    return {name: (RSL_ORDER if name == "rsl" else prep.frame[name].unique().sort().to_list()) for name in FILTER_KEYS}
+def _filter_catalog(prep: Prepared, *, scoped: bool = False) -> dict:
+    catalog: dict = {
+        name: (RSL_ORDER if name == "rsl" else prep.frame["material_code" if name == "material" else name].unique().sort().to_list())
+        for name in FILTER_KEYS
+    }
+    if scoped:
+        present = set(prep.frame["rsl"].unique().to_list())
+        catalog["rsl"] = [value for value in RSL_ORDER if value in present]
+    materials = prep.frame.select("material_code", "material").unique().sort("material_code", "material")
+    catalog["material"] = [code for code in catalog["material"] if code]
+    catalog["material_labels"] = {
+        row["material_code"]: f'{row["material"]} · {row["material_code"]}' if row["material"] else row["material_code"]
+        for row in materials.to_dicts() if row["material_code"]
+    }
+    return catalog
 
 
 def _prune_scopes(root: Path, keep: Path) -> None:
@@ -842,10 +865,7 @@ def cached_artifact(history_dir: str | Path, data_dir: str | Path | None, out_di
     if lens not in LENS_BY_ID or unit not in UNITS:
         raise ValueError("Unknown lens or unit")
     filters = {name: sorted(set(values)) for name, values in (filters or {}).items() if values and name in FILTER_KEYS}
-    try:
-        cutoff = dt.date.fromisoformat(as_of) if as_of else None
-    except ValueError as exc:
-        raise InvalidFilter("Invalid report date; use YYYY-MM-DD") from exc
+    cutoff = _report_cutoff(as_of)
     if selection is not None and (not selection or len(selection) > 240):
         raise InvalidFilter("Invalid category or band selection")
     scoped_request = bool(filters or cutoff or selection)

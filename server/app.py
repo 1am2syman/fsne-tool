@@ -149,7 +149,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 history, data, out = store.history_dir, ROOT / "sample_input", ROOT / "output" / "evolution"
             try:
                 if lens == "filters":
-                    return self._json(evolution.filter_options(history, data, out))
+                    return self._json(evolution.filter_options(history, data, out, filters, as_of=as_of))
                 with evolution.cached_artifact(history, data, out, lens, unit, filters, as_of=as_of, selection=selection) as path:
                     if part.endswith("detail"):
                         path = evolution.artifact_path(path.parent, lens, unit, "detail")

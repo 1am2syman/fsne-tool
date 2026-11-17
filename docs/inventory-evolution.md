@@ -13,7 +13,7 @@ Right-click an **Exposure** or **LND FC** cell and choose **Show evolution**. Th
 | loading-watch | >10M |
 | brand-status / town-status | Clicked RSL column, or all groups for a total; selected metric must be Exposure or LND |
 
-The overlay carries the selected measure, BDT/KL display, report date and available Brand, Parent and Town dimensions. A total omits row dimensions that do not apply. The report RSL condition filters each saved snapshot at this first level. Closing the overlay returns to the report with its expanded rows, selection and scroll intact; the standalone evolution chart retains its previous filter state.
+The full-page overlay carries the selected measure, BDT/KL display, report date and available Brand, Parent and Town dimensions. Its dropdowns stay within that report scope: Town, Parent and Material options reflect the other active filters and the report date. **All in scope** and **Clear filters** restore the opened report's bounds; they do not broaden a brand or town drill-down to the entire company. Material options show the description and exact child code, and filter by that code. A total omits row dimensions that do not apply. The report RSL condition filters each saved snapshot at this first level. Closing the overlay returns to the report with its expanded rows, selection and scroll intact; the standalone evolution chart retains its previous filter state.
 
 A snapshot is closing stock for its report month and appears as the **next month’s opening**. For example, an August snapshot appears as September opening stock. The report date limits which saved snapshots are available.
 
@@ -39,7 +39,7 @@ The RSL view hides the lens and scope controls to keep that selection fixed. **B
 | RSL | Closing stock by RSL group, including good stock |
 | >10M cohort | Eligible Exposure originating in >10M, retained while eligible |
 
-The standalone chart offers Town, Parent, Brand and RSL filters. Mitigation lenses exclude good stock and unclassified amounts. Sales attribution uses secondary-sales inputs when available; unavailable sales are shown explicitly.
+The standalone chart offers Town, Parent, Material, Brand and RSL filters. Each dropdown lists options compatible with the other selections. The chart keeps separate timeline columns even when filtered stock disappears and reappears in disconnected periods; label widths set a minimum column spacing so tight spacing cannot overlap adjacent labels. Mitigation lenses exclude good stock and unclassified amounts. Sales attribution uses secondary-sales inputs when available; unavailable sales are shown explicitly.
 
 Report overlays display **M BDT** or **KL**. Standalone BDT uses **crore BDT**. API graph values are BDT or litres; consumers must apply `unit_div` and `unit_label`, rather than treating raw `unit=kl` values as displayed KL. The report overlay deliberately overrides the BDT divisor to 1,000,000.
 
@@ -65,7 +65,7 @@ Run routes start at `/api/runs/<id>/evolution/`. Sample routes start at `/api/ev
 | `<lens>/rsl` | RSL graph for the selected category or band |
 | `<lens>/rsl/detail` | Details for that selected RSL graph |
 
-Lens IDs are `exposure`, `lnd`, `stock`, `rsl` and `cohort`. Query parameters are `unit=bdt` or `unit=kl`, repeated `town`, `parent`, `brand` and `rsl` values, and optional `as_of=YYYY-MM-DD`. RSL drill-down requests also require `selection`, the node/link ID from the category graph built with the same measure, units and scope. URL-encode filter values and IDs. Graph and detail requests must use identical parameters.
+Lens IDs are `exposure`, `lnd`, `stock`, `rsl` and `cohort`. Graph and catalog queries accept repeated `town`, `parent`, `material` (exact child code), `brand` and `rsl` values, and optional `as_of=YYYY-MM-DD`. The `filters` route intersects those conditions and returns arrays plus `material_labels` keyed by child code. Graph queries also accept `unit=bdt` or `unit=kl`. RSL drill-down requests also require `selection`, the node/link ID from the category graph built with the same measure, units and scope. URL-encode filter values and IDs. Graph and detail requests must use identical parameters.
 
 Parsed history lives in ignored `.cache/evolution/` (override with `FSNE_CACHE_DIR`). Graphs live in `output/evolution/`, or the run’s `output/evolution/`. Input signatures and the schema version invalidate stale payloads. Filtered scopes have bounded cache retention, with active reads protected from eviction. Cache generation does not modify saved reports.
 
@@ -83,6 +83,7 @@ Serve the normal app for interactive charts; a copied static HTML file does not 
 POLARS_MAX_THREADS=2 uv run python -m unittest tests.test_evolution -v
 node --check ui/evolution/page.js
 node --check ui/evolution/refchart.js
+node --test tests/evolution_layout.test.cjs
 ```
 
 The regression suite covers intersecting scopes, units, report dates, cache isolation, run-scoped HTTP routes, selection quantities, RSL history and exclusion of later growth.

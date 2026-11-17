@@ -561,7 +561,17 @@
         .sort((a, b) => d3.ascending(a, b));
       const layoutColumnByDataColumn = new Map(dataColumns.map((column, index) => [column, index]));
       const columnCount = Math.max(1, dataColumns.length);
-      const desiredWidth = Math.max(1100, (columnCount * horizontalSpacingPx) + 260);
+      // Reserve a label lane even at the tightest spacing and for the final column.
+      const measureGroup = svg.append('g').attr('class', 'node').attr('visibility', 'hidden');
+      const measureText = measureGroup.append('text');
+      const labelWidth = Math.max(160, ...DATA.nodes.map(node => {
+        measureText.text(node.label);
+        return measureText.node().getComputedTextLength?.() || node.label.length * 6.6;
+      }));
+      measureGroup.remove();
+      const rightMargin = labelWidth + 24;
+      const columnSpacing = Math.max(horizontalSpacingPx, labelWidth + 24);
+      const desiredWidth = Math.max(1100, (columnCount - 1) * columnSpacing + 44 + rightMargin);
       const width = Math.max(viewportWidth, desiredWidth);
       const height = host.layoutHeight || Math.max(760, rect.height || 820);
       svg.attr('width', width).attr('height', height).style('width', `${width}px`).attr('viewBox', [0, 0, width, height]);
@@ -620,12 +630,29 @@
         })
         .nodeWidth(20)
         .nodePadding(28)
-        .extent([[24, 30], [width - 190, height - 38]])
+        .extent([[24, 30], [width - rightMargin, height - 38]])
         .iterations(48);
 
       generator(graph);
+      /* D3 clamps alignment to the longest connected path. Filtered histories can have
+         disconnected periods, so restore the calendar columns before packing labels. */
+      const columnStep = (width - rightMargin - 24 - generator.nodeWidth()) / Math.max(1, columnCount - 1);
+      graph.nodes.forEach(node => {
+        node.layer = node.layoutColumn;
+        node.x0 = 24 + node.layoutColumn * columnStep;
+        node.x1 = node.x0 + generator.nodeWidth();
+      });
       repackColumnsFromTop(graph, 82, nodeVisualPadding);
       generator.update(graph);
+
+      const monthColumns = graph.nodes.filter(node => node.kind === 'month');
+      const calendar = svg.append('g').attr('class', 'calendar-columns').attr('aria-hidden', 'true');
+      calendar.selectAll('text').data(monthColumns).join('text')
+        .attr('x', node => node.x0).attr('y', 30)
+        .text(node => node.label.replace(/\s+opening.*$/i, ''));
+      calendar.selectAll('line').data(monthColumns).join('line')
+        .attr('x1', node => node.x0).attr('x2', node => node.x0)
+        .attr('y1', 44).attr('y2', 64);
 
       const nodeById = new Map(graph.nodes.map(d => [d.id, d]));
       const linkByKey = new Map(graph.links.map(d => [`${d.source.id}|${d.target.id}`, d]));

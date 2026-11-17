@@ -883,7 +883,11 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 @media(max-width:700px){.app,.app.rail{grid-template-columns:var(--rail) minmax(0,1fr)}aside .subitem,aside .item span,aside .group,aside .brand b,aside .brand span,aside .item kbd,aside .count,aside .who{display:none}aside .item{justify-content:center;padding:0}aside .brand{justify-content:center;padding:0}main{min-width:0}.page{padding:16px 12px 48px}.head{align-items:flex-start;flex-wrap:wrap}.file{grid-template-columns:16px minmax(0,1fr);padding:12px}.file .file-actions{grid-column:2}.file-heading{gap:6px}.file-ext{font-size:9px}.tabs{gap:14px;flex-wrap:wrap}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 /* inventory-evolution: chart styles live in assets/evolution/refchart.css */
-#r-evolution .evo-panel{border-radius:12px}
+#r-evolution .evo-panel{border-radius:10px;overflow:hidden;border-color:var(--line);box-shadow:0 2px 8px #10182804}
+#r-evolution #evTools{gap:12px;margin-bottom:14px;min-height:38px}
+#r-evolution #evLens{padding:4px;background:var(--sunken);border:1px solid var(--line);border-radius:9px}
+#r-evolution #evLens button{padding:7px 14px;border-radius:6px;font-size:12px}
+#r-evolution #evLens button[aria-pressed=true]{color:var(--ink);background:var(--surface);box-shadow:0 1px 3px #10182816}
 #r-evolution .evo-panel[data-state=status] #evScroll,#r-evolution .evo-panel[data-state=status] .rc-legend,#r-evolution .evo-panel[data-state=status] .legnote{display:none}
 #r-evolution .evo-panel[data-state=chart] #evStatus{display:none}
 #r-evolution .btn[aria-pressed=false]{color:var(--ink3)}
@@ -903,15 +907,19 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #r-evolution .evo-state p{max-width:420px;font-size:13px}
 #r-evolution .rc-canvas{overflow-x:auto;overflow-y:hidden}
 #r-evolution svg.rc{stroke-linecap:butt;stroke-linejoin:miter;stroke-width:1}
-#r-evolution .evo-filters{gap:10px;margin-bottom:12px;position:relative;z-index:5}
-#r-evolution .evo-filter{position:relative;width:220px}
-#r-evolution .evo-filter summary{display:flex;align-items:center;gap:10px;list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:12.5px;font-weight:500}
+#r-evolution .evo-filters{display:grid;grid-template-columns:1fr 1.15fr 1.5fr 1fr .85fr auto;gap:10px;margin-bottom:16px;position:relative;z-index:5;align-items:center}
+#r-evolution .evo-filter{position:relative;min-width:0;width:auto}
+#r-evolution .evo-filter summary{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:5px;list-style:none;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 30px 9px 12px;font-size:11px;line-height:1.2;font-weight:500;color:var(--ink3);transition:border-color .12s,box-shadow .12s}
+#r-evolution .evo-filter summary:hover{border-color:var(--ink3)}
 #r-evolution .evo-filter summary::-webkit-details-marker{display:none}
-#r-evolution .evo-filter summary::after{content:'⌄';margin-left:auto;color:var(--ink3)}
-#r-evolution .evo-filter summary span{color:var(--ink3);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#r-evolution .evo-filter[data-active=true] summary{border-color:var(--accent)}
+#r-evolution .evo-filter summary::after{content:'⌄';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:15px}
+#r-evolution .evo-filter summary span{color:var(--ink);font-size:12.5px;font-weight:550;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#r-evolution .evo-filter[data-active=true] summary{border-color:color-mix(in srgb,var(--accent) 50%,var(--line));background:color-mix(in srgb,var(--accent) 3%,var(--surface))}
+#r-evolution .evo-filter[open] summary{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 10%,transparent)}
 #r-evolution .evo-filter summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-#r-evolution .evo-filter-pop{position:absolute;top:calc(100% + 6px);left:0;width:288px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.14)}
+#r-evolution .evo-filter-pop{position:absolute;top:calc(100% + 7px);left:0;width:320px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.14)}
+#r-evolution #evFilter-material .evo-filter-pop{width:400px}
+#r-evolution #evFilter-rsl .evo-filter-pop{left:auto;right:0}
 #r-evolution .evo-filter-pop input[type=search]{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:12.5px var(--font)}
 #r-evolution .evo-options{max-height:260px;overflow-y:auto;margin:8px 0}
 #r-evolution .evo-options label{display:flex;align-items:center;gap:9px;padding:7px 5px;border-radius:5px;font-size:12.5px;cursor:pointer}
@@ -920,20 +928,32 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #r-evolution .evo-options input{accent-color:var(--accent)}
 #r-evolution .evo-filter-actions{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:9px}
 #r-evolution .evo-filter-empty{padding:10px 4px;font-size:12px;color:var(--ink3)}
-#r-evolution #evFilterStatus{font-size:12px;color:var(--ink3)}
+#r-evolution #evFilterStatus{grid-column:1/-1;font-size:12px;color:var(--ink3)}
+#r-evolution #evFilterStatus:empty{display:none}
 #r-evolution #evFilters[hidden],#r-evolution #evLens[hidden],#r-evolution #evDrill[hidden]{display:none}
 #r-evolution #evDrill{margin:0;gap:12px;min-width:0}
 #r-evolution #evDrill strong{white-space:nowrap;font-size:13px}
 #r-evolution #evDrillScope{font-size:12px;color:var(--ink2);max-width:480px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #r-evolution #evFilterClear[hidden]{display:none}
-#evoDialog{width:calc(100vw - 48px);max-width:1600px;height:calc(100vh - 48px);max-height:none;margin:auto;padding:0;border:1px solid var(--line);border-radius:14px;background:var(--canvas);color:var(--ink);box-shadow:0 24px 80px #0003}
-#evoDialog::backdrop{background:#10182866}
-.evo-dialog-head{display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
+#evoDialog{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:var(--canvas);color:var(--ink)}
+#evoDialog[open]{display:flex;flex-direction:column}
+#evoDialog::backdrop{background:var(--canvas)}
+.evo-dialog-head{display:flex;flex:none;align-items:center;gap:12px;padding:20px 28px 18px;border-bottom:1px solid var(--line);background:var(--surface)}
 .evo-dialog-head .sp{flex:1}
-.evo-dialog-head h2{font-size:18px;margin:0 0 3px}.evo-dialog-head p{font-size:12.5px;color:var(--ink2);margin:0}
-#evoDialogBody{height:calc(100% - 77px);overflow:auto;padding:16px 20px}
-#evoDialog .evo-filter{flex:1;min-width:0;width:auto;max-width:280px}
-#evoDialog #evScroll{max-height:calc(100vh - 310px);overflow:auto}
+.evo-dialog-head h2{font-size:21px;line-height:1.25;letter-spacing:-.5px;font-weight:650;margin:0 0 6px}
+.evo-dialog-head p{font-size:12px;color:var(--ink2);margin:0;line-height:1.5}
+.evo-dialog-head .btn{height:36px;padding:0 14px;font-size:12px}
+#evoDialogExport{background:transparent}
+#evoDialogBody{flex:1;min-height:0;overflow:hidden;padding:20px 28px 22px}
+#evoDialog #r-evolution:not([hidden]){height:100%;display:flex;flex-direction:column;min-height:0}
+#evoDialog #evFilters,#evoDialog #evTools{flex:none}
+#evoDialog .evo-panel{flex:1;min-height:0;display:flex;flex-direction:column}
+#evoDialog #evScroll{flex:1;min-height:0;max-height:none;overflow:auto;scrollbar-gutter:stable}
+#evoDialog #evSel,#evoDialog #evLegend,#evoDialog #evNote{flex:none}
+#evoDialog #evStatus{flex:1;min-height:0;overflow:auto}
+#evoDialog #evStatus .evo-skel,#evoDialog #evStatus .evo-state{height:100%}
+#evoDialog .rc-legend{padding:12px 18px 6px;font-size:11px;gap:8px 18px}
+#evoDialog .legnote{padding:2px 18px 12px;font-size:10.5px;line-height:1.5}
 #reportEvolutionMenu{position:fixed;z-index:80;min-width:180px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 24px #0002}
 #reportEvolutionMenu[hidden]{display:none}
 #reportEvolutionMenu button{width:100%;border:0;background:transparent;color:var(--ink);padding:9px 12px;border-radius:5px;text-align:left;font:500 13px var(--font);cursor:pointer}
@@ -1223,7 +1243,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 </div>
 <div id="reportEvolutionMenu" role="menu" aria-label="Cell actions" hidden><button type="button" role="menuitem" id="showCellEvolution">Show evolution</button></div>
 <dialog id="evoDialog" aria-labelledby="evoDialogTitle" aria-describedby="evoDialogScope">
-  <header class="evo-dialog-head"><div><h2 id="evoDialogTitle">Inventory evolution</h2><p id="evoDialogScope"></p></div><span class="sp"></span><button class="btn" id="evoDialogExport" type="button">Export CSV</button><button class="btn" id="evoDialogClose" type="button" aria-label="Close inventory evolution">Close</button></header>
+  <header class="evo-dialog-head"><div><h2 id="evoDialogTitle">Inventory evolution</h2><p id="evoDialogScope"></p></div><span class="sp"></span><button class="btn" id="evoDialogExport" type="button">Export CSV</button><button class="btn" id="evoDialogClose" type="button" aria-label="Close inventory evolution">Back to report</button></header>
   <div id="evoDialogBody"></div>
 </dialog>
 <div class="toast" id="toast" role="status"></div>

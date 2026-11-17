@@ -16,8 +16,9 @@
   ];
   const state = { lens: 'exposure', unit: 'bdt', hide10: false, gap: GAP.start, asOf: null, reportUnits: false };
   const cache = new Map();
-  const filters = { town: [], parent: [], brand: [], rsl: [] };
-  let filterLoad = null;
+  const filters = { town: [], parent: [], material: [], brand: [], rsl: [] };
+  let reportScope = {}, filterSeq = 0, materialLabels = {};
+  const filterCatalogs = new Map();
   const DATASETS = { default_metric: LENSES[0].key, metric_options: LENSES.map((l) => ({ key: l.key, label: l.label, category_dimension: l.dimension, included_good_stock_policy: l.policy })), metrics: {} };
   let env = null, ctrl = null, mounted = false, seq = 0, lockSeq = 0, pendingLockId = null, current = null, observer = null, lastWidth = 0, drill = null;
 
@@ -105,21 +106,29 @@
   }
 
   /* ---------- dropdown filters ---------- */
-  function filterQuery() {
+  function filterQuery(values = filters) {
     const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, values]) => values.forEach(value => params.append(key, value)));
+    Object.entries(values).forEach(([key, selected]) => selected.forEach(value => params.append(key, value)));
     if (state.asOf) params.set('as_of', state.asOf);
     return params.size ? '&' + params.toString() : '';
+  }
+
+  function filterLabel(key, value) {
+    if (key === 'material') return materialLabels[value] || value;
+    if (key === 'parent') return env.parents?.[value] || value;
+    return value;
   }
 
   function updateFilterLabels() {
     Object.entries(filters).forEach(([key, values]) => {
       const dropdown = $(`#evFilter-${key}`);
       dropdown.dataset.active = String(values.length > 0);
-      dropdown.querySelector('summary span').textContent = values.length === 1 ? values[0] : values.length ? `${values.length} selected` : 'All';
-      dropdown.querySelector('summary').title = values.join(', ');
+      const valueLabel = value => filterLabel(key, value);
+      dropdown.querySelector('summary span').textContent = values.length === 1 ? valueLabel(values[0]) : values.length ? `${values.length} selected` : 'All';
+      dropdown.querySelector('summary').title = values.map(valueLabel).join(', ');
+      dropdown.dataset.scoped = String(Boolean(reportScope[key]?.length));
     });
-    $('#evFilterClear').hidden = !Object.values(filters).some(values => values.length);
+    $('#evFilterClear').hidden = !Object.entries(filters).some(([key, values]) => JSON.stringify(values) !== JSON.stringify(reportScope[key] || []));
   }
 
   function mountFilters() {
@@ -139,7 +148,7 @@
       const options = element('div', { class: 'evo-options', role: 'group', 'aria-label': `${title} options` });
       options.append(element('p', { class: 'evo-filter-empty' }, 'Loading options…'));
       const actions = element('div', { class: 'evo-filter-actions' });
-      actions.append(element('button', { type: 'button', class: 'btn', 'data-all': '' }, 'All'), element('button', { type: 'button', class: 'btn primary', 'data-apply': '', disabled: '' }, 'Apply'));
+      actions.append(element('button', { type: 'button', class: 'btn', 'data-all': '' }, 'All in scope'), element('button', { type: 'button', class: 'btn primary', 'data-apply': '', disabled: '' }, 'Apply'));
       pop.append(search, options, actions);
       dropdown.append(summary, pop);
       return dropdown;
@@ -160,7 +169,8 @@
       dropdown.querySelector('[data-apply]').onclick = () => {
         const inputs = [...dropdown.querySelectorAll('input[type=checkbox]')];
         const selected = inputs.filter(input => input.checked).map(input => input.value).sort();
-        filters[dropdown.dataset.filter] = selected.length === inputs.length ? [] : selected;
+        const key = dropdown.dataset.filter;
+        filters[key] = selected.length === inputs.length || !selected.length ? [...(reportScope[key] || [])] : selected;
         dropdown.open = false;
         dropdown.querySelector('summary').focus();
         applyFilters();
@@ -176,7 +186,7 @@
       if (!event.target.closest('#evFilters')) document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
     });
     $('#evFilterClear').onclick = () => {
-      Object.keys(filters).forEach(key => { filters[key] = []; });
+      Object.keys(filters).forEach(key => { filters[key] = [...(reportScope[key] || [])]; });
       document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
       applyFilters();
     };
@@ -194,32 +204,47 @@
   }
 
   function loadFilters() {
-    if (filterLoad) return filterLoad;
-    filterLoad = getJson('evolution/filters').then(options => {
-      Object.entries(options).forEach(([key, values]) => {
-        const dropdown = $(`#evFilter-${key}`);
-        if (!dropdown) return;
-        const labels = values.map(value => {
-          const label = document.createElement('label');
-          const input = document.createElement('input');
-          input.type = 'checkbox';
-          input.value = value;
-          input.checked = filters[key].includes(value);
-          const name = key === 'parent' ? (env.parents?.[value] || value) : value;
-          label.append(input, document.createTextNode(name));
-          return label;
-        });
-        const empty = document.createElement('p');
-        empty.className = 'evo-filter-empty';
-        empty.dataset.empty = '';
-        empty.hidden = true;
-        empty.textContent = 'No matches';
-        dropdown.querySelector('.evo-options').replaceChildren(...labels, empty);
-        dropdown.querySelector('[data-apply]').disabled = false;
+    const request = ++filterSeq;
+    const requests = Object.keys(filters).map(async key => {
+      const dropdown = $(`#evFilter-${key}`);
+      dropdown.querySelector('[data-apply]').disabled = true;
+      dropdown.querySelector('.evo-options').textContent = 'Loading options…';
+      // Keep the clicked report bounds while letting each dropdown expand its own selection.
+      const context = { ...filters, [key]: reportScope[key] || [] };
+      const path = 'evolution/filters?' + filterQuery(context).slice(1);
+      const cacheKey = env.api(path);
+      if (!filterCatalogs.has(cacheKey)) {
+        const pending = getJson(path).catch(error => { filterCatalogs.delete(cacheKey); throw error; });
+        filterCatalogs.set(cacheKey, pending);
+        if (filterCatalogs.size > 64) filterCatalogs.delete(filterCatalogs.keys().next().value);
+      }
+      const options = await filterCatalogs.get(cacheKey);
+      if (request !== filterSeq) return;
+      materialLabels = { ...materialLabels, ...options.material_labels };
+      const labels = (options[key] || []).map(value => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = value;
+        input.checked = filters[key].includes(value);
+        label.append(input, document.createTextNode(filterLabel(key, value)));
+        return label;
       });
+      const empty = document.createElement('p');
+      empty.className = 'evo-filter-empty';
+      empty.dataset.empty = '';
+      empty.hidden = labels.length > 0;
+      empty.textContent = labels.length ? 'No matches' : 'No options in this scope';
+      dropdown.querySelector('.evo-options').replaceChildren(...labels, empty);
+      dropdown.querySelector('[data-apply]').disabled = false;
+      searchFilterOptions(dropdown);
+    });
+    return Promise.all(requests).then(() => {
+      if (request !== filterSeq) return;
+      updateFilterLabels();
       $('#evFilterStatus').textContent = '';
     }).catch(() => {
-      filterLoad = null;
+      if (request !== filterSeq) return;
       $('#evFilterStatus').textContent = 'Filters unavailable. ';
       const retry = document.createElement('button');
       retry.className = 'btn';
@@ -228,12 +253,12 @@
       retry.onclick = loadFilters;
       $('#evFilterStatus').append(retry);
     });
-    return filterLoad;
   }
 
   function applyFilters() {
     updateFilterLabels();
     clearLock();
+    loadFilters();
     draw();
   }
 
@@ -412,7 +437,7 @@
     const digits = state.unit === 'kl' ? 6 : 9;
     const quote = (v) => (/[",\n]/.test(v) ? '"' + String(v).replace(/"/g, '""') + '"' : v);
     const months = new Map(data.nodes.map((n) => [n.id, n.month || '']));
-    const header = ['lens', 'unit', 'town_filter', 'parent_filter', 'brand_filter', 'rsl_filter', 'as_of', 'selection_id', 'selection_month', 'month', 'source_id', 'source', 'target_id', 'target', state.unit === 'kl' ? 'amount_kl' : state.reportUnits ? 'amount_m_bdt' : 'amount_cr_bdt'];
+    const header = ['lens', 'unit', ...Object.keys(filters).map(key => key + '_filter'), 'as_of', 'selection_id', 'selection_month', 'month', 'source_id', 'source', 'target_id', 'target', state.unit === 'kl' ? 'amount_kl' : state.reportUnits ? 'amount_m_bdt' : 'amount_cr_bdt'];
     const lines = [header.join(',')].concat(data.links.map((l) => [
       activeLens().label, state.unit, ...Object.entries(filters).map(([key, values]) => drill && key === 'rsl' ? 'All (selection anchored in ' + (values.join('; ') || 'All') + ')' : values.join('; ') || 'All'), state.asOf || '', current.payload.selection?.id || '', current.payload.selection?.date || '', months.get(l.source) || months.get(l.target), l.source, labels.get(l.source), l.target, labels.get(l.target), (l.value / host.unit.div).toFixed(digits),
     ].map(quote).join(',')));
@@ -455,7 +480,7 @@
   }
 
   function captureScope() {
-    return { ...state, filters: Object.fromEntries(Object.entries(filters).map(([key, values]) => [key, [...values]])) };
+    return { ...state, bounds: structuredClone(reportScope), filters: Object.fromEntries(Object.entries(filters).map(([key, values]) => [key, [...values]])) };
   }
 
   function restoreScope(scope) {
@@ -463,7 +488,9 @@
     drill = null;
     clearLock();
     ['lens', 'unit', 'hide10', 'gap', 'asOf', 'reportUnits'].forEach(key => { state[key] = scope[key]; });
+    reportScope = structuredClone(scope.bounds || {});
     Object.keys(filters).forEach(key => { filters[key] = [...(scope.filters[key] || [])]; });
+    loadFilters();
     $('#evTip').style.opacity = 0;
     $('#evMenu').classList.remove('open');
     document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
@@ -474,9 +501,9 @@
     open(options) {
       env = options;
       mount();
-      if (options.scope) restoreScope({ ...state, hide10: false, ...options.scope });
+      if (options.scope) restoreScope({ ...state, hide10: false, ...options.scope, bounds: options.scope.filters || {} });
+      else loadFilters();
       state.unit = options.unit || state.unit;
-      loadFilters();
       updateFilterLabels();
       $('#evTip').style.opacity = 0;
       return draw();
