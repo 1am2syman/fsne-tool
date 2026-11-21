@@ -109,8 +109,15 @@ def check_plan(path: Path, report: Path, report_date: str) -> tuple[pl.DataFrame
     return entries, counts
 
 
+def _in_git_repo(directory: Path) -> bool:
+    resolved = directory.resolve()
+    return any((parent / ".git").exists() for parent in (resolved, *resolved.parents))
+
+
 def commit_history(history_dir: Path, paths: list[Path], message: str) -> dict:
-    """Commit only the exported history paths; leave other staged work alone."""
+    """Commit only the exported history paths when history lives inside a Git repo."""
+    if not _in_git_repo(history_dir):
+        return {"ok": True, "skipped": True}
     try:
         root = subprocess.run(["git", "-C", str(history_dir), "rev-parse", "--show-toplevel"],
                               check=True, capture_output=True, text=True, timeout=30).stdout.strip()

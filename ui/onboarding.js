@@ -294,7 +294,7 @@
     const id = esc(r.id), plan = r.plan_upload, settlement = r.settlement || {};
     const settled = r.plan_state === 'settled', locked = !!r.out_of_date && !settled;
     const inputFile = `<a class="btn run-btn" href="${esc(apiUrl('runs/' + r.id + '/report.xlsx'))}" download>${ICON.download}Action plan input file</a>`;
-    const upload = settled || locked ? '' : `<button type="button" class="btn run-btn" data-plan="${id}"${plan ? ' title="Uploading again replaces the earlier plan"' : ''}>${ICON.upload}${plan ? 'Replace plan' : 'Upload action plan'}</button>`;
+    const upload = settled || locked ? '' : `<button type="button" class="btn run-btn${plan ? '' : ' soft'}" data-plan="${id}"${plan ? ' title="Uploading again replaces the earlier plan"' : ''}>${ICON.upload}${plan ? 'Replace plan' : 'Upload action plan'}</button>`;
     const calculated = runStep('done', 'Calculated', [esc(shortDate(r.started || r.created)) + (r.seconds == null ? '' : ' · took ' + duration(r.seconds))]);
     let returned;
     if (plan) returned = runStep('done', 'Action plan returned', [`${esc(shortDate(plan.time))} · ${esc(plan.uploader || 'local')}`, `<span class="run-file" title="${esc(plan.filename)}">${esc(plan.filename)}</span>`], inputFile + upload);
@@ -304,16 +304,17 @@
     let close;
     if (settled) {
       const committed = settlement.commit?.ok;
+      const commitLabel = settlement.commit?.skipped ? 'Saved to history' : 'Committed locally';
       close = runStep(committed ? 'done' : 'warn', 'Month settled', [
         `${esc(shortDate(settlement.time))} · history/${esc(settlement.history_file)}`,
-        committed ? 'Committed locally' : `<span class="run-warn" title="${esc(settlement.commit?.error || '')}">Settled, not committed</span>`,
+        committed ? commitLabel : `<span class="run-warn" title="${esc(settlement.commit?.error || '')}">Settled, not committed</span>`,
       ], `<button type="button" class="btn run-btn" data-reopen="${id}">${ICON.reopen}Reopen</button>`);
     } else if (locked) {
       close = runStep('locked', 'Month settled', ['Calculate a new run to settle this month.']);
     } else {
       const reopened = r.reopened ? `Reopened ${esc(shortDate(r.reopened.time))}` + (r.reopened.commit?.ok ? '' : ` · <span class="run-warn" title="${esc(r.reopened.commit?.error || '')}">history removal not committed</span>`) : '';
       close = runStep(plan ? 'current' : 'todo', 'Month settled', [reopened, plan ? 'Publishes this snapshot to history.' : 'Settling without a returned plan keeps carried-over statuses.'],
-        `<button type="button" class="btn run-btn" data-settle="${id}">${ICON.settle}Settle month</button>`);
+        `<button type="button" class="btn run-btn soft" data-settle="${id}">${ICON.settle}Settle month</button>`);
     }
     return `<ol class="run-steps" aria-label="Action plan cycle for ${id}">${calculated}${returned}${close}</ol>`;
   }
@@ -686,5 +687,11 @@
     }
     controls();
   }
+  window.addEventListener('fsne:storage-changed', async () => {
+    if (!online) return;
+    selected.clear(); invalidSlot = null; showDraft(null);
+    await refresh();
+    showDraft(runs.find(r => r.status === 'draft' && !r.archived) || null);
+  });
   init();
 })();

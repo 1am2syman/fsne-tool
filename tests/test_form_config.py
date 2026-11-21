@@ -7,7 +7,7 @@ import threading
 from unittest import TestCase
 
 from server.app import make_server
-from server.runs import RunError, Store, read_report_date
+from server.runs import BUNDLED_HISTORY, RunError, Store, read_report_date
 from ui.samples import files
 
 
@@ -18,7 +18,7 @@ def populate(store, run_id):
 
 
 def test_three_files_detect_fsne_month_and_form_can_save_it(tmp_path):
-    store = Store(tmp_path / "runs", start_worker=False)
+    store = Store(tmp_path / "runs", BUNDLED_HISTORY, start_worker=False)
     run = store.create("Form run")
     populate(store, run["id"])
     assert store.get(run["id"])["report_date"] == "2026-09-30"
@@ -26,7 +26,7 @@ def test_three_files_detect_fsne_month_and_form_can_save_it(tmp_path):
     assert configured["configuration_source"] == "form"
     assert configured["files"]["config"]["generated"] is True
     assert read_report_date(store.path(run["id"]) / "input") == "2026-09-30"
-    restarted = Store(store.dir, start_worker=False)
+    restarted = Store(store.dir, BUNDLED_HISTORY, start_worker=False)
     assert restarted.get(run["id"])["report_date"] == "2026-09-30"
     assert restarted.get(run["id"])["label"] == "September close"
     assert restarted.start(run["id"])["status"] == "queued"
@@ -35,7 +35,7 @@ def test_three_files_detect_fsne_month_and_form_can_save_it(tmp_path):
 
 
 def test_rejected_date_does_not_replace_accepted_settings(tmp_path):
-    store = Store(tmp_path / "runs", start_worker=False)
+    store = Store(tmp_path / "runs", BUNDLED_HISTORY, start_worker=False)
     run = store.create("Original")
     populate(store, run["id"])
     original = store.configure(run["id"], "2026-09-30")
@@ -50,7 +50,7 @@ def test_rejected_date_does_not_replace_accepted_settings(tmp_path):
 
 
 def test_optional_workbook_import_populates_date_and_form_can_override_it(tmp_path):
-    store = Store(tmp_path / "runs", start_worker=False)
+    store = Store(tmp_path / "runs", BUNDLED_HISTORY, start_worker=False)
     run = store.create("Import")
     store.configure(run["id"], "2026-08-29")
     name, contents, _ = files()["config"]
@@ -64,7 +64,7 @@ def test_optional_workbook_import_populates_date_and_form_can_override_it(tmp_pa
 
 
 def test_http_form_configuration_saves_and_rejects_bad_dates(tmp_path):
-    store = Store(tmp_path / "runs", start_worker=False)
+    store = Store(tmp_path / "runs", BUNDLED_HISTORY, start_worker=False)
     run = store.create("HTTP form")
     server = make_server(store, port=0)
     thread = threading.Thread(target=server.serve_forever, daemon=True)

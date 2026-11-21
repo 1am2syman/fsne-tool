@@ -86,7 +86,7 @@ class ServerTests(unittest.TestCase):
         self.store.archive(done["id"], True)
         pending = self.uploaded()
         self.store.start(pending["id"], override_unsettled=True)
-        restored = Store(self.store.dir, start_worker=False)
+        restored = Store(self.store.dir, self.store.history_dir, start_worker=False)
         self.assertIsNotNone(restored.get(done["id"])["archived"])
         self.assertEqual(restored.get(pending["id"])["status"], "bad")
         self.assertIn("Interrupted", restored.get(pending["id"])["error"])

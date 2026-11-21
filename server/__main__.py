@@ -4,7 +4,7 @@ import argparse
 import webbrowser
 
 from .app import make_server
-from .runs import RUNS_DIR, Store
+from .runs import Store
 
 
 def main() -> None:
@@ -15,7 +15,7 @@ def main() -> None:
     args = parser.parse_args()
     store = Store()
     httpd = make_server(store, args.host, args.port)
-    print(f"FSNE app on http://{args.host}:{args.port}/  (runs in {RUNS_DIR})", flush=True)
+    print(f"FSNE app on http://{args.host}:{args.port}/  (runs in {store.dir}, history in {store.history_dir})", flush=True)
     if args.open_browser:
         webbrowser.open(f"http://{args.host}:{args.port}/")
     try:

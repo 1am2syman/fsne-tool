@@ -1,24 +1,124 @@
 @echo off
-setlocal
-cd /d "%~dp0"
+setlocal DisableDelayedExpansion
+pushd "%~dp0"
+if errorlevel 1 goto folder_error
 
-where git >nul 2>&1
-if errorlevel 1 (
-    echo Git is required to update FSNE.
-    goto :failed
+git --version >nul 2>&1
+if errorlevel 1 goto git_error
+if not exist ".git" goto repo_error
+
+rem FSNE must be closed: Windows locks the running runtime, and a running
+rem server would keep using the old code after the update.
+set "FSNE_DIR=%CD%"
+powershell -NoProfile -NonInteractive -Command "$p = ($env:FSNE_DIR.TrimEnd('\') + '\runtime\').ToLower(); if (Get-Process python, pythonw -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.ToLower().StartsWith($p) }) { exit 2 }; exit 0" >nul 2>&1
+if "%errorlevel%"=="2" goto running_error
+
+rem A Git command that was interrupted can leave this lock behind.
+if not exist ".git\index.lock" goto no_lock
+tasklist /fi "imagename eq git.exe" 2>nul | find /i "git.exe" >nul
+if not errorlevel 1 goto git_busy
+del /f /q ".git\index.lock" >nul 2>&1
+:no_lock
+
+git rev-parse --verify --quiet "@{u}" >nul 2>&1
+if errorlevel 1 goto upstream_error
+
+echo Checking for updates...
+git fetch --prune
+if errorlevel 1 goto fetch_error
+
+set "FSNE_LOCAL="
+for /f "delims=" %%i in ('git status --porcelain') do set "FSNE_LOCAL=1"
+
+rem Parse the complete update block before Git can replace this batch file.
+rem Labels and goto must not be used below this point.
+(
+    echo Updating FSNE...
+    if defined FSNE_LOCAL (
+        git -c "user.name=FSNE updater" -c "user.email=fsne-updater@localhost" stash push --include-untracked --quiet -m "Set aside by update.bat"
+        if errorlevel 1 (
+            echo.
+            echo Update stopped. Nothing was changed. Close programs using files in the FSNE folder, then run update.bat again.
+            popd
+            pause
+            endlocal
+            exit /b 1
+        )
+        echo Files that differed from the published version were set aside in Git stash.
+    )
+    git reset --hard --quiet "@{u}"
+    if errorlevel 1 (
+        echo.
+        echo Update did not finish. Close programs using files in the FSNE folder, then run update.bat again.
+        popd
+        pause
+        endlocal
+        exit /b 1
+    )
+    git clean -fdxq -- src server ui
+    if errorlevel 1 (
+        echo.
+        echo Update did not finish. Close programs using files in the FSNE folder, then run update.bat again.
+        popd
+        pause
+        endlocal
+        exit /b 1
+    )
+    set "FSNE_DIRTY="
+    for /f "delims=" %%i in ('git status --porcelain') do set "FSNE_DIRTY=1"
+    if defined FSNE_DIRTY (
+        echo.
+        echo The FSNE folder still differs from the published version:
+        git status --short
+        echo Close programs using these files, then run update.bat again.
+        popd
+        pause
+        endlocal
+        exit /b 1
+    )
+    echo.
+    git --no-pager log -1 "--format=FSNE is up to date: %%h %%s"
+    echo Run start-fsne.bat to start FSNE.
+    popd
+    pause
+    endlocal
+    exit /b 0
 )
 
-echo Updating FSNE from the configured Git upstream...
-git pull --ff-only
-if errorlevel 1 goto :failed
+:running_error
+echo FSNE is still running from this folder. Close the FSNE launcher window,
+echo then run update.bat again. Nothing was changed.
+goto checkout_error
 
-echo.
-echo Update complete. Run start-fsne.bat to start FSNE.
-pause
-exit /b 0
+:git_busy
+echo Another Git command is using this folder. Wait for it to finish, then
+echo run update.bat again. Nothing was changed.
+goto checkout_error
 
-:failed
+:upstream_error
+echo This copy is not following a published branch. Clone the repository
+echo again, then run update.bat. Nothing was changed.
+goto checkout_error
+
+:fetch_error
 echo.
-echo Update failed. Check the messages above; your local files have not been reset.
+echo Could not download updates. Check the internet connection, then run
+echo update.bat again. Nothing was changed.
+goto checkout_error
+
+:git_error
+echo Git was not found. Install Git for Windows, then run update.bat again.
+goto checkout_error
+
+:repo_error
+echo This folder is not a Git checkout. Use the cloned repository, not a ZIP download.
+
+:checkout_error
+popd
 pause
-exit /b 1
+endlocal & exit /b 1
+
+:folder_error
+echo Could not open the FSNE folder. Run update.bat from your cloned repository.
+pause
+endlocal & exit /b 1

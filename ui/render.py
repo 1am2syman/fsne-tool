@@ -22,6 +22,7 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
     template = ((UI / "template.html").read_text(encoding="utf-8")
                 .replace("/*DOH_OVERLAY*/", (UI / "doh_overlay.js").read_text(encoding="utf-8"))
                 .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text(encoding="utf-8"))
+                .replace("/*STORAGE*/", (UI / "storage.js").read_text(encoding="utf-8"))
                 .replace("/*SAMPLES*/{}", json.dumps(downloads(), separators=(",", ":")))
                 .replace("/*HAS_REPORT*/true", json.dumps(has_report))
                 .replace("/*RUN_ID*/null", json.dumps(run["id"] if run else None)))

@@ -3,12 +3,13 @@ __pycache__/
 *.py[oc]
 build/
 dist/
-wheels/
+/wheels/
 *.egg-info
 
-# Virtual environments
+# Virtual environments and extracted runtime packages
 .venv
 .fsne-python/
+.fsne-packages/
 
 # Optional sample data (downloaded separately)
 sample_input/

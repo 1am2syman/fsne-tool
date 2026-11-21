@@ -14,7 +14,7 @@ This change makes the round trip a first-class part of a run and makes it visibl
 | --- | --- | --- | --- | --- |
 | Provisional | Run completes | Pre-action plan view | Pre-action plan view: statuses carried over from the previous month, N new batches unlabelled | Nothing written to `history/` |
 | Plan uploaded | Sales file uploaded | Action plan view (not settled) | Action plan view (not settled) | Nothing written to `history/` |
-| Settled | "Settle month" confirmed | Final view | Final view | Written to `history/`, committed locally |
+| Settled | "Settle month" confirmed | Final view | Final view | Written to the configured history folder; committed locally when it lives inside a Git repository |
 
 The state is stored in the run's metadata (state, upload time, uploader, file name, check counts, settle time, settler, commit result). Every label and flag is derived from it.
 
@@ -48,14 +48,14 @@ The state is stored in the run's metadata (state, upload time, uploader, file na
 - Confirmation shows the month, batch count and number of batches without a status.
 - Settling with no plan uploaded is allowed behind a stronger confirmation, so a month where sales never responds does not block the next one. The settled file then holds the carried-over statuses.
 - One settled run per calendar month. Settling a run archives the month's other runs.
-- Settling writes the run's snapshot to `history/<report date>.xlsx` and commits that file only, locally. It does not push.
-- A failed commit (no git, no identity, any other error) leaves the run settled and shows "settled, not committed".
+- Settling writes the run's snapshot to `<history folder>/<report date>.xlsx` (`Documents/FSNE/history` by default; change it on the Storage page or with `FSNE_HISTORY_DIR`). When that folder lives inside a Git repository, the file is committed locally on its own; otherwise the export is written without a commit. It never pushes.
+- When a commit is expected and fails (no git, no identity, any other error), the run stays settled and shows "settled, not committed".
 - The run's snapshot is the authority; the file in `history/` is its export.
 
 ## Reopen
 
 - Needs a confirmation.
-- Returns the run to "plan uploaded" (or "provisional" if it was settled without a plan), removes its settled history file in a new local commit, and marks later runs built on that month as out of date.
+- Returns the run to "plan uploaded" (or "provisional" if it was settled without a plan), removes its settled history file (in a new local commit when the history folder lives inside a Git repository), and marks later runs built on that month as out of date.
 
 ## Next month
 

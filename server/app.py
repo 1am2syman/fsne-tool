@@ -38,6 +38,8 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from src import evolution
 from ui.render import extract_legacy, render
 
+from . import runs as runs_mod
+from . import storage
 from .runs import ROOT, SLOTS, RunError, Store
 
 FALLBACK_HTML = ROOT / "ui" / "index.html"
@@ -204,7 +206,33 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 if method == "GET" and url == "/api/context":
                     run_id = parse_qs(query).get("run", [None])[0] or store.latest_ok()
                     meta = store.get(run_id) if run_id else None
-                    return self._json({"run": meta, "sample": meta is None, "user": self._user()})
+                    return self._json({
+                        "run": meta,
+                        "sample": meta is None,
+                        "user": self._user(),
+                        "storage": {"runs_dir": str(store.dir), "history_dir": str(store.history_dir)},
+                    })
+                if url == "/api/storage":
+                    if method == "GET":
+                        return self._json(storage.storage_status(store))
+                    if method == "POST":
+                        return self._json(self._update_storage(self._body_json()))
+                if url == "/api/storage/inspect" and method == "POST":
+                    body = self._body_json()
+                    return self._json(storage.inspect_path(str(body.get("kind", "")), str(body.get("path", ""))))
+                if url == "/api/storage/browse" and method == "GET":
+                    params = parse_qs(query)
+                    return self._json(storage.browse_directory(params.get("path", [""])[0], params.get("kind", ["runs"])[0]))
+                if url == "/api/storage/mkdir" and method == "POST":
+                    body = self._body_json()
+                    return self._json(storage.create_subfolder(str(body.get("parent", "")), str(body.get("name", ""))))
+                if url == "/api/storage/pick" and method == "POST":
+                    body = self._body_json()
+                    chosen = storage.pick_folder_windows(
+                        str(body.get("initial_path", "")),
+                        str(body.get("title", "Select folder")),
+                    )
+                    return self._json({"path": chosen, "cancelled": chosen is None})
                 if url == "/api/slots" and method == "GET":
                     return self._json([{"slot": k, "label": v[0], "stem": v[1], "ext": v[2], "required": k != "config"} for k, v in SLOTS.items()])
                 if url == "/api/runs":
@@ -242,6 +270,39 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             except Exception as exc:  # noqa: BLE001 - last resort, never leak a traceback to the page
                 logging.getLogger(__name__).exception("Server error during %s %s", method, url)
                 return self._error(500, f"Server error: {exc.__class__.__name__}")
+
+        def _update_storage(self, body: dict) -> dict:
+            status = storage.storage_status(store)
+            base = runs_mod.default_data_dir()
+            default_runs = (base / "runs").resolve()
+            default_history = (base / "history").resolve()
+
+            def resolve_slot(kind: str, field: str, current: Path, default_path: Path, locked: bool) -> tuple[Path, str | None]:
+                if field not in body:
+                    saved = storage.load_settings().get(field)
+                    return current, saved
+                raw = body.get(field)
+                if raw is None or (isinstance(raw, str) and not raw.strip()):
+                    if locked:
+                        raise RunError(f"{status[kind]['env_var']} is set in the environment and cannot be changed in the UI.")
+                    return default_path, None
+                if not isinstance(raw, str):
+                    raise RunError(f"{field} must be a folder path string or null")
+                info = storage.inspect_path(kind, raw)
+                if not info.get("valid"):
+                    raise RunError(str(info.get("error") or f"Invalid {kind} folder"))
+                resolved = Path(info["resolved"])
+                if locked and resolved != current:
+                    raise RunError(f"{status[kind]['env_var']} is set in the environment and cannot be changed in the UI.")
+                saved_val = None if resolved == default_path else str(resolved)
+                return resolved, saved_val
+
+            new_runs, saved_runs = resolve_slot("runs", "runs_dir", store.dir, default_runs, status["runs"]["locked"])
+            new_history, saved_history = resolve_slot("history", "history_dir", store.history_dir, default_history, status["history"]["locked"])
+            seed = body.get("seed_history") is True
+            store.reconfigure(new_runs, new_history, seed_history=seed)
+            storage.save_settings(saved_runs, saved_history)
+            return storage.storage_status(store)
 
         def _page(self, query: str) -> None:
             run_id = parse_qs(query).get("run", [None])[0]

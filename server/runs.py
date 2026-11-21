@@ -13,6 +13,7 @@ Each run lives in ``runs/RUN-0001/``::
 from __future__ import annotations
 
 import calendar
+import ctypes
 import json
 import os
 import queue
@@ -25,6 +26,7 @@ import tempfile
 import threading
 import time
 import traceback
+import uuid
 from contextlib import suppress
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -39,8 +41,87 @@ from .action_plans import STATUSES, ActionPlanCycle, decorate, previous_month
 from .errors import RunError
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNS_DIR = Path(os.environ.get("FSNE_RUNS_DIR", ROOT / "runs"))
-SHARED_HISTORY = Path(os.environ.get("FSNE_HISTORY_DIR", ROOT / "history"))
+BUNDLED_HISTORY = ROOT / "history"
+
+
+def default_data_dir() -> Path:
+    """Keep user runs and settled history outside the repository checkout."""
+    if sys.platform == "win32":
+        # FOLDERID_Documents resolves redirected/OneDrive Documents and Unicode paths.
+        folder_id = (ctypes.c_byte * 16).from_buffer_copy(uuid.UUID("fdd39ad0-238f-46af-adb4-6c85480369c7").bytes_le)
+        result = ctypes.c_wchar_p()
+        shell = ctypes.WinDLL("shell32", use_last_error=True)
+        shell.SHGetKnownFolderPath.argtypes = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.POINTER(ctypes.c_wchar_p)]
+        shell.SHGetKnownFolderPath.restype = ctypes.c_long
+        ole = ctypes.WinDLL("ole32", use_last_error=True)
+        ole.CoTaskMemFree.argtypes = [ctypes.c_void_p]
+        ole.CoTaskMemFree.restype = None
+        try:
+            status = shell.SHGetKnownFolderPath(ctypes.byref(folder_id), 0, None, ctypes.byref(result))
+            if status != 0 or not result.value:
+                raise OSError("Windows could not locate Documents; set FSNE_RUNS_DIR and FSNE_HISTORY_DIR")
+            return Path(result.value) / "FSNE"
+        finally:
+            if result:
+                ole.CoTaskMemFree(ctypes.cast(result, ctypes.c_void_p))
+    return Path.home() / "Documents" / "FSNE"
+
+
+def default_runs_dir() -> Path:
+    override = os.environ.get("FSNE_RUNS_DIR")
+    if override:
+        return Path(override)
+    from .storage import load_settings
+
+    saved = load_settings().get("runs_dir")
+    return Path(saved) if saved else default_data_dir() / "runs"
+
+
+def default_history_dir() -> Path:
+    override = os.environ.get("FSNE_HISTORY_DIR")
+    if override:
+        return Path(override)
+    from .storage import load_settings
+
+    saved = load_settings().get("history_dir")
+    return Path(saved) if saved else default_data_dir() / "history"
+
+
+def _seed_history(target: Path, bundled: Path = BUNDLED_HISTORY) -> None:
+    """Seed a brand-new external history directory once from the bundled baseline snapshots."""
+    if target.exists():
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=".history-seed-", dir=target.parent))
+    try:
+        if bundled.is_dir():
+            for source in sorted(bundled.glob("*.xlsx")):
+                shutil.copyfile(source, staging / source.name)
+        try:
+            staging.rename(target)
+        except OSError:
+            if not target.exists():
+                raise
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+
+
+def _seed_empty_history(target: Path, bundled: Path = BUNDLED_HISTORY) -> None:
+    """Copy bundled baseline snapshots into an empty history directory."""
+    target.mkdir(parents=True, exist_ok=True)
+    if any(p.is_file() and not p.name.startswith("~$") for p in target.glob("*.xlsx")):
+        return
+    if not bundled.is_dir():
+        return
+    for source in sorted(bundled.glob("*.xlsx")):
+        dest = target / source.name
+        if not dest.exists():
+            shutil.copyfile(source, dest)
+
+
+RUNS_DIR = default_runs_dir()
+SHARED_HISTORY = default_history_dir()
 RUN_ID = re.compile(r"^RUN-\d{4,}$")
 
 # slot -> (label, canonical file stem, allowed extensions). The stems are what
@@ -60,25 +141,71 @@ def _now() -> str:
 
 class Store:
     def __init__(
-        self, runs_dir: Path = RUNS_DIR, history_dir: Path = SHARED_HISTORY, *, start_worker: bool = True
+        self,
+        runs_dir: Path | None = None,
+        history_dir: Path | None = None,
+        *,
+        start_worker: bool = True,
     ) -> None:
-        self.dir = runs_dir.resolve()
-        self.history_dir = history_dir.resolve()
+        from .storage import load_settings
+
+        saved = load_settings() if (runs_dir is None and history_dir is None) else {}
+        seed_default_history = (
+            runs_dir is None
+            and history_dir is None
+            and not os.environ.get("FSNE_HISTORY_DIR")
+            and "history_dir" not in saved
+        )
+        resolved_runs = default_runs_dir() if runs_dir is None else runs_dir
+        resolved_history = default_history_dir() if history_dir is None else history_dir
+        self.dir = resolved_runs.resolve()
+        self.history_dir = resolved_history.resolve()
         self.dir.mkdir(parents=True, exist_ok=True)
+        if seed_default_history and self.history_dir != BUNDLED_HISTORY.resolve():
+            _seed_history(self.history_dir, BUNDLED_HISTORY)
         self.lock = threading.RLock()
         self.cycle = ActionPlanCycle(self)
         self.jobs: queue.Queue[str | None] = queue.Queue()
         self.process: subprocess.Popen | None = None
         self.process_run: str | None = None
+        self._recover_interrupted()
+        self.worker = threading.Thread(target=self._worker, daemon=True, name="fsne-runs")
+        if start_worker:
+            self.worker.start()
+
+    def _recover_interrupted(self) -> None:
         for meta in self.list():
             if meta["status"] in {"queued", "running"}:
                 meta.update(status="bad", error="Interrupted: the server restarted during this run")
                 self._write(meta)
             elif meta["status"] == "ok":
                 self._backfill_label_counts(meta)
-        self.worker = threading.Thread(target=self._worker, daemon=True, name="fsne-runs")
-        if start_worker:
-            self.worker.start()
+
+    def is_busy(self) -> bool:
+        with self.lock:
+            if self.process is not None or self.process_run is not None:
+                return True
+            return any(m["status"] in {"queued", "running"} for m in self.list())
+
+    def reconfigure(self, runs_dir: Path, history_dir: Path, *, seed_history: bool = False) -> None:
+        """Switch active runs and history folders live while idle."""
+        with self.lock:
+            if self.is_busy():
+                raise RunError("Wait for the active run to finish or cancel it before changing storage folders.")
+            new_runs = runs_dir.expanduser().resolve()
+            new_history = history_dir.expanduser().resolve()
+            if new_runs == new_history or new_runs.is_relative_to(new_history) or new_history.is_relative_to(new_runs):
+                raise RunError("Working runs and settled history must be separate, non-nested folders.")
+            try:
+                new_runs.mkdir(parents=True, exist_ok=True)
+                new_history.mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                raise RunError(f"Could not create folder: {exc.strerror or exc}") from exc
+            if seed_history and new_history != BUNDLED_HISTORY.resolve():
+                _seed_empty_history(new_history, BUNDLED_HISTORY)
+            self.dir = new_runs
+            self.history_dir = new_history
+            self._recover_interrupted()
 
     def close(self) -> None:
         """Finish accepted jobs and then stop the worker."""
