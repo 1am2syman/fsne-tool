@@ -2,7 +2,7 @@
 
 `windows-x64/` contains the **CPython 3.14.10 Windows x64 embeddable distribution** from the Python Software Foundation, with `python314._pth` configured to keep the interpreter isolated while adding the repository root (`..\..`) and installed packages (`..\..\.fsne-packages`) to `sys.path` for both `start.py` and pipeline subprocesses.
 
-Third-party packages (`polars`, `fastexcel`, `openpyxl`, `xlsxwriter`) are **not** vendored in Git. On first launch (or whenever `uv.lock` changes after `update.bat`), `start.py` uses the user's installed `uv` (with `UV_PYTHON_DOWNLOADS=never`) to install the hash-verified dependencies from `uv.lock` into the ignored `.fsne-packages/` directory. Subsequent launches skip `uv` and start offline.
+Third-party packages (`polars`, `fastexcel`, `openpyxl`, `xlsxwriter`) are **not** vendored in Git. On first launch (or whenever `uv.lock` changes after `update.bat`), `start.py` uses the user's installed `uv` (with `UV_PYTHON_DOWNLOADS=never`) to install the hash-verified dependencies from `uv.lock` into the ignored `.fsne-packages/` directory. It passes the running bundled interpreter explicitly with `--python`, so no separate Python installation, PATH entry, or registry registration is needed. Subsequent launches skip `uv` and start offline.
 
 - Supported launcher target: **64-bit Windows 10/11 (Intel/AMD x64)**. Not native ARM64 or 32-bit.
 - Upstream release: <https://www.python.org/downloads/release/python-31410/>

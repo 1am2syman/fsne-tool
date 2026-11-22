@@ -106,6 +106,11 @@ class BundledRuntimeTests(unittest.TestCase):
                 if cmd[1] == "export":
                     Path(cmd[cmd.index("--output-file") + 1]).write_text("demo==1.0\n", encoding="utf-8")
                 elif cmd[1] == "pip":
+                    # A bundled interpreter is not necessarily discoverable by uv.
+                    self.assertIn("--python", cmd)
+                    self.assertEqual(cmd[cmd.index("--python") + 1], sys.executable)
+                    self.assertEqual(cmd[cmd.index("--python-version") + 1], "3.14")
+                    self.assertEqual(cmd[cmd.index("--python-platform") + 1], "x86_64-pc-windows-msvc")
                     target = Path(cmd[cmd.index("--target") + 1])
                     (target / "demo").mkdir(parents=True, exist_ok=True)
                     (target / "demo" / "__init__.py").write_text(lock_file.read_text(encoding="utf-8"), encoding="utf-8")

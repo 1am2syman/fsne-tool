@@ -72,6 +72,8 @@ def ensure_packages(
         install = subprocess.run(
             [
                 uv, "pip", "install",
+                # The bundled runtime is not registered or necessarily on PATH.
+                "--python", sys.executable,
                 "--target", str(staging),
                 "--python-version", py_ver,
                 "--python-platform", python_platform,
