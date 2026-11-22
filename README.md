@@ -93,6 +93,16 @@ Detailed reports use three connected value filters: **Brand**, **Parent SKU**, a
 
 Values within a field combine with OR; fields combine with AND. Each dropdown offers values matching the other two fields and the report’s month, RSL or review controls. Existing selections are retained when another filter excludes them, so incompatible selections show an empty result instead of silently broadening the report. Filters persist when changing units, sorting or hierarchy and remain separate between reports. Table totals, related charts, DOH explanations, evolution scopes and connected CSV exports follow the selected facts. The batch-wise report remains a top-400 preview; its filters and filtered cards apply to that preview population. The national Overview retains its national scope. Inventory evolution uses the same dropdown interaction for its additional Material and RSL fields.
 
+### Quick filter
+
+Every report table with these dropdowns (total-batch-wise, transfer-candidates, sales-push, total-stock-movement, brand-status, town-status, the action-plan pages and not-actionables) also has a quick filter in its formula bar. It sets the same dropdown values, so the dropdowns, totals and exports always agree with it. **Quick filter ?** in the report header opens a guide whose examples use the open report's data.
+
+- **Type:** press `/`, click the formula bar, or type a letter while the table has focus. `bpcno,shmp+sylhet` means (Brand containing BPCNO or SHMP) and Town Sylhet: `,` is or within one field, `+` is and, `!word` or `-word` excludes. Spaces around operators are optional. Quote a name that itself contains `+` or `,` (`"SAF ACTV+ 100G"`); picking a suggestion adds the quotes. Words match by prefix, contained text or one typo; `"Exact name"` names one value and `town:`, `brand:`, `sku:`/`parent:` or `cat:` force a field. The table previews live with a count; Enter applies, Esc restores. Tab switches the field of an ambiguous word or applies the suggested fix when the bar warns (for example two brands joined by `+`). Two fields joined by `,` cannot be expressed as dropdown values, so the bar warns instead of applying them.
+- **Select:** Ctrl+click (⌘+click on Mac) cells, Shift+click a block, click a row number for the whole row, Space for the clicked cell, or Alt+click a tree row for its own level only. Then **F** keeps the selection (hold F to peek, tap F again to flip between filtered and everything), **X** excludes the clicked values, **+** adds them to the current filter. Plain click still opens each table's details.
+- **Chips:** the formula bar lists each field's filter; click one to edit it, × or Backspace removes one, Shift+Backspace clears all. Ctrl+Z / Ctrl+Shift+Z (Ctrl+Y on Windows and Linux) undo and redo any filter change in that report, including dropdown changes.
+
+Keys act only while a report table (or, for `/`, `?` and undo, the report page) has focus and never inside text boxes. None of them is a Chrome shortcut; Ctrl+K/E/P/F/L, Ctrl+1–9, Shift+Esc, Alt+letters and F-keys stay with the browser. The parser and selection rules live in `ui/quick_filter.js` and are tested by `tests/quick_filter.test.cjs`. A new sheet joins with one `FSNEQuick.attach('#table', {group, sheetState, path, colDim?, tree?, noun})` call next to its filter group.
+
 Town-level stock movement and action-plan cohort projections are derived from saved snapshots. Opening an older completed run adds these derived fields without changing its frozen report calculations or prices. After updating, restart the app server and refresh the browser to load both the filter data support and the new controls.
 
 ## Not-actionables
@@ -202,7 +212,7 @@ uv run --with pytest python -m pytest -q tests/test_fsne_month.py tests/test_for
 uv run python -m unittest tests.test_saved_report_cache tests.test_history_parquet -v
 uv run python -m unittest tests.test_action_plans -v
 POLARS_MAX_THREADS=2 uv run python -m pytest tests/test_filter_data.py tests/test_movement.py tests/test_server.py -q
-node --unhandled-rejections=strict --test tests/overview.test.cjs tests/report_filters.test.cjs tests/doh_summary.test.cjs tests/evolution_page.test.cjs tests/evolution_layout.test.cjs
+node --unhandled-rejections=strict --test tests/overview.test.cjs tests/report_filters.test.cjs tests/quick_filter.test.cjs tests/doh_summary.test.cjs tests/evolution_page.test.cjs tests/evolution_layout.test.cjs
 uvx ruff check src tests ui server
 uvx pyright --project pyrightconfig.json
 ```
@@ -211,7 +221,7 @@ The focused pytest checks cover FSNE-month detection, previous-month sales valid
 
 ## Rebuild generated outputs and the UI
 
-For a template-only change (`ui/template.html`, `ui/onboarding.js`, `ui/doh_overlay.js`), a completed live run picks up the current template on reload and keeps its frozen data. For the bundled sample, re-render an existing built page without recalculating the pipeline:
+For a template-only change (`ui/template.html`, `ui/onboarding.js`, `ui/doh_overlay.js`, `ui/report_filters.js`, `ui/quick_filter.js`), a completed live run picks up the current template on reload and keeps its frozen data. For the bundled sample, re-render an existing built page without recalculating the pipeline:
 
 ```bash
 uv run python -m ui.rerender ui/index.html

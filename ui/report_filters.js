@@ -155,19 +155,42 @@ class Dropdown{
 }
 class Group{
   constructor({container,rows,onChange,dimensions:defs=dimensions}){
-    this.source=rows;this.onChange=onChange;this.states=new Map();this.state={};this.defs=defs;
+    this.source=rows;this.onChange=onChange;this.states=new Map();this.state={};this.defs=defs;this.histories=new Map();this.previewing=false;
     this.container=container;container.classList.add('value-filters');
     this.controls=defs.map(({key,label})=>new Dropdown({container,key,label,options:()=>catalog(this.source(),this.state,key),selection:()=>this.state[key]??null,apply:selected=>{this.state[key]=selected;this.changed()}}));
     this.clear=element('button','btn ghost value-filters-reset','×');this.clear.type='button';this.clear.title='Clear filters';this.clear.setAttribute('aria-label','Clear filters');this.clear.hidden=true;
     this.clear.onclick=()=>{this.state={};this.states.set(this.scope,this.state);this.changed()};container.append(this.clear);
+    // Single-scope reports never call use(), so their first change needs this baseline to be undoable.
+    this.history().last=this.snapshot();
   }
-  use(scope){active?.close();this.scope=scope;if(!this.states.has(scope))this.states.set(scope,{});this.state=this.states.get(scope);this.refresh()}
+  use(scope){active?.close();this.scope=scope;if(!this.states.has(scope))this.states.set(scope,{});this.state=this.states.get(scope);this.previewing=false;this.history().last??=this.snapshot();this.refresh()}
   matches(row,exclude){return matches(row,this.state,exclude)}
   rows(){return this.source().filter(r=>this.matches(r))}
   get active(){return Object.values(this.state).some(s=>s!=null)}
   refresh(){this.controls.forEach(c=>c.refresh());this.clear.hidden=!this.active}
-  changed(){this.refresh();this.onChange()}
+  changed(){this.record();this.refresh();this.onChange()}
   selection(){return Object.fromEntries(Object.entries(this.state).filter(([,s])=>s!=null).map(([k,s])=>[k,[...s]]))}
+  /* Committed state per scope, a temporary preview over it, and per-scope undo history of committed changes. */
+  committed(){return this.states.get(this.scope)||{}}
+  snapshot(state=this.state){return JSON.stringify(Object.entries(state).filter(([,s])=>s!=null).map(([k,s])=>[k,[...s].sort()]).sort((a,b)=>a[0]<b[0]?-1:1))}
+  restore(text){return Object.fromEntries(JSON.parse(text).map(([k,v])=>[k,new Set(v)]))}
+  history(){let h=this.histories.get(this.scope);if(!h)this.histories.set(this.scope,h={undo:[],redo:[],last:undefined});return h}
+  record(){
+    if(this.previewing)return;
+    const h=this.history(),now=this.snapshot();
+    if(h.last!=null&&h.last!==now){h.undo.push(h.last);h.redo.length=0;if(h.undo.length>200)h.undo.shift()}
+    h.last=now;
+  }
+  apply(state){this.previewing=false;this.state=state;this.states.set(this.scope,state);this.changed()}
+  preview(state){this.previewing=true;this.state=state;this.refresh();this.onChange()}
+  endPreview(){if(!this.previewing)return;this.previewing=false;this.state=this.committed();this.refresh();this.onChange()}
+  step(from,to){
+    this.endPreview();const h=this.history();if(!h[from].length)return false;
+    h[to].push(h.last);h.last=h[from].pop();this.state=this.restore(h.last);this.states.set(this.scope,this.state);
+    this.refresh();this.onChange();return true;
+  }
+  undo(){return this.step('undo','redo')}
+  redo(){return this.step('redo','undo')}
 }
 if(typeof document!=='undefined'){
   document.addEventListener('pointerdown',e=>{if(active&&!active.popup?.contains(e.target)&&!active.button.contains(e.target))active.close()});

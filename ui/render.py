@@ -24,6 +24,7 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
                 .replace("/*ONBOARDING*/", (UI / "onboarding.js").read_text(encoding="utf-8"))
                 .replace("/*STORAGE*/", (UI / "storage.js").read_text(encoding="utf-8"))
                 .replace("/*REPORT_FILTERS*/", (UI / "report_filters.js").read_text(encoding="utf-8"))
+                .replace("/*QUICK_FILTER*/", (UI / "quick_filter.js").read_text(encoding="utf-8"))
                 .replace("/*SAMPLES*/{}", json.dumps(downloads(), separators=(",", ":")))
                 .replace("/*HAS_REPORT*/true", json.dumps(has_report))
                 .replace("/*RUN_ID*/null", json.dumps(run["id"] if run else None)))

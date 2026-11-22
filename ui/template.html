@@ -508,6 +508,78 @@ input[type=checkbox]:disabled{opacity:.45;cursor:not-allowed}
 .fx .fi{width:34px;display:grid;place-items:center;border-right:1px solid var(--line2);font:italic 500 13px var(--serif);color:var(--ink3)}
 .fx .fv{padding:0 10px;display:flex;align-items:center;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tw{overflow:auto;max-height:calc(100vh - 340px);min-height:220px;outline:0}
+/* quick filter (ui/quick_filter.js): formula-bar chips, live query editor, cell selection, guide */
+.fx .fv{cursor:text}
+.fx .qf{display:flex;align-items:center;gap:5px;flex:0 1 auto;max-width:64%;min-width:0;padding:0 8px;border-left:1px solid var(--line);overflow:hidden;cursor:text;white-space:nowrap}
+.fx .qf:empty{display:none}
+.fx.qf-has-sel .fv{display:none}
+.fx.qf-has-sel .qf{flex:1;max-width:none;border-left:0}
+.fx.qf-editing{height:auto;min-height:28px;box-shadow:inset 0 0 0 2px var(--accent);position:relative;z-index:6}
+.fx.qf-editing .nb{background:var(--accent);color:var(--accent-ink)}
+.fx.qf-editing .fv{display:none}
+.fx.qf-editing .qf{flex:1;max-width:none;padding:0;border-left:0;align-items:stretch;white-space:normal;overflow:visible}
+.qf kbd,#qfGuideBtn kbd,.qf-sugg kbd,.qf-guide kbd,.qf-sg-f kbd{font:500 10.5px/1.45 var(--mono);border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:0 4px;background:var(--surface);color:var(--ink2);white-space:nowrap}
+#qfGuideBtn kbd{margin-left:2px;background:transparent}
+#qfGuideBtn svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+.qf code,.qf-guide code{font:500 11.5px var(--mono);background:var(--sunken);border-radius:4px;padding:0 4px}
+.qf-ph{color:var(--ink3);font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.qf-hud{color:var(--ink);overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.qf-keys{display:inline-flex;gap:4px;align-items:center;color:var(--ink3);font-size:11.5px;flex:none;margin-right:6px}
+.qf-chip{display:inline-flex;align-items:center;gap:3px;height:20px;border-radius:6px;padding:0 3px 0 7px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);font:500 11.5px var(--font);cursor:pointer;white-space:nowrap;flex:none}
+.qf-chip button{all:unset;cursor:pointer;width:15px;text-align:center;border-radius:4px;opacity:.7;line-height:15px}
+.qf-chip button:hover{background:rgba(0,0,0,.08);opacity:1}
+.qf-chip.neg{background:#fdecee;color:var(--bad);border-color:#f5c2c7}
+.qf-chip.qf-clear{background:var(--surface);color:var(--ink3);border-color:var(--line2);padding:0 7px}
+.qf-chip.qf-clear:hover{color:var(--ink)}
+.qf-edit{flex:1;display:flex;flex-direction:column;gap:3px;padding:4px 10px 5px;min-width:0}
+.qf-input{border:0;outline:0;background:transparent;font:500 13.5px var(--mono);color:var(--ink);padding:1px 0;width:100%}
+.qf-pills{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:11.5px;min-height:18px}
+.qf-pill{border-radius:6px;padding:0 7px;line-height:18px;background:var(--accent-soft);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 28%,transparent);white-space:nowrap}
+.qf-pill em{font-style:normal;opacity:.7}
+.qf-pill.neg{background:#fdecee;color:var(--bad);border-color:#f5c2c7}
+.qf-pill.err{background:var(--surface);border-style:dashed;color:var(--bad);border-color:var(--bad)}
+.qf-op{font:600 10.5px var(--mono);color:var(--ink3)}
+.qf-hint{color:var(--warn);display:inline-flex;gap:5px;align-items:center}
+.qf-hint button{all:unset;cursor:pointer;text-decoration:underline}
+.qf-tip{color:var(--ink3)}
+.qf-readout{display:flex;flex-direction:column;justify-content:center;align-items:flex-end;padding:0 12px;font:500 12px var(--mono);color:var(--ink2);border-left:1px solid var(--line);white-space:nowrap;min-width:150px}
+.qf-readout b{color:var(--ink);font-weight:600}
+.qf-readout small{font:400 10.5px var(--font);color:var(--ink3)}
+.qf-sugg{position:fixed;z-index:10001;width:440px;max-height:380px;overflow:auto;background:var(--surface);border:1px solid var(--line2);border-radius:10px;box-shadow:0 12px 32px -8px rgba(18,21,40,.25);padding:4px;font-size:12.5px}
+.qf-sugg[hidden]{display:none}
+.qf-sg-h{font-size:10.5px;letter-spacing:.06em;color:var(--ink3);padding:6px 8px 3px;text-transform:uppercase;display:flex;justify-content:space-between}
+.qf-sg-i{display:flex;gap:8px;align-items:center;padding:4px 8px;border-radius:6px;cursor:pointer}
+.qf-sg-i span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qf-sg-i small{font:400 11px var(--mono);color:var(--ink3);white-space:nowrap}
+.qf-sg-i:hover{background:var(--sunken)}
+.qf-sg-i.on{background:var(--accent);color:var(--accent-ink)}.qf-sg-i.on small{color:var(--accent-ink)}
+.qf-sg-f{display:flex;gap:10px;padding:6px 8px 3px;border-top:1px solid var(--line);margin-top:4px;color:var(--ink3);font-size:11px}
+tbody td.qf-sel{background:#dfe6ff!important;outline:1.5px dashed var(--accent);outline-offset:-2px}
+tbody tr.qf-dim td:not(.rn){opacity:.28}
+.qf-fly{position:fixed;z-index:10002;pointer-events:none;background:var(--accent);color:var(--accent-ink);font:500 11px var(--font);padding:2px 8px;border-radius:99px;transform:translate(-50%,-50%);transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .6s ease-in;box-shadow:0 6px 16px -4px color-mix(in srgb,var(--accent) 50%,transparent);white-space:nowrap}
+.qf-fly.neg{background:var(--bad)}
+.qf-pulse{animation:qfPulse .8s ease-out}
+@keyframes qfPulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 60%,transparent)}100%{box-shadow:0 0 0 12px transparent}}
+.qf-guide{position:fixed;right:0;top:0;bottom:0;width:420px;background:var(--surface);border-left:1px solid var(--line2);box-shadow:-12px 0 32px -16px rgba(18,21,40,.3);z-index:9000;display:flex;flex-direction:column;transform:translateX(105%);visibility:hidden;transition:transform .2s,visibility .2s}
+.qf-guide.on{transform:none;visibility:visible}
+.qf-guide header{display:flex;align-items:flex-start;gap:8px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.qf-guide header div{flex:1}
+.qf-guide h2{font:500 21px/1.2 var(--serif);margin:0}
+.qf-guide header p{margin:2px 0 0;color:var(--ink3);font-size:12.5px}
+.qf-gtabs{display:flex;gap:4px;padding:8px 16px 0;border-bottom:1px solid var(--line)}
+.qf-gtabs button{all:unset;cursor:pointer;padding:6px 10px;color:var(--ink3);font-size:12.5px}
+.qf-gtabs button[aria-selected=true]{color:var(--ink);font-weight:600;box-shadow:inset 0 -2px 0 var(--accent)}
+.qf-gbody{overflow:auto;padding:12px 16px 30px;flex:1;font-size:12.5px;line-height:1.5}
+.qf-gbody>p{margin:0 0 10px;color:var(--ink2)}
+.qf-step{border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:8px}
+.qf-step h4{margin:0 0 4px;font-size:13px}
+.qf-step p{margin:3px 0;color:var(--ink2)}
+.qf-step .btn.sm{height:24px;font-size:11.5px;padding:0 8px;margin-left:4px}
+.qf-expect{color:var(--ok)!important}
+.qf-gt{border-collapse:collapse;width:100%;font-size:12px;margin-bottom:10px}
+.qf-gt th,.qf-gt td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.qf-gt th{color:var(--ink3);font-weight:500}
+.qf-note{color:var(--ink3)}
 table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%;font-size:13px}
 th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 8px;white-space:nowrap}
 th{position:sticky;z-index:3;background:var(--sunken);font-weight:500;color:var(--ink3);text-align:left;user-select:none}
@@ -1654,6 +1726,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <span class="rh-meta"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></span>
       <div class="seg" id="overviewMonths" role="group" aria-label="Month"></div>
       <div id="unitTools"><span class="l" id="unitLabel">Display</span><div class="seg" id="reportUnit" role="group" aria-label="Report unit"><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div></div>
+      <button class="btn" id="qfGuideBtn" type="button" aria-haspopup="dialog" aria-expanded="false" title="Quick filter guide (?)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4 1.5v-8z"/></svg>Quick filter<kbd>?</kbd></button>
       <button class="btn" id="exportBtn"><svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14"/></svg>Export CSV</button>
     </div>
   </header>
@@ -1863,6 +1936,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 
 <script>
 /*REPORT_FILTERS*/
+/*QUICK_FILTER*/
 (() => {
 const HAS_REPORT = /*HAS_REPORT*/true;
 const SAMPLES = /*SAMPLES*/{};
@@ -1989,6 +2063,7 @@ function table({t,cols,rows,sort,onSort,foot,emptyMsg,onSelect,groups}){
       e.preventDefault();st.on=true;st.r=Math.max(0,Math.min(st.nr-1,st.r+d[0]));st.c=Math.max(0,Math.min(st.nc-1,st.c+d[1]));st.paint(true);st.onSelect&&st.rows[st.r]&&st.onSelect(st.rows[st.r],st.c)});
   }
   st.r=Math.min(st.r,Math.max(0,rows.length-1));st.paint();
+  T.dispatchEvent(new CustomEvent('sheet:render'));
 }
 const cmp=(k,d)=>(a,b)=>{const x=a[k],y=b[k];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y):x-y)*d};
 
@@ -2090,6 +2165,11 @@ function drawB(){
   $('#bPrev').disabled=!pg;$('#bNext').disabled=(pg+1)*PS>=rows.length;
 }
 $('#bPrev').onclick=()=>{pg--;drawB()};$('#bNext').onclick=()=>{pg++;drawB()};drawB();
+/* Quick filter: each sheet names the Brand / Parent SKU / Town path of a row; dimension columns select just their value. */
+FSNEQuick.init({toast,guideButton:$('#qfGuideBtn')});
+const flatPath=r=>[['brand',r.brand],['parent',r.parent],['town',r.town]];
+const columnDim=(cols,map)=>c=>map[cols[c]?.k];
+FSNEQuick.attach('#bT',{group:batchFilters,sheetState:()=>SHEETS['#bT'],path:flatPath,colDim:columnDim(bcols,{Town:'town','Brand Name':'brand',material_desc:'parent'}),noun:'batches'});
 
 
 
@@ -2149,6 +2229,7 @@ function drawTransfer(){
   drawTransferDest();
 }
 $('#tfPrev').onclick=()=>{tfPg--;drawTransfer()};$('#tfNext').onclick=()=>{tfPg++;drawTransfer()};
+FSNEQuick.attach('#tfT',{group:transferFilters,sheetState:()=>SHEETS['#tfT'],path:flatPath,colDim:columnDim(tfSrcCols,{town:'town',brand:'brand',material:'parent'}),noun:'source batches'});
 function exportTransfer(){
   const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
   const head=['snapshot_id','source_town','material_code','material','brand','source_batch','source_rsl_days','source_stock_kl','source_exposure_kl','source_exposure_bdt','assessment_kind','assessment_days','batch_remaining_keep_kl','batch_remaining_plan_kl','dest_town','proposed_kl','two_town_remaining_keep_kl','two_town_remaining_move_kl','net_improvement_kl','spare_sales_kl','existing_stock_kl','child_rate_kl_month','result','rejection_counts','policy_version'];
@@ -2207,6 +2288,7 @@ function drawSP(){
   spExplain();
 }
 $('#spPrev').onclick=()=>{spPg--;drawSP()};$('#spNext').onclick=()=>{spPg++;drawSP()};
+FSNEQuick.attach('#spT',{group:salesFilters,sheetState:()=>SHEETS['#spT'],path:flatPath,colDim:columnDim(spCols,{town:'town',brand:'brand',material:'parent'}),noun:'pools'});
 function exportSP(){
   const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v,S=SALESPUSH.scenarios;
   const head=['snapshot','town','material_code','material','brand','batches','stock_kl','baseline_kl_week','simple_required_kl_week','required_total_kl_week','required_incremental_kl_week','required_uplift','solver_status','review_state','reason_codes','required_vs_observed_peak','observed_peak_kl_week','observed_peak_month','recent_3m_kl_week','recent_months_observed','history_window_months','history_observed_months','calendar_gap_months','winsorized_months','ambiguous_peak_months',...S.flatMap(c=>[c.id+'_sales_kl',c.id+'_residual_kl']),'deadline_kind','deadline_days','deadline_date','rate_basis','max_uplift_searched','uplift_tolerance','history_caveats','assumption_note','policy_version'];
@@ -2641,6 +2723,7 @@ const togBrand=b=>{open.has(b)?open.delete(b):open.add(b);drawM();const e=$(`#mT
 $('#mT').closest('.tw').addEventListener('click',e=>{const g=e.target.closest('.tg');if(!g)return;e.stopPropagation();togBrand(g.dataset.tg)},true);
 $('#mExp').onclick=e=>{const all=e.currentTarget.dataset.all;B.forEach(r=>{if(r.now>=minStock&&r.kids.length)all?open.delete(r.brand):open.add(r.brand)});drawM()};
 drawNote();drawScale();drawRsl();drawM();
+FSNEQuick.attach('#mT',{group:moveFilters,sheetState:()=>SHEETS['#mT'],path:r=>r.parent?[['brand',r.brand],['parent',r.code]]:[['brand',r.brand]],tree:true,noun:'town–parents'});
 
 /* overview report: national stock first, then each RSL group, then Exposure, LND FC and the
    change since the previous saved month. Totals sum every RSL group in the selected unit, and
@@ -3140,6 +3223,9 @@ function openStatusChart(n){
   $('#mv').hidden=false;$('#mvClose').focus();
 }
 drawStatus();
+const statusOrder=()=>statusView==='town'?['town','brand','parent']:statusView==='brand-town'?['brand','town','parent']:['brand','parent','town'];
+FSNEQuick.attach('#sT',{group:statusFilters,sheetState:()=>SHEETS['#sT'],tree:true,noun:'town–parent rows',
+  path:n=>n.id==='total'?[]:statusOrder().slice(0,n.level+1).map(d=>[d,d==='parent'?n.parentCode:n[d]])});
 
 /* Show data: the brand-status page itself, moved into a full-screen dialog and limited to the rows behind a Sankey node or band. */
 const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
@@ -3512,6 +3598,7 @@ function fitRescue(){
   const top=tw.getBoundingClientRect().top+$('main').scrollTop-$('main').getBoundingClientRect().top;
   tw.style.maxHeight=Math.max(200,Math.floor($('main').clientHeight-top-14))+'px';
 }
+FSNEQuick.attach('#rT',{group:planFilters,sheetState:()=>SHEETS['#rT'],tree:true,noun:'batches',path:n=>n.id==='all'?[]:n.id.split('\u0001').slice(1).map((v,i)=>[RC_ORDER[rcOrder][i],v])});
 function drawRescue(){
   const has=RCR.length>0,pg=rcMeta();$('#rcEmpty').hidden=has;
   $('#rcEmpty').textContent=RESCUE.rows?`No ${pg.label} batches${pg.exposure_only?' with exposure':''} in this run.`:'This run was calculated before this report existed. Start a new run to see it.';
@@ -3750,6 +3837,7 @@ function fitNotActionables(){
   const tw=$('#naT').closest('.tw'),main=$('main'),top=tw.getBoundingClientRect().top+main.scrollTop-main.getBoundingClientRect().top;
   tw.style.maxHeight=Math.max(200,Math.floor(main.clientHeight-top-14))+'px';
 }
+FSNEQuick.attach('#naT',{group:notActionableFilters,sheetState:()=>SHEETS['#naT'],tree:true,noun:'batches',path:n=>JSON.parse(n.id).slice(0,3).map((v,i)=>[['brand','parent','town'][i],v])});
 function naResetSelection(){if(SHEETS['#naT'])SHEETS['#naT'].on=false}
 $('#naMonth').onchange=e=>{naMonth=+e.target.value;naOpen.clear();naResetSelection();drawNotActionables()};
 $('#naRsl').onchange=e=>{naBand=e.target.value;naResetSelection();drawNotActionables()};
