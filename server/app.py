@@ -46,6 +46,7 @@ from ui.not_actionables_data import COLS as NOT_ACTIONABLE_COLS
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import extract_legacy, render
 from ui.rescue_data import CURRENT_COLS, with_current_plans
+from ui.status_data import with_categories
 
 from . import runs as runs_mod
 from . import storage
@@ -371,6 +372,12 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 if data.get('NOTACTIONABLES', {}).get('cols') != NOT_ACTIONABLE_COLS:
                     # Upgrade this derived view from private snapshots; preserve all frozen results.
                     data['NOTACTIONABLES'] = not_actionables_payload(read_raw_reports(run / 'history'))
+                    changed = True
+                if data.get('STATUS', {}).get('total') and 'facets' not in data['STATUS']:
+                    data['STATUS'] = with_categories(
+                        data['STATUS'], read_raw_reports(run / 'history'),
+                        current=pl.read_parquet(run / 'output' / 'inferred_report.parquet'),
+                    )
                     changed = True
                 if changed:
                     tmp = run / 'data.json.tmp'

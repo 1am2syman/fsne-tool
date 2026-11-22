@@ -25,7 +25,7 @@ from ui.render import render
 from ui.rescue_data import build_pages as action_plan_pages
 from ui.run_rate_data import build_current
 from ui.sales_push_data import build_payload as sales_push_payload
-from ui.status_data import build_payload
+from ui.status_data import build_payload, with_categories
 from ui.transfer_data import build_payload as transfer_payload
 
 d = pathlib.Path(__file__).parent
@@ -54,10 +54,11 @@ if _args.frozen:
         status = existing['STATUS']
     except (OSError, ValueError, KeyError) as exc:
         raise SystemExit('Frozen dashboard data could not be read; accepted results are unchanged') from exc
-    # These views depend on frozen stock/rates, never on manual plan entries.
-    # Only a changed movement window needs the all-stock status data re-windowed.
-    if status['labels'] != [m.strftime('%b %Y') for m in status_months]:
+    # All-stock totals stay frozen; category facts follow accepted plan statuses.
+    if (status['labels'] != [m.strftime('%b %Y') for m in status_months]
+            or not {'groups', 'total', 'total_kl'} <= status.keys()):
         status = build_payload(HIST, status_months)
+    status = with_categories(status, raw_history, current=pl.read_parquet(OUT / 'inferred_report.parquet'))
     payload = {**existing, 'SERIES': series, 'STATUS': status}
     # The action plan pages depend only on this run's frozen report, last month's saved plans and
     # its shelf-life file, so rebuilding them here is idempotent and upgrades older runs.

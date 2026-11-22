@@ -16,7 +16,7 @@
   ];
   const state = { lens: 'exposure', unit: 'bdt', hide10: false, gap: GAP.start, asOf: null, reportUnits: false };
   const cache = new Map();
-  const filters = { town: [], parent: [], material: [], brand: [], rsl: [] };
+  const filters = { town: [], parent: [], material: [], brand: [], rsl: [], category: [] };
   let reportScope = {}, filterSeq = 0, materialLabels = {};
   const filterCatalogs = new Map();
   const filterDropdowns = new Map();
@@ -461,6 +461,7 @@
       const trail = drill ? [...drill.trail] : [];
       env.showData({
         lens: state.lens, title: info.label, snapshot, group,
+        categories: [...(entry.payload.filters?.category || [])],
         scope: [lensById(state.lens).short, month, ...trail].filter(Boolean).join(' · '),
         leaves: [...rows].map(([leaf, amount]) => [...JSON.parse(leaf), amount]),
       });

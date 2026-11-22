@@ -109,13 +109,15 @@ hierarchy row and the national footer. Stock movement retains its start→latest
 stock column; DOH does not replace it.
 
 ```text
-DOH = latest all-stock cohort KL with known demand
+DOH = latest selected stock-category cohort KL with known demand
       / sum of relevant distinct town-parent adjusted monthly rates × 30
 ```
 
-Each town-parent appears once in the payload, with stock quantities for its RSL
-groups. Status DOH includes all RSL groups and mitigation statuses, independent
-of the displayed stock/exposure/LND metric and BDT/KL unit. Town, brand, expanded
+Each town-parent appears once in the rate payload, with stock quantities for its RSL
+groups. Status DOH includes all RSL groups and follows the Stock category, Town,
+Brand and Parent SKU filters. Selecting multiple categories sums their stock before
+counting the town-parent rate once. With no category filter it includes all statuses.
+It is independent of the displayed stock/exposure/LND metric and BDT/KL unit. Town, brand, expanded
 parent and total values are independently recalculated from those
 cohorts, never averaged from batch or brand DOH. Known zero rates remain zero.
 A town-parent assigned to multiple brands or duplicate rate rows fails validation.
@@ -134,9 +136,9 @@ A town-parent assigned to multiple brands or duplicate rate rows fails validatio
 - Mixed known zero/positive rates: pooled DOH using their summed rate, not a claim
   that stock can physically move between towns/products.
 
-This is historical cover for the latest **all-stock cohort with known demand**,
+This is historical cover for the latest **selected cohort with known demand**,
 not a promise of consumption before expiry. DOH column sorting is available in
-both status reports; the national footer remains national when search is active.
+both status reports; the footer is recalculated from the selected stock and distinct rates.
 
 ## Click-to-explain overlay
 

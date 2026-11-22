@@ -176,7 +176,15 @@ class RunLifecycleTests(unittest.TestCase):
 
         with patch('server.action_plans.subprocess.run', side_effect=calculate):
             meta = self.store.cycle.accept(self.run_id, checked['token'], 'test')
-        data = json.loads((self.run_dir / 'data.json').read_text())['NOTACTIONABLES']
+        result = json.loads((self.run_dir / 'data.json').read_text())
+        data = result['NOTACTIONABLES']
+        # Status filters refresh at acceptance using the same private statuses.
+        facets = result['STATUS']['facets']
+        non = next(r for r in facets if r['category'] == 'Non actionable')
+        self.assertEqual(sum(cell[0] for cell in non['m'][-1]), 200)
+        self.assertEqual(sum(cell[0] for cell in non['m'][0]), 100)
+        actionable = next(r for r in facets if r['category'] == 'Actionable')
+        self.assertEqual(sum(cell[0] for cell in actionable['m'][-1]), 100)
         self.assertEqual([r['batch'] for r in rows(data)], ['Batch 1'])
         self.assertEqual([r['batch'] for r in rows(data, 0)], ['Batch 0'])
         self.assertEqual(rows(data)[0]['stock_bdt'], 200)

@@ -6,9 +6,12 @@ Percentages are calculated from summed BDT, never averaged from batch percentage
 """
 import polars as pl
 
+from .io import date as parse_date
+from .stock_categories import category, status_column
+
 ORDER = ['< 3M', '3M - 6M', '6M - 10M', '> 10M']
 METRICS = ['stock', 'exposure', 'lnd']
-KEYS = ['month', 'town', 'brand', 'parent', 'description', 'rsl']
+KEYS = ['month', 'town', 'brand', 'parent', 'description', 'rsl', 'category']
 
 
 def normalise(frame: pl.DataFrame, unit: str = "bdt") -> pl.DataFrame:
@@ -16,13 +19,14 @@ def normalise(frame: pl.DataFrame, unit: str = "bdt") -> pl.DataFrame:
         return pl.col(name).cast(pl.String).str.strip_chars().replace('', None)
 
     return frame.select(
-        text('report_date').str.slice(0, 10).str.to_date(strict=False).alias('date'),
+        parse_date('report_date').alias('date'),
         text('Town').fill_null('Unknown town').alias('town'),
         text('Brand Name').fill_null('Unknown brand').alias('brand'),
         pl.coalesce(text('parent_material_code'), text('Material Code')).fill_null('Unknown parent').alias('parent'),
         text('Material Code').alias('material'),
         text('material_desc').alias('description'),
         text('rsl_group').fill_null('Unknown').alias('rsl'),
+        category(status_column(frame)),
         *[pl.col(source).cast(pl.Float64, strict=True).fill_null(0).alias(target)
           for source, target in zip([f'total_closing_stock_{unit}', f'exposure_{unit}', f'lnd_fc_{unit}'], METRICS, strict=True)],
     ).filter(pl.col('date').is_not_null())
