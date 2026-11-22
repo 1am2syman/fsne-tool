@@ -67,13 +67,13 @@ New calculations save both `history/snapshot.parquet` (the frozen monthly data w
 
 After updating this version, restart the app server and refresh the browser to load the storage behavior and current UI.
 
-Each run is isolated under `<FSNE_RUNS_DIR>/RUN-0001/` (`Documents/FSNE/runs/RUN-0001/` by default) with `input/`, `output/`, `history-source/`, private `history/`, `data.json`, `meta.json` and `log.txt`. Start run freezes copies of settled prior months before queueing. The run's frozen `history/snapshot.parquet` is authoritative when present, with `history/snapshot.xlsx` retained for Excel workflows and older runs; the shared history files are its published records. Movement carries previous-calendar-month labels by its shortened batch key, separately from the export's exact join. New batches stay unlabelled. Movement measures the Actionable cohort and retains the latest month even when every uploaded status is blank. Archiving sets aside an unsettled attempt in Archived runs; settled records remain in Settled months. All run folders stay under the same runs directory. A settled run must be reopened before deletion. Replacing or removing a shared export materializes older runs' symlinks so those dashboards remain readable. Deletion retries read-only private files; a still-open Excel file yields a close-and-retry message and the run stays listed. The server never modifies `sample_input/`.
+Each run is isolated under `<FSNE_RUNS_DIR>/RUN-0001/` (`Documents/FSNE/runs/RUN-0001/` by default) with `input/`, `output/`, `history-source/`, private `history/`, `data.json`, `meta.json` and `log.txt`. Start run freezes copies of settled prior months before queueing. The run's frozen `history/snapshot.parquet` is authoritative when present, with `history/snapshot.xlsx` retained for Excel workflows and older runs; the shared history files are its published records. Movement carries previous-calendar-month labels by its shortened batch key, separately from the export's exact join. New batches stay unlabelled. Movement measures **all saved stock**, including Good stock, Not actionable, Incorrect Stock, blank and unrecognised statuses. Each calendar month uses its latest saved snapshot; status edits cannot change stock totals or physical new-batch membership. **Net reduction on existing batches** is opening stock minus current stock on previously present keys; it can be negative and does not prove sales or disposal. Net change includes new keys. CSV exports the matching Brand, Parent SKU, Town and RSL scope for all months in both BDT and KL at saved precision. On first open after this update, an older completed run refreshes its cached movement and filters from its private snapshots, retaining its frozen stock, prices, report and demand data. Archiving sets aside an unsettled attempt in Archived runs; settled records remain in Settled months. All run folders stay under the same runs directory. A settled run must be reopened before deletion. Replacing or removing a shared export materializes older runs' symlinks so those dashboards remain readable. Deletion retries read-only private files; a still-open Excel file yields a close-and-retry message and the run stays listed. The server never modifies `sample_input/`.
 
 The cycle's E2E checks use real HTTP requests, pipeline calculations, Excel downloads and temporary git repositories, followed by widescreen browser interactions and screenshots. Run `uv run python -m tests.e2e_action_plan_cycle`, then `node tests/e2e_action_plan_cycle.cjs`. The browser script needs Chromium and `playwright-core` (install with `npm install --prefix validation-artifacts/run-upload playwright-core`). Evidence is saved under `validation-artifacts/action-plan/`. Both checks exercise the cycle end to end.
 
 The current dashboard needs saved history for movement comparisons and secondary sales ending one month before the FSNE month; unsuitable inputs fail visibly instead of falling back to sample data. Legacy sample configurations without an `fsne_month` entry retain their original same-month convention when explicitly rebuilt. The static `ui/index.html` and static preview can display results, but uploads require the live server. The batch table is the top 400 stock rows; the Excel download contains all rows. Rotation stays at 2×, rates use all supplied months through the report date, and batch-key whitespace follows the source queries.
 
-In **brand-status** and **town-status**, each nonzero **>10M** bar spans the full cell and represents that cell's stock. The light red tail shows Exposure and the dark red tip shows L&D FC, each as a share of >10M stock. Hover an RSL cell for a table of stock, exposure and L&D values and percentages; for >10M the denominator is that cell's stock, while other RSL groups use the corresponding row total. The displayed cell value follows the selected metric and units.
+In **brand-status** and **town-status**, **Exposure** mode treats each cell as 100% of that cell's exposure, including **>10M**. Exposure uses the same light red as Stock mode's Exposure tail. The darker red segment has width = L&D FC ÷ that cell's Exposure. Its tooltip labels this denominator explicitly. **<3M** cells remain unshaded in every mode. Data labels are aligned inside the left edge of each status-report cell. **L&D FC** mode shows plain values without colour coding. **Stock** mode retains its RSL colours: each nonzero **>10M** bar spans the full cell and represents that cell's stock, with a light red Exposure tail and red L&D FC tip, each divided by that cell's stock. Hover an RSL cell for all three values. Displayed values follow the selected metric and units.
 
 In **rescue**, **rebalance** and **loading-watch**, right-click an **Exposure** or **LND FC** cell and choose **Show evolution**. The chart carries the row scope, units, report date and the report’s RSL group (3M–6M, 6M–10M or >10M). The same action works on Exposure/LND RSL cells and totals in **brand-status** and **town-status**. Within the Sankey, right-click a category or band and choose **Show RSL evolution**, or right-click an RSL group or band and choose **Show category evolution**. You can drill further within either selected view; **Back** restores the preceding graph, and Close returns to the report. Keyboard menus use **Shift+F10**. Any node or band also offers **Show data**, a full-screen brand-status view (Brand → Parent → Town by default, reorderable) limited to the rows behind that selection, at that node's snapshot month and scaled to the traced amount; see `docs/inventory-evolution.md`.
 
@@ -221,7 +221,7 @@ Only the final report files in `output/` (`inferred_report.*`, `comparison.*`, `
 Everything else is regenerable and gitignored: the other `output/*` files, `output/legacy-compare/`, `ui/index.html` and `validation-artifacts/`.
 
 ```bash
-# 1. movement history (inputs of ui/build.py), from the saved reports in history/
+# 1. optional movement exports from the saved reports in history/
 uv run python -m src movement_series  --history-dir history --output output/movement_series.parquet
 uv run python -m src movement_parents --history-dir history --output output/movement_parents.parquet
 # 2. adjusted report + run-rate/transfer/sales-push outputs + ui/index.html
@@ -242,16 +242,22 @@ uv run python -m src.compare_report --legacy --output-dir output/legacy-compare
 ## total-stock-movement (LM vs CM, by brand)
 
 ```bash
-uv run python -m src movement --data-dir sample_input --history-dir data/history --output output/movement.parquet
+uv run python -m src movement --history-dir history --output output/movement.parquet
 uv run python -m src movement_series --history-dir history --output output/movement_series.parquet   # last 6 months, every brand
 uv run python ui/build.py   # embeds the series in ui/index.html (brand x month heatmap)
 ```
 
-`src/movement.py` is fully columnar Polars (joins, one `group_by` per side, no row loops; ~40 ms for 27,891 batches).
-`Reduced from LM = LM Stock BDT - CM Closing Stock BDT (No New Inclusions)`; `Reduction % = Reduced / LM`.
-A CM batch is a *new inclusion* when its key (`batch_index` minus its last two hyphen segments) is absent from LM.
-LM is the saved report in `--history-dir` (parquet/csv/xlsx with the report columns) with the latest `report_date` before the current one.
+`src/movement.py` uses columnar Polars joins and aggregations over **all saved stock**. The latest snapshot in each calendar month is selected before comparing the last two months (`movement`) or the last six comparisons (`movement_series`). Planning labels do not filter the calendar or stock population. A single snapshot has closing stock but no available opening balance or reduction percentage.
 
-Not verifiable yet: no LM report or mitigation source exists in `sample_input/`. The mitigation file schema
-(`batch_index`, `mitigation_status_category`, `remarks`, file name containing "mitigation") is an assumption.
-Tests (`tests/test_movement.py`) use small hand-computed cases only.
+A CM batch is a *new inclusion* when its key (`batch_index` minus its last two hyphen segments) is absent from **all LM stock**. `Net reduction on existing batches = LM stock − CM stock on keys present in LM`; `Net reduction % = Net reduction / LM stock`. Negative reduction means existing keys grew. `Net change % = (CM closing stock − LM stock) / LM stock`, including new keys. These are inventory differences, not proven sales or disposal. RSL comparisons assign matched opening stock to the key's closing RSL group, so the groups add up to the full movement.
+
+The dashboard derives its BDT and KL series directly from private saved snapshots through `ui/movement_data.py`; the optional Parquet movement exports are not build prerequisites. Values retain saved precision and snapshot prices. Filters and CSV use the same facts, with CSV including both units for every month, brand, parent and total in the selected scope.
+
+Regression checks cover status-only edits, monthly snapshot selection, units, filters and cached upgrades of provisional, accepted and settled runs. To run the Python suite, install pytest into the development environment with `uv pip install pytest`, then run:
+
+```bash
+POLARS_MAX_THREADS=2 uv run python -m pytest -q tests
+node --test tests/*.test.cjs
+```
+
+These commands exclude the separately invoked `tests/e2e_*` scripts. For status UI changes, also validate a completed run in light mode at a widescreen laptop size. Keep temporary runs, exports, logs and screenshots in a task-owned temporary directory and remove them after validation; retain the maintained regression tests.

@@ -31,15 +31,15 @@ class MovementTest(unittest.TestCase):
             ("t1B-10.0-5.0", "X", 50.0, A, None),
             ("t2C-9.0-4.0", "Y", 80.0, A, None),
             ("t3D-1.0-1.0", "Z", 10.0, A, None),
-            ("t4E-1.0-1.0", "X", 999.0, N, None),  # filtered out of LM
+            ("t4E-1.0-1.0", "X", 999.0, N, None),  # all stock belongs to LM
         ])
         self.cm = frame([
             ("t1A-12.0-6.0", "X", 60.0, A, "Sales Push, Stock rotation"),
             ("t1N-12.0-6.0", "X", 25.0, A, "sales push "),
             ("t2C-9.5-4.5", "Y", 100.0, A, "Other"),
             ("t9Q-1.0-1.0", "W", 7.0, A, None),
-            ("t4E-2.0-2.0", "X", 500.0, A, "Late"),  # LM had it as Not actionable -> new
-            ("t5F-1.0-1.0", "X", 321.0, N, "ignored"),
+            ("t4E-2.0-2.0", "X", 500.0, A, "Late"),  # status changed; physical batch remains
+            ("t5F-1.0-1.0", "X", 321.0, N, "Review"),
         ])
 
     def row(self, out, brand):
@@ -48,9 +48,9 @@ class MovementTest(unittest.TestCase):
     def test_reduction_and_new_inclusions(self):
         out = transform(self.cm, self.lm)
         x = self.row(out, "X")
-        self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"]), (150.0, 60.0, 525.0))
-        self.assertEqual(x["reduced_bdt"], 90.0)
-        self.assertAlmostEqual(x["reduction_pct"], 0.6)
+        self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"]), (1149.0, 560.0, 346.0))
+        self.assertEqual(x["reduced_bdt"], 589.0)
+        self.assertAlmostEqual(x["reduction_pct"], 589 / 1149)
         y = self.row(out, "Y")
         self.assertEqual(y["reduced_bdt"], -20.0)  # increase is negative
         self.assertIsNone(y["cm_new_bdt"])
@@ -69,13 +69,13 @@ class MovementTest(unittest.TestCase):
         out = transform(self.cm, self.lm)
         self.assertEqual(out["brand"].to_list(), ["X", "Z", "Y", "W", TOTAL])
         t = self.row(out, TOTAL)
-        self.assertEqual((t["lm_stock_bdt"], t["cm_no_new_bdt"], t["cm_new_bdt"], t["reduced_bdt"]), (240.0, 160.0, 532.0, 80.0))
-        self.assertAlmostEqual(t["reduction_pct"], 80 / 240)
+        self.assertEqual((t["lm_stock_bdt"], t["cm_no_new_bdt"], t["cm_new_bdt"], t["reduced_bdt"]), (1239.0, 660.0, 353.0, 579.0))
+        self.assertAlmostEqual(t["reduction_pct"], 579 / 1239)
 
     def test_remarks_distinct_case_insensitive_first_seen(self):
         out = transform(self.cm, self.lm)
-        self.assertEqual(self.row(out, "X")["remarks"], "Sales Push, Stock rotation, Late")
-        self.assertEqual(self.row(out, TOTAL)["remarks"], "Sales Push, Stock rotation, Other, Late")
+        self.assertEqual(self.row(out, "X")["remarks"], "Sales Push, Stock rotation, Late, Review")
+        self.assertEqual(self.row(out, TOTAL)["remarks"], "Sales Push, Stock rotation, Other, Late, Review")
 
     def test_normalise_accepts_both_column_spellings(self):
         base = {"report_date": ["2026-07-31 00:00:00"], "batch_index": ["k"], "Brand Name": ["B"], "total_closing_stock_bdt": ["1.5"]}
@@ -94,7 +94,7 @@ class SeriesTest(unittest.TestCase):
             return f.with_columns(pl.lit(d).alias("report_date"))
 
         self.m = [
-            month(date(2026, 1, 31), [("a-1-1", "X", 5.0, "Not actionable", None)]),  # no Actionable: out of window
+            month(date(2026, 1, 31), [("a-1-1", "X", 5.0, "Not actionable", None)]),  # unlabelled/actionability does not constrain the calendar
             month(date(2026, 2, 28), [("a-1-1", "X", 100.0, "Actionable - rotation", None), ("b-1-1", "Y", 40.0, "Actionable - tbc", None)]),
             month(date(2026, 3, 31), [("a-2-2", "X", 70.0, "Actionable", "Push"), ("c-1-1", "X", 30.0, "Actionable", "push"), ("b-2-2", "Y", 10.0, "Actionable", None)]),
             month(date(2026, 4, 30), [("a-3-3", "X", 20.0, "Actionable", "Rotate"), ("c-2-2", "X", 50.0, "Actionable", None), ("d-1-1", "Z", 9.0, "Actionable", None)]),
@@ -105,8 +105,8 @@ class SeriesTest(unittest.TestCase):
         from src.movement import transform_series
 
         out = transform_series(self.make(), months=6)
-        self.assertEqual(min(out["month"].unique().to_list()).isoformat(), "2026-03-31")  # Feb is LM only
-        self.assertEqual(out["month"].n_unique(), 2)
+        self.assertEqual(min(out["month"].unique().to_list()).isoformat(), "2026-02-28")  # January is LM, regardless of status
+        self.assertEqual(out["month"].n_unique(), 3)
         # Mar: X LM 100, carried a (70), new c (30)
         x = out.filter((pl.col("brand") == "X") & (pl.col("month").dt.month() == 3)).row(0, named=True)
         self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"], x["reduced_bdt"]), (100.0, 70.0, 30.0, 30.0))
@@ -116,8 +116,8 @@ class SeriesTest(unittest.TestCase):
         z = out.filter((pl.col("brand") == "Z") & (pl.col("month").dt.month() == 4)).row(0, named=True)
         self.assertEqual((z["lm_stock_bdt"], z["cm_new_bdt"], z["reduced_bdt"]), (None, 9.0, None))
         # same numbers as the single-pair function
-        for d, (cm, lm) in {3: (self.m[2], self.m[1]), 4: (self.m[3], self.m[2])}.items():
-            pair = transform(cm, lm, ["Actionable - rotation", "Actionable - tbc", "Actionable"]).drop("remarks")
+        for d, (cm, lm) in {2: (self.m[1], self.m[0]), 3: (self.m[2], self.m[1]), 4: (self.m[3], self.m[2])}.items():
+            pair = transform(cm, lm).drop("remarks")
             ser = out.filter(pl.col("month").dt.month() == d).drop("month", "remarks")
             self.assertTrue(pair.sort("brand").equals(ser.sort("brand")), (d, pair, ser))
 
