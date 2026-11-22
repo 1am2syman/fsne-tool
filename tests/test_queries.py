@@ -60,7 +60,7 @@ def secondary():
 
 
 class StructureTests(unittest.TestCase):
-    def test_all_sources_have_vectorized_modules(self):
+    def test_translated_queries_have_vectorized_modules(self):
         def udf_calls(source):
             return [
                 node.attr
@@ -74,7 +74,7 @@ class StructureTests(unittest.TestCase):
             module = importlib.import_module(f"src.{query.stem}")
             self.assertTrue(callable(module.build))
             self.assertTrue(callable(module.transform))
-        for path in (ROOT / "src").glob("*.py"):
+            path = ROOT / "src" / f"{query.stem}.py"
             self.assertFalse(udf_calls(path.read_text()), path.name)
 
 

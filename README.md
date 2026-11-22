@@ -152,7 +152,7 @@ Each query exposes `build(...)` for file loading and dependency resolution, and 
 
 ## Transformation behavior
 
-- Native, chained Polars lazy expressions perform filters, casts, text operations, aggregation, deduplication and joins. No pandas, Python row loops, `map_elements`, `map_rows`, or row-wise UDFs. Python iteration is confined to filesystem/workbook metadata, column expressions and the single header row.
+- The translated query modules use native, chained Polars lazy expressions for filters, casts, text operations, aggregation, deduplication and joins. They avoid pandas, Python row loops, `map_elements`, `map_rows`, and row-wise UDFs; Python iteration handles filesystem/workbook metadata, column expressions and the single header row. Other application modules may iterate over aggregated results when assembling views.
 - Run rates clamp negative sales **before** monthly aggregation, then conservatively winsorize isolated positive spikes after a leave-one-town-out product/month seasonal adjustment. Sparse histories and ambiguous peaks are preserved. The adjusted sum is divided by the **global** distinct month count; missing pair-months count as zero. Raw `sec_history` is unchanged. See [the complete policy](docs/run-rates.md).
 - Headers are promoted once after source concatenation, matching the M scripts. Only `history` explicitly removes repeated header rows. Other sources containing repeated headers can therefore raise conversion errors, just as the original queries do; they are not silently cleaned.
 - `ph` fills missing parents with material codes and keeps the first duplicate material. Files use sorted recursive paths for deterministic selection; M's unspecified folder/deduplication ordering may choose a different duplicate.

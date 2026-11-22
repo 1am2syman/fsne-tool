@@ -1,5 +1,7 @@
 # Gates: run export and monthly upload fixes
 
+Historical record of an earlier investigation, not a current test plan. The upload-layout and new-month scripts listed below were removed after the upload flow changed; their results describe the earlier version only. See README.md for current verification commands.
+
 OWNS: server/runs.py, server/app.py, ui/template.html, ui/onboarding.js, tests/test_run_export_regression.py, tests/e2e_new_month.py, tests/e2e_upload_layout.cjs, tests/serve_upload_regression.py, README.md, RUN_UPLOAD_GATES.md
 
 Scope: deliver all seven requested changes; verify only end-to-end and targeted regression behavior. UI requires reviewed screenshots. No unit-test suite.
