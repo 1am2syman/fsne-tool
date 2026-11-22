@@ -110,6 +110,12 @@ aside{background:var(--surface);border-right:1px solid var(--line);display:flex;
 .item.subitem[aria-current=page]{box-shadow:none;border-left-color:var(--accent);border-left-width:2px;padding-left:13px}
 .item.subitem[aria-current=page]::before{display:none}
 .rail .item.subitem{display:none}
+.item .rk{display:none}
+.rail .item.subitem.rk-on{display:flex;margin:0;width:100%;padding:0;border-left:0;border-radius:8px;height:30px}
+.rail .item.subitem.rk-on[aria-current=page]{border-left:0;padding:0;background:var(--sunken);box-shadow:inset 0 0 0 1px var(--line)}
+.rail .item.subitem.rk-on[aria-current=page]::before{display:block}
+.rail .item.subitem.rk-on .rk{display:inline-block;font:600 12px/1 var(--mono);font-style:normal;letter-spacing:0}
+.rail .item.subitem.rk-on svg.rk{display:block;width:16px;height:16px}
 .rail .item span,.rail .group,.rail .brand-text,.rail .brand .brand-tag,.rail .item kbd,.rail .count,.rail .who{display:none}
 .rail .item{justify-content:center;padding:0}
 .rail .item[aria-current=page]::before{left:-9px}
@@ -1304,15 +1310,15 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <svg viewBox="0 0 24 24"><path d="M12 15V4m0 0L8 8m4-4l4 4M5 15v4h14v-4"/></svg><span>Monthly upload</span><b class="count" id="runCount"></b></button>
   <button class="item" data-view="reports" title="Reports">
     <svg viewBox="0 0 24 24"><path d="M4 4v16h16M8 16v-4m4 4V8m4 8v-6"/></svg><span>Reports</span></button>
-  <button class="item subitem" data-view="reports" data-r="overview">Overview</button>
+  <button class="item subitem rk-on" data-view="reports" data-r="overview" title="Overview (O)"><span>Overview</span><i class="rk">O</i></button>
   <button class="item subitem" data-view="reports" data-r="batch">total-batch-wise</button>
-  <button class="item subitem" data-view="reports" data-r="move">total-stock-movement</button>
-  <button class="item subitem" data-view="reports" data-r="town">town-status</button>
-  <button class="item subitem" data-view="reports" data-r="status">brand-status</button>
+  <button class="item subitem rk-on" data-view="reports" data-r="move" title="total-stock-movement (S)"><span>total-stock-movement</span><i class="rk">S</i></button>
+  <button class="item subitem rk-on" data-view="reports" data-r="town" title="town-status (T)"><span>town-status</span><i class="rk">T</i></button>
+  <button class="item subitem rk-on" data-view="reports" data-r="status" title="brand-status (B)"><span>brand-status</span><i class="rk">B</i></button>
   <button class="item subitem" data-view="reports" data-r="transfer">transfer-candidates</button>
   <button class="item subitem" data-view="reports" data-r="salespush">sales-push</button>
-  <button class="item subitem" data-view="reports" data-r="evolution">inventory-evolution</button>
-  <button class="item subitem" data-view="reports" data-r="not-actionables">not-actionables</button>
+  <button class="item subitem rk-on" data-view="reports" data-r="evolution" title="inventory-evolution"><span>inventory-evolution</span><svg class="rk" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h3v6H3zM3 15h3v4H3zM18 4h3v7h-3zM18 15h3v5h-3z"/><path d="M6 7c6 0 6 1 12 1M6 9c6 0 6 7 12 7M6 17c6 0 6-3 12-3"/></svg></button>
+  <button class="item subitem rk-on" data-view="reports" data-r="not-actionables" title="not-actionables (N)"><span>not-actionables</span><i class="rk">N</i></button>
   <button class="item" data-view="reports" data-group="ap" title="Action plans">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg><span>Action plans</span></button>
   <button class="item subitem" data-view="reports" data-r="rescue">rescue<small>3M–6M</small></button>

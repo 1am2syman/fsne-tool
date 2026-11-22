@@ -67,6 +67,10 @@ Evolution reads frozen snapshots, so its endpoint can differ from a report forec
 
 The server binds to localhost. Large HTML dashboards are gzip-compressed when the browser accepts gzip, so previews and live runs share the same delivery path without a separate preview server. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
 
+## Sidebar
+
+Press `[` or choose **Collapse** to shrink the sidebar to its icon rail; the width stays fixed and the choice is remembered. The collapsed rail keeps the main report shortcuts under **Reports**: **O** overview, **S** total-stock-movement, **T** town-status, **B** brand-status, a Sankey icon for inventory-evolution and **N** not-actionables. Other reports and action plans are reachable from the expanded sidebar.
+
 ## Report filters
 
 Detailed reports use three connected value filters: **Brand**, **Parent SKU**, and **Town**. Open a dropdown, search names or parent codes, and check the values to include. **(Select All)** toggles the displayed values; during search it applies to the search results. **Add current selection to filter** combines search results with the previous selection. **OK** applies changes; **Cancel**, Escape or clicking outside discards them. An empty selection cannot be applied. Use **Clear filter from…** for one field or the × button to clear the three fields.
