@@ -628,6 +628,6 @@ function init({toast:t,guideButton}={}){
 document.addEventListener('keydown',onKey);
 document.addEventListener('keyup',onKeyUp);
 addEventListener('blur',()=>{if(fDown){const {b}=fDown;fDown=null;b.group.endPreview();drawIdle(b)}});
-document.addEventListener('scroll',e=>{if(sugg&&!sugg.contains(e.target))hideSuggest()},true);
+document.addEventListener('scroll',e=>{if(sugg&&!sugg.hidden&&!sugg.contains(e.target))hideSuggest()},{capture:true,passive:true});
 root.FSNEQuick={...api,attach,init,openGuide,closeGuide,bindings};
 })(typeof window!=='undefined'?window:globalThis);
