@@ -23,6 +23,7 @@ from src.movement import (
 from src.rescue import PAGES, incumbent_trend, remark_outcomes, saved_report
 from ui.filter_data import enrich_payload
 from ui.not_actionables_data import COLS
+from ui.rescue_data import CURRENT_COLS
 
 
 def snapshot(day, rows):
@@ -253,7 +254,8 @@ def test_completed_run_lazy_upgrade_only_writes_payload(tmp_path, facts):
     raw, current, payload = facts
     raw = [f.with_columns(pl.col('total_closing_stock_kl').alias('lnd_fc_kl'),
                           pl.col('total_closing_stock_bdt').alias('lnd_fc_bdt')) for f in raw]
-    payload['ACTIONPLANS'] = {'rescue': {'trend': ['saved trend'], 'outcomes': {'window': ['Jan']}}}
+    payload['ACTIONPLANS'] = {'rescue': {'trend': ['saved trend'], 'outcomes': {'window': ['Jan']},
+                                       'cols': CURRENT_COLS, 'rows': []}}
     # This run already has movement filters but predates action-plan filters.
     older = enrich_payload(payload, raw, current)
     older['ACTIONPLANS']['rescue'].pop('filter_trend')

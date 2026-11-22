@@ -11,6 +11,7 @@ import polars as pl
 from src import report
 from src.io import matching_files
 from src.rescue import (
+    NO_ACTION,
     PAGES,
     PLAN_CATEGORIES,
     Page,
@@ -25,6 +26,33 @@ from src.rescue import (
 COLS = ['batch_index', 'brand', 'parent', 'pdesc', 'town', 'material', 'mdesc', 'batch', 'rsl',
         'exp_kl', 'exp_bdt', 'lnd_kl', 'lnd_bdt', 'cs', 'plan', 'status', 'has_plan']
 ROTATION = ['rot_kl', 'rot_bdt']  # loading-watch only: the report's rotation_req_*, after LND FC
+CURRENT_COLS = ['current_plan', 'current_status', 'current_has_plan']
+
+
+def with_current_plans(pages: dict[str, dict], snapshot: pl.DataFrame) -> dict[str, dict]:
+    """Attach private snapshot entries by exact batch key, without changing frozen measures or LM plans.
+
+    Snapshot entries can be carried labels before acceptance; the renderer exposes
+    upload provenance separately so they never count as accepted current plans.
+    Also upgrades cached page payloads without rebuilding any calculations.
+    """
+    entries = saved_report(snapshot)
+    result = {}
+    for key, page in pages.items():
+        current = entries.filter(pl.col('report_date').cast(pl.String) == page['date'])
+        keys = current['batch_index']
+        if keys.null_count() or (keys.str.strip_chars() == '').any() or keys.n_unique() != current.height:
+            raise ValueError('Current snapshot batch_index must be nonblank and unique')
+        plans = {r['batch_index']: (r['action_plan'], r['mitigation_status'],
+                                  bool(r['action_plan'] and r['action_plan'].lower() != NO_ACTION))
+                 for r in current.iter_rows(named=True)}
+        # Replace these columns when refreshing an already upgraded projection.
+        keep = [i for i, c in enumerate(page['cols']) if c not in CURRENT_COLS]
+        batch = page['cols'].index('batch_index')
+        result[key] = {**page, 'cols': [page['cols'][i] for i in keep] + CURRENT_COLS,
+                       'rows': [[row[i] for i in keep] + list(plans.get(row[batch], (None, None, False)))
+                                for row in page['rows']]}
+    return result
 
 
 def shelf_life_facts(data_dir: Path | None) -> tuple[pl.DataFrame | None, pl.DataFrame | None]:
@@ -67,8 +95,9 @@ def build_pages(current: pl.DataFrame, history: list[pl.DataFrame], data_dir: Pa
     regions, cases = shelf_life_facts(data_dir)
     if output_dir is not None:
         output_dir.mkdir(parents=True, exist_ok=True)
-    return {key: _page(page, current, saved, plans, snapshot, lm_date, regions, cases, output_dir)
-            for key, page in PAGES.items()}
+    pages = {key: _page(page, current, saved, plans, snapshot, lm_date, regions, cases, output_dir)
+             for key, page in PAGES.items()}
+    return with_current_plans(pages, saved)
 
 
 def _page(page: Page, current: pl.DataFrame, saved: pl.DataFrame, plans: pl.DataFrame, snapshot, lm_date,

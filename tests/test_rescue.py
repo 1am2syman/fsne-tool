@@ -181,7 +181,7 @@ class PagePayloadTest(unittest.TestCase):
             self.assertEqual(pl.read_parquet(out / 'loading_watch_batches.parquet')['batch_index'].to_list(), ['c-1-1'])
             self.assertEqual(pl.read_parquet(out / 'rebalance_batches.parquet')['has_plan'].to_list(), [True])
         lw = pages['loading-watch']
-        self.assertEqual(lw['cols'][-2:], ['rot_kl', 'rot_bdt'])
+        self.assertEqual([c for c in lw['cols'] if c.startswith('rot_')], ['rot_kl', 'rot_bdt'])
         self.assertEqual([dict(zip(lw['cols'], r, strict=True))['rot_kl'] for r in lw['rows']], [1.5])
         self.assertEqual(lw['rows'][0][lw['cols'].index('exp_kl')] - lw['rows'][0][lw['cols'].index('rot_kl')], 2.5)
         for key in ('rescue', 'rebalance'):

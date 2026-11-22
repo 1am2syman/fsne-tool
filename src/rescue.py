@@ -22,6 +22,7 @@ from datetime import date, timedelta
 
 import polars as pl
 
+from .io import date as parse_date
 from .movement import KEY, batch_key
 
 
@@ -90,7 +91,7 @@ def _text(frame: pl.DataFrame, name: str) -> pl.Expr:
 def saved_report(frame: pl.DataFrame) -> pl.DataFrame:
     """One schema for a saved workbook, whatever the June column rename."""
     return frame.select(
-        pl.col("report_date").cast(pl.String).str.slice(0, 10).str.to_date(strict=False),
+        parse_date("report_date"),
         pl.col("batch_index").cast(pl.String),
         batch_key(),
         pl.col("rsl_group").cast(pl.String).str.strip_chars(),
