@@ -1121,6 +1121,14 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #evoDialog #evStatus .evo-skel,#evoDialog #evStatus .evo-state{height:100%}
 #evoDialog .rc-legend{padding:12px 18px 6px;font-size:11px;gap:8px 18px}
 #evoDialog .legnote{padding:2px 18px 12px;font-size:10.5px;line-height:1.5}
+#scopeDialog{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:var(--canvas);color:var(--ink)}
+#scopeDialog[open]{display:flex;flex-direction:column}
+#scopeDialog::backdrop{background:var(--canvas)}
+#scopeDialogBody{flex:1;min-height:0;overflow:hidden;padding:20px 28px 22px}
+#scopeDialog #r-status:not([hidden]){height:100%;display:flex;flex-direction:column;min-height:0}
+#scopeDialog #sTools{flex:none}
+#scopeDialog #r-status>.sheet{flex:1;min-height:0;display:flex;flex-direction:column}
+#scopeDialog #r-status .tw{flex:1;height:auto;min-height:0}
 #reportEvolutionMenu{position:fixed;z-index:80;min-width:180px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 24px #0002}
 #reportEvolutionMenu[hidden]{display:none}
 #reportEvolutionMenu button{width:100%;border:0;background:transparent;color:var(--ink);padding:9px 12px;border-radius:5px;text-align:left;font:500 13px var(--font);cursor:pointer}
@@ -1731,7 +1739,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <button class="btn" id="sExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta" id="sCount"></span>
-      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>RSL bar width and solid colour depth = cell value ÷ row Total for the selected metric; 3–6M red, 6–10M amber, &gt;10M green</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>RSL bar width and solid colour depth = cell value ÷ row Total for the selected metric; 3–6M red, 6–10M amber, &gt;10M green</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
     </div>
     <div data-sheet="sT"></div>
   </div>
@@ -1776,6 +1784,10 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </section>
 </div>
 <div id="reportEvolutionMenu" role="menu" aria-label="Cell actions" hidden><button type="button" role="menuitem" id="showCellEvolution">Show evolution</button></div>
+<dialog id="scopeDialog" aria-labelledby="scopeDialogTitle" aria-describedby="scopeDialogScope">
+  <header class="evo-dialog-head"><div><h2 id="scopeDialogTitle">Show data</h2><p id="scopeDialogScope"></p></div><span class="sp"></span><button class="btn" id="scopeDialogClose" type="button" aria-label="Close data view">Back to chart</button></header>
+  <div id="scopeDialogBody"></div>
+</dialog>
 <dialog id="evoDialog" aria-labelledby="evoDialogTitle" aria-describedby="evoDialogScope">
   <header class="evo-dialog-head"><div><h2 id="evoDialogTitle">Inventory evolution</h2><p id="evoDialogScope"></p></div><span class="sp"></span><button class="btn" id="evoDialogExport" type="button">Export CSV</button><button class="btn" id="evoDialogClose" type="button" aria-label="Close inventory evolution">Back to report</button></header>
   <div id="evoDialogBody"></div>
@@ -1856,7 +1868,7 @@ function openEvolution(scope){
     if(request!==evoRequest||(scope&&!$('#evoDialog').open))return;
     const evolution=window.FSNE.evolution;
     if(scope)evoPrevious=evolution.captureScope();
-    return evolution.open({root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
+    return evolution.open({showData:showScopedData,root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
   }).catch(e=>{if(scope)$('#evoDialogScope').textContent='Could not load evolution: '+e.message;else toast(e.message)});
 }
 const ACTION_PLANS=['rescue','rebalance','loading-watch'];
@@ -2588,7 +2600,14 @@ let statusMetric=1,statusSort={k:'total',d:-1},statusFocus=null;
 const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),rows:()=>statusLeaves(STATUS.total),onChange:()=>{drawStatus();$('#mv').hidden=true}});
 statusFilters.use('town');
 const statusStates=new Map();
-function statusLeaves(root){return root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))))}
+/* While the scoped overlay is open, statusScope holds the JSON [town,brand,parent] keys of the rows it may show. */
+let statusScope=null;
+const statusLeafKey=(town,brand,parent)=>JSON.stringify([town,brand,String(parent)]);
+function statusLeaves(root){
+  const leaves=root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
+  return statusScope?leaves.filter(r=>statusScope.has(statusLeafKey(r.town,r.brand,r.parent))):leaves;
+}
+const statusPairs=()=>statusScope?SERIES.doh.pairs.filter(p=>statusScope.has(statusLeafKey(p.t,p.b,p.p))):SERIES.doh.pairs;
 function filteredStatusTree(){
   const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
   const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:STATUS.labels.map(()=>null),kids:[]};
@@ -2610,11 +2629,11 @@ function filteredStatusTree(){
 }
 function setStatusView(view){
   statusStates.set(statusView,{metric:statusMetric,sort:statusSort,open:statusOpen});
-  const key=view==='town'?'town':'brand-'+$('#sOrder').value;
+  const order=$('#sOrder').value,key=view==='town'||order==='town-first'?'town':'brand-'+order;
   const state=statusStates.get(key)||{metric:statusMetric,sort:{k:'total',d:-1},open:new Set()};
   statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
-  statusFilters.use(key==='town'?'town':'brand');
-  $('#sOrder').hidden=key==='town';$('#sMetric').value=String(statusMetric);
+  statusFilters.use(statusScope?'scoped':key==='town'?'town':'brand');
+  $('#sOrder').hidden=view==='town';$('#sMetric').value=String(statusMetric);
   $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
   $('#sSort option[value="name:1"]').textContent=key==='town'?'Town A–Z':'Brand A–Z';
   if(SHEETS['#sT'])SHEETS['#sT'].on=false;
@@ -2664,7 +2683,7 @@ function statusName(n){
 }
 function drawStatus(){
   statusRoot=filteredStatusTree();statusNodes=new Map();indexStatus(statusRoot);
-  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,SERIES.doh.pairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
+  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,statusPairs()),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
   const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
   const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
   function visit(n){
@@ -2685,7 +2704,7 @@ function drawStatus(){
   table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.'});
-  if(statusMetric===1||statusMetric===2){
+  if(!statusScope&&(statusMetric===1||statusMetric===2)){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
     const specs=[...STATUS.groups.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
@@ -2734,6 +2753,59 @@ function openStatusChart(n){
   $('#mv').hidden=false;$('#mvClose').focus();
 }
 drawStatus();
+
+/* Show data: the brand-status page itself, moved into a full-screen dialog and limited to the rows behind a Sankey node or band. */
+const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
+const SCOPE_ORDERS='<option value="parent">Brand → Parent → Town</option><option value="town">Brand → Town → Parent</option><option value="town-first">Town → Brand → Parent</option>';
+let statusSaved=null,scopeHomes=[];
+function openStatusScope({leaves,lens,note}){
+  const order=$('#sOrder');
+  statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
+  statusScope=new Set(leaves.map(l=>statusLeafKey(...l)));
+  statusFilters.states=new Map();statusStates.clear();
+  statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
+  order.html=SCOPE_ORDERS;order.value='parent';
+  $('#sScopeNote').textContent=note;$('#sScopeNote').hidden=false;
+  setStatusView('scope');
+}
+function closeStatusScope(){
+  const saved=statusSaved;if(!saved)return;
+  statusSaved=null;statusScope=null;
+  statusStates.clear();saved.states.forEach((v,k)=>statusStates.set(k,v));
+  statusFilters.states=saved.filterStates;
+  const order=$('#sOrder');order.html=saved.orderHtml;order.value=saved.order;
+  $('#sScopeNote').hidden=true;
+  statusStates.set(saved.view,{metric:saved.metric,sort:saved.sort,open:saved.open});
+  // setStatusView('town') would force the town page, so restore the exact view key through the saved selector.
+  statusView=saved.view;statusMetric=saved.metric;statusSort=saved.sort;statusOpen=saved.open;
+  setStatusView(saved.view==='town'?'town':'status');
+  order.hidden=saved.orderHidden;
+}
+function showScopedData(request){
+  const dialog=$('#scopeDialog'),page=$('#r-status');
+  if(dialog.open)return;
+  const homeOf=el=>{const mark=document.createComment('scope home');el.before(mark);return {el,mark}};
+  scopeHomes=[homeOf(page),...SCOPE_MODALS.map(id=>homeOf($(id)))];
+  const pageWasHidden=page.hidden;scopeHomes[0].wasHidden=pageWasHidden;
+  $('#scopeDialogBody').append(page);page.hidden=false;
+  SCOPE_MODALS.forEach(id=>dialog.append($(id)));
+  $('#scopeDialogTitle').textContent='Show data · '+request.title;
+  const note=`${request.scope} · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · full stock of each row`;
+  $('#scopeDialogScope').textContent=note;
+  dialog.showModal();
+  openStatusScope({...request,note});
+  $('#scopeDialogClose').focus({preventScroll:true});
+}
+function closeScopedData(){
+  closeStatusScope();
+  $('#mv').hidden=true;if(!$('#doh').hidden)closeDohExplanation();$('#help').hidden=true;
+  scopeHomes.forEach(({el,mark,wasHidden})=>{mark.replaceWith(el);if(wasHidden!==undefined)el.hidden=wasHidden});
+  scopeHomes=[];
+}
+$('#scopeDialogClose').onclick=()=>$('#scopeDialog').close();
+$('#scopeDialog').addEventListener('close',closeScopedData);
+// Escape belongs to an open chart, DOH or help sheet first; only a bare overlay closes the dialog.
+$('#scopeDialog').addEventListener('keydown',e=>{if(e.key==='Escape'&&SCOPE_MODALS.some(id=>!$(id).hidden))e.preventDefault()},true);
 
 $$('#reportUnit button').forEach(button=>button.onclick=()=>{
   if(!$('#doh').hidden)closeDohExplanation();

@@ -146,14 +146,18 @@
     function showDrilldownContextMenu(event, d, reason = '') {
       event.preventDefault();
       event.stopPropagation();
-      if (host.openSelection && (isSupportedDrilldownNode(d) || d.kind === 'rsl_downgrade' || (d.source && d.target))) {
+      const canSelect = host.openSelection && (isSupportedDrilldownNode(d) || d.kind === 'rsl_downgrade' || (d.source && d.target));
+      if (canSelect || host.openData) {
         const title = d.source ? `${d.source.label} → ${d.target.label}` : d.label;
         const atLimit = host.drillDepth >= 32;
         const action = isRslGroupLens() ? 'Show category evolution' : 'Show RSL evolution';
-        drilldownContextMenu.html(`<div class="drilldown-context-title">${escapeHtml(title)}</div>${atLimit ? '<div class="drilldown-context-detail">Go back to choose another selection.</div>' : ''}<button type="button" role="menuitem" ${atLimit ? 'disabled' : ''}>${action}</button>`).classed('open', true);
-        if (!atLimit) drilldownContextMenu.select('button').on('click', () => { hideDrilldownContextMenu(); host.openSelection(d); });
+        const evolutionItem = canSelect ? `<button type="button" role="menuitem" data-menu="evolution" ${atLimit ? 'disabled' : ''}>${action}</button>` : '';
+        const dataItem = host.openData ? '<button type="button" role="menuitem" data-menu="data">Show data</button>' : '';
+        drilldownContextMenu.html(`<div class="drilldown-context-title">${escapeHtml(title)}</div>${canSelect && atLimit ? '<div class="drilldown-context-detail">Go back to choose another selection.</div>' : ''}${evolutionItem}${dataItem}`).classed('open', true);
+        if (canSelect && !atLimit) drilldownContextMenu.select('[data-menu=evolution]').on('click', () => { hideDrilldownContextMenu(); host.openSelection(d); });
+        if (host.openData) drilldownContextMenu.select('[data-menu=data]').on('click', () => { hideDrilldownContextMenu(); host.openData(d); });
         placeDrilldownContextMenu(event);
-        drilldownContextMenu.select('button').node().focus({preventScroll: true});
+        drilldownContextMenu.select('button:not(:disabled)').node().focus({preventScroll: true});
         return;
       }
       if (!host.openPivot) return;

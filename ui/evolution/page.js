@@ -29,6 +29,7 @@
     unit: { div: 1e7, label: 'Cr' }, pctOnly: false, includeOver10: true, spacing: GAP.start,
     onLock: () => syncSelection(),
     openSelection: (datum) => openSelection(datum),
+    openData: (datum) => showData(datum),
     detailsReady: () => (current ? current.detailsPromise : Promise.resolve()),
     fillLineage: (records) => { if (current) current.fill(records); },
     lineageRows: (record, kind) => (current ? current.lineageRows(record, kind) : []),
@@ -329,7 +330,7 @@
     $('#evGap').addEventListener('input', (e) => setGap(e.target.value));
     $('#evGapReset').addEventListener('click', () => setGap(GAP.start));
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !$('#r-evolution').hidden && ctrl && ctrl.current && ctrl.current.describe()) { ctrl.clear(); syncSelection(); }
+      if (e.key === 'Escape' && !document.querySelector('#scopeDialog[open]') && !$('#r-evolution').hidden && ctrl && ctrl.current && ctrl.current.describe()) { ctrl.clear(); syncSelection(); }
     });
     observer = new ResizeObserver(() => {
       const width = $('#evScroll').clientWidth;
@@ -421,6 +422,33 @@
     $('#evMenu').classList.remove('open');
     await draw();
     if (drill === selection) { $('#evScroll').scrollLeft = 0; $('#evScroll').scrollTop = 0; $('#evBack').focus({ preventScroll: true }); }
+  }
+
+  /* Hand the report the brand · parent · town rows behind a node or band. The chosen side's lineages are
+   * the exact batches the chart traced; lineage slivers below LINEAGE_FLOOR stay out of the trace lists. */
+  async function showData(datum) {
+    if (!current || !env.showData) return;
+    const entry = current;
+    try {
+      await ctrl.lockById(datum.id);
+      await entry.detailsPromise;
+      const info = ctrl.current && ctrl.current.describe();
+      if (!info || info.id !== datum.id || current !== entry) return;
+      const { brand, town, parent } = entry.detail.lineages;
+      const leaves = new Set();
+      info.lineage.forEach(([id]) => leaves.add(JSON.stringify([entry.detail.towns[town[id]], entry.detail.brands[brand[id]], String(entry.detail.parents[parent[id]])])));
+      if (!leaves.size) throw new Error('no batch lineages are listed for this selection');
+      const month = datum.month || datum.source?.month || '';
+      const trail = drill ? [...drill.trail] : [];
+      env.showData({
+        lens: state.lens, title: info.label,
+        scope: [lensById(state.lens).short, month, ...trail].filter(Boolean).join(' · '),
+        leaves: [...leaves].map((leaf) => JSON.parse(leaf)),
+      });
+    } catch (error) {
+      $('#evTip').textContent = 'Could not show data: ' + error.message;
+      $('#evTip').style.opacity = 1;
+    }
   }
 
   async function backToParent() {

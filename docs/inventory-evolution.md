@@ -29,6 +29,12 @@ Blended Sales push/Rotation categories retain their selected share. If you selec
 
 Selected views hide the lens and scope controls to keep the selection fixed. The toolbar shows the selection trail; hover it to read the full trail. **Back to categories** or **Back to RSL** restores the immediate parent graph, filters, selected node/band, keyboard focus, spacing and scroll. Back remains available during loading or after an error; **Retry** repeats the complete selected request. Superseded requests cannot replace the active view after Back or Close. A trail supports up to 32 selections; at that limit, go Back to choose another branch.
 
+## Show data behind a node or band
+
+Every evolution chart, including the standalone page, report-cell overlays and selected RSL/category views, adds **Show data** to the right-click menu for any node or band. It opens a full-screen overlay that is the brand-status page itself — same filters, metric, sort, expand, stock trend and DOH explanation — limited to the brand · parent · town rows whose batch lineages sit behind the chosen node or band. The default order is Brand → Parent → Town; the order selector also offers Brand → Town → Parent and Town → Brand → Parent. The metric starts on the chart's lens (Exposure, L&D FC or Closing stock).
+
+Rows show each row's full latest saved stock, not only the share that flows through the selection, and the header says so. Lineages below the chart's tiny-lineage floor are not listed, so rows can be fewer than the selection's lineage count. **Back to chart** or **Esc** returns to the chart with its selection intact; the brand-status page keeps its own filters and view.
+
 ## Lenses, display and export
 
 | Lens | Measure and grouping |

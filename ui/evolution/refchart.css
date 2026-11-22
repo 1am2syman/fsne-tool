@@ -37,6 +37,9 @@ svg.rc .focus-label { font-size: 10px; font-weight: 750; fill: #101828; paint-or
 .rc-menu .drilldown-context-title { padding: 6px 8px 8px; font-weight: 800; color: #101828; border-bottom: 1px solid rgba(16,24,40,.10); margin-bottom: 6px; }
 .rc-menu .drilldown-context-detail { padding: 0 8px 8px; color: #667085; line-height: 1.35; }
 .rc-menu button { display: block; width: 100%; padding: 9px 10px; border: 0; border-radius: 10px; background: #eef4ff; color: #1849a9; cursor: pointer; font: inherit; font-weight: 800; text-align: left; }
+.rc-menu button + button { margin-top: 4px; }
+.rc-menu button[data-menu="data"] { background: #f2f4f7; color: #344054; }
+.rc-menu button[data-menu="data"]:hover { background: #e4e7ec; }
 .rc-menu button:hover:not(:disabled) { background: #dbeafe; }
 .rc-menu button:disabled { cursor: not-allowed; opacity: .58; background: #f2f4f7; color: #667085; }
 .rc-legend .swatch.hatch { background: repeating-linear-gradient(45deg, #94A3B8 0 2px, #e2e8f0 2px 5px) !important; }
