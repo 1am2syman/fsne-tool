@@ -1343,8 +1343,9 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div><h1>Monthly upload</h1><p class="lede">Add this month’s exports and choose the FSNE month.</p></div>
     <div class="tabs" role="tablist" id="obTabs">
       <button class="tab" role="tab" aria-selected="true" data-t="setup">Setup</button>
-      <button class="tab" role="tab" aria-selected="false" data-t="runs">Runs<span class="count" id="runsN"></span></button>
-      <button class="tab" role="tab" aria-selected="false" data-t="archive">Archive<span class="count" id="archN"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-t="runs">Ongoing runs<span class="count" id="runsN"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-t="settled">Settled months<span class="count" id="settledN"></span></button>
+      <button class="tab" role="tab" aria-selected="false" data-t="archive">Archived runs<span class="count" id="archN"></span></button>
     </div>
   </div>
 
@@ -1375,6 +1376,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </div>
 
   <div id="ob-runs" hidden><div id="runsT"></div></div>
+  <div id="ob-settled" hidden><div id="settledT"></div></div>
   <div id="ob-archive" hidden><div id="archiveT"></div></div>
   <dialog id="runLogPanel" aria-labelledby="runLogTitle">
     <div class="run-log-inner">
@@ -1869,7 +1871,7 @@ if(!HAS_REPORT){
   $('.overview-nav').value='onboarding';
 }
 function tabs(sel,key,fn){$$(sel+' .tab').forEach(t=>t.onclick=()=>{$$(sel+' .tab').forEach(x=>x.setAttribute('aria-selected',x===t));fn(t.dataset[key])})}
-tabs('#obTabs','t',k=>['setup','runs','archive'].forEach(n=>{$('#ob-'+n).hidden=n!==k}));
+tabs('#obTabs','t',k=>['setup','runs','settled','archive'].forEach(n=>{$('#ob-'+n).hidden=n!==k}));
 $$('.sw').forEach(s=>s.onclick=()=>s.setAttribute('aria-checked',s.getAttribute('aria-checked')!=='true'));
 
 /* spreadsheet table: column letters, row numbers (header is row 1), frozen header + first column, cell selection, formula bar */

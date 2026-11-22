@@ -216,7 +216,12 @@
     el.ondragleave = () => el.classList.remove('over');
     el.ondrop = e => {e.preventDefault(); el.classList.remove('over'); choose(e.dataTransfer.files[0]);};
   });
-  /* ---- Runs and archive: each run renders as the stub of the ticket issued in Setup. ---- */
+  /* ---- Each run has one home; settlement takes precedence over old archive flags. ---- */
+  function runTab(r) {
+    if (r.plan_state === 'settled') return 'settled';
+    return r.archived ? 'archive' : 'runs';
+  }
+  const RUN_LISTS = {runs: '#runsT', settled: '#settledT', archive: '#archiveT'};
   const ICON = {
     open: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg>',
     download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m-4.5-4.5L12 15l4.5-4.5M5 19h14"/></svg>',
@@ -257,15 +262,15 @@
       case 'bad': return ['is-bad', 'Failed'];
       case 'cancelled': return ['', 'Cancelled'];
     }
-    if (r.plan_state === 'settled') return r.settlement?.commit?.ok ? ['is-ok', 'Settled'] : ['is-warn', 'Not committed'];
+    if (r.plan_state === 'settled') return r.settlement?.commit?.ok ? ['is-ok', 'Settled'] : ['is-warn', 'Settled · not committed'];
     if (r.superseded_by) return ['', 'Replaced by ' + r.superseded_by];
     if (r.out_of_date) return ['is-warn', 'Out of date'];
     // Archived runs are set aside: describe them, do not nudge.
-    if (r.archived) return ['', r.plan_upload ? 'Plan returned' : 'Pre-action plan'];
+    if (runTab(r) === 'archive') return ['', r.plan_upload ? 'Plan returned' : 'Pre-action plan'];
     return r.plan_upload ? ['is-next', 'Ready to settle'] : ['', 'Awaiting plan'];
   }
   /** A report month's headline from all of its runs, active and archived: [node, badge class, badge, note HTML].
-   *  The archive only reports whether the month is in history; next steps belong to the Runs tab. */
+   *  Archived attempts report history membership; next steps belong to Ongoing runs. */
   function monthState(month, monthRuns, tab) {
     const id = run => `<span class="run-id-text">${esc(run.id)}</span>`;
     if (!month) return ['todo', '', 'No report date', 'Drafts without a report date yet.'];
@@ -292,14 +297,15 @@
   /** Calculated → action plan returned → month settled, with each action on the step it advances. */
   function runSteps(r) {
     const id = esc(r.id), plan = r.plan_upload, settlement = r.settlement || {};
-    const settled = r.plan_state === 'settled', locked = !!r.out_of_date && !settled;
+    const settled = r.plan_state === 'settled', archived = runTab(r) === 'archive';
+    const locked = (!!r.out_of_date || archived) && !settled;
     const inputFile = `<a class="btn run-btn" href="${esc(apiUrl('runs/' + r.id + '/report.xlsx'))}" download>${ICON.download}Action plan input file</a>`;
     const upload = settled || locked ? '' : `<button type="button" class="btn run-btn${plan ? '' : ' soft'}" data-plan="${id}"${plan ? ' title="Uploading again replaces the earlier plan"' : ''}>${ICON.upload}${plan ? 'Replace plan' : 'Upload action plan'}</button>`;
     const calculated = runStep('done', 'Calculated', [esc(shortDate(r.started || r.created)) + (r.seconds == null ? '' : ' · took ' + duration(r.seconds))]);
     let returned;
     if (plan) returned = runStep('done', 'Action plan returned', [`${esc(shortDate(plan.time))} · ${esc(plan.uploader || 'local')}`, `<span class="run-file" title="${esc(plan.filename)}">${esc(plan.filename)}</span>`], inputFile + upload);
     else if (settled) returned = runStep('skipped', 'Action plan returned', ['Skipped: settled with carried-over statuses'], inputFile);
-    else if (locked) returned = runStep('locked', 'Action plan returned', ['Locked while this run is out of date'], inputFile);
+    else if (locked) returned = runStep('locked', 'Action plan returned', [r.out_of_date ? 'Locked while this run is out of date' : 'Restore this run to upload an action plan.'], inputFile);
     else returned = runStep('current', 'Action plan returned', ['Send the input file to sales, then upload the file they return.'], inputFile + upload);
     let close;
     if (settled) {
@@ -310,7 +316,7 @@
         committed ? commitLabel : `<span class="run-warn" title="${esc(settlement.commit?.error || '')}">Settled, not committed</span>`,
       ], `<button type="button" class="btn run-btn" data-reopen="${id}">${ICON.reopen}Reopen</button>`);
     } else if (locked) {
-      close = runStep('locked', 'Month settled', ['Calculate a new run to settle this month.']);
+      close = runStep('locked', 'Month settled', [r.out_of_date ? 'Calculate a new run to settle this month.' : 'Archived attempt. Restore it to continue working.']);
     } else {
       const reopened = r.reopened ? `Reopened ${esc(shortDate(r.reopened.time))}` + (r.reopened.commit?.ok ? '' : ` · <span class="run-warn" title="${esc(r.reopened.commit?.error || '')}">history removal not committed</span>`) : '';
       close = runStep(plan ? 'current' : 'todo', 'Month settled', [reopened, plan ? 'Publishes this snapshot to history.' : 'Settling without a returned plan keeps carried-over statuses.'],
@@ -383,7 +389,7 @@
     const icon = (attrs, svg, label, cls = '') => `<button type="button" class="btn${cls}" ${attrs} aria-label="${label}" title="${label}">${svg}</button>`;
     const house = [
       r.status === 'bad' ? '' : icon(`data-log="${id}"`, ICON.log, 'Log'),
-      live ? '' : icon(`data-archive="${id}" data-value="${!r.archived}"`, ICON.archive, r.archived ? 'Restore' : 'Archive'),
+      live || r.plan_state === 'settled' ? '' : icon(`data-archive="${id}" data-value="${runTab(r) !== 'archive'}"`, ICON.archive, runTab(r) === 'archive' ? 'Restore' : 'Archive'),
       ['ok', 'bad', 'cancelled'].includes(r.status) && r.plan_state !== 'settled' ? icon(`data-delete="${id}"`, ICON.trash, 'Delete', ' is-danger') : '',
     ].join('');
     return lead || house ? `<div class="run-lead">${lead}${house ? `<div class="run-house">${house}</div>` : ''}</div>` : '';
@@ -391,8 +397,8 @@
   function runPane(r, paneId) {
     const [badgeClass, badge] = runState(r), actions = runPaneActions(r);
     const by = esc(r.started_by || 'local') + ' · ' + (r.status === 'draft' ? 'draft created ' + esc(stamp(r.created)) : 'started ' + esc(stamp(r.started || r.created)))
-      + (r.archived ? ' · archived ' + esc(shortDate(r.archived)) : '');
-    return `<section class="run-pane${r.archived ? ' is-archived' : ''}" id="${paneId}" aria-label="Selected run ${esc(r.id)}"><div class="run-pane-top">`
+      + (runTab(r) === 'archive' && r.archived ? ' · archived ' + esc(shortDate(r.archived)) : '');
+    return `<section class="run-pane${runTab(r) === 'archive' ? ' is-archived' : ''}" id="${paneId}" aria-label="Selected run ${esc(r.id)}"><div class="run-pane-top">`
       + `<p class="run-pane-date${r.report_date ? '' : ' empty'}"><span class="sr-only">FSNE report date </span>${esc(stampText(r.report_date))}</p><p class="run-pane-eyebrow">${esc(r.id)}</p></div>`
       + `<h2>${esc(r.label)}</h2><p class="run-pane-by">${by}</p>${r.status === 'ok' ? '' : `<p style="margin-top:12px"><span class="run-badge ${badgeClass}">${esc(badge)}</span></p>`}`
       + `${actions}${runNotices(r)}${runBody(r)}</section>`;
@@ -462,8 +468,15 @@
   async function cycleDone(meta, message) {
     $('#planDialog').close();
     $('#appNotice').textContent = message + (meta.plan_state === 'settled' && !meta.settlement.commit.ok ? ' · settled, not committed' : '');
-    if (loadedRun?.id === meta.id) reloadReport();
-    else await refresh();
+    const tab = runTab(meta);
+    selectedRun[tab] = meta.id;
+    if (loadedRun?.id === meta.id) {
+      sessionStorage.setItem('fsne-return-run:' + basePath, JSON.stringify({tab, id: meta.id}));
+      reloadReport();
+    } else {
+      await refresh();
+      $(`#obTabs [data-t="${tab}"]`).click();
+    }
   }
   function uploadPlan(id) {
     cycleDialog('Upload action plan', '<p>Choose the file returned by sales, including its lm_ columns. Only action_plan and mitigation_status will be applied to this run’s batches.</p><input id="returnedPlan" type="file" accept=".xlsx" aria-label="Returned action plan">', 'Check file', async () => {
@@ -525,11 +538,11 @@
 
   // Polling redraws only when a run or the selection changed, so focus and scroll survive.
   let drawnKey = '', drawnIds = null;
-  const selectedRun = {runs: null, archive: null};
+  const selectedRun = {runs: null, settled: null, archive: null};
   const FOCUS_KEYS = ['select', 'open', 'plan', 'settle', 'reopen', 'log', 'archive', 'delete', 'cancel'];
   /** Selector that finds the focused run control again after a redraw, or null. */
   function focusTarget(el) {
-    const list = el?.closest?.('#runsT, #archiveT');
+    const list = el?.closest?.(Object.values(RUN_LISTS).join(', '));
     if (!list) return null;
     const name = FOCUS_KEYS.find(k => el.dataset[k] != null);
     return name ? `#${list.id} [data-${name}="${CSS.escape(el.dataset[name])}"]` : null;
@@ -545,9 +558,12 @@
     selectedRun[tab] = (pending || list[0])?.id ?? null;
   }
   function drawRuns() {
-    const active = runs.filter(r => !r.archived), archived = runs.filter(r => r.archived);
+    const active = runs.filter(r => runTab(r) === 'runs');
+    const settled = runs.filter(r => runTab(r) === 'settled');
+    const archived = runs.filter(r => runTab(r) === 'archive');
     const fresh = new Set(drawnIds ? runs.filter(r => !drawnIds.has(r.id)).map(r => r.id) : []);
     keepSelection('runs', active, fresh);
+    keepSelection('settled', settled, fresh);
     keepSelection('archive', archived, fresh);
     const key = JSON.stringify([online, draft?.id ?? null, runs, selectedRun]);
     if (key === drawnKey) return;
@@ -556,21 +572,23 @@
     const refocus = focusTarget(document.activeElement);
     const empty = (title, text, action = '') => `<div class="runs-empty"><span class="runs-empty-stub" aria-hidden="true"><b>DD</b><b>MMM</b><small>YYYY</small></span><div><b>${title}</b><p>${text}</p>${action}</div></div>`;
     $('#runsT').html = active.length ? runLedger(active, 'runs', fresh) : online
-      ? empty('No runs yet', 'Set a report date, upload three source files and choose Start run.', `<button type="button" class="btn run-btn" data-goto-setup>Go to Setup${ICON.open}</button>`)
+      ? empty('No ongoing runs', 'Start a new month in Setup, or reopen a month from Settled months.', `<button type="button" class="btn run-btn" data-goto-setup>Go to Setup${ICON.open}</button>`)
       : empty('Runs live in the app', 'Open the live app to see each run and move it through the month.');
+    $('#settledT').html = settled.length ? runLedger(settled, 'settled', fresh)
+      : empty('No settled months yet', 'Settle a completed run from Ongoing runs to save the official monthly result.');
     $('#archiveT').html = archived.length ? runLedger(archived, 'archive', fresh)
-      : empty('Nothing archived', 'Archive a run from its panel to set it aside. It keeps its results.');
+      : empty('No archived runs', 'Earlier attempts appear here when another run settles the same month, or when you archive them.');
     if (refocus) $(refocus)?.focus({preventScroll: true});
-    $('#runsN').textContent = active.length || ''; $('#archN').textContent = archived.length || '';
+    $('#runsN').textContent = active.length || ''; $('#settledN').textContent = settled.length || ''; $('#archN').textContent = archived.length || '';
     const running = runs.filter(r => ['queued', 'running'].includes(r.status)).length;
     $('#runCount').textContent = running ? running + ' running' : '';
     const newest = runs.find(r => r.status !== 'draft');
     document.title = running ? 'Running · FSNE' : newest?.status === 'ok' ? 'Done · FSNE' : 'FSNE';
     $$('[data-select]').forEach(b => b.onclick = () => {
-      const tab = b.closest('#archiveT') ? 'archive' : 'runs', id = b.dataset.select;
+      const tab = Object.keys(RUN_LISTS).find(key => b.closest(RUN_LISTS[key])), id = b.dataset.select;
       selectedRun[tab] = id;
       drawRuns();
-      $(`#${tab === 'runs' ? 'runsT' : 'archiveT'} [data-select="${CSS.escape(id)}"]`)?.focus({preventScroll: true});
+      $(`${RUN_LISTS[tab]} [data-select="${CSS.escape(id)}"]`)?.focus({preventScroll: true});
     });
     $$('[data-open]').forEach(link => link.onclick = e => {
       if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
@@ -585,7 +603,14 @@
     $$('[data-reopen]').forEach(b => b.onclick = () => reopenMonth(b.dataset.reopen));
     $$('[data-archive]').forEach(b => b.onclick = async () => {
       b.disabled = true;
-      try {await post('runs/' + b.dataset.archive + '/' + (b.dataset.value === 'true' ? 'archive' : 'restore')); await refresh();}
+      try {
+        const meta = await post('runs/' + b.dataset.archive + '/' + (b.dataset.value === 'true' ? 'archive' : 'restore'));
+        await refresh();
+        const tab = runTab(meta);
+        selectedRun[tab] = meta.id;
+        drawRuns();
+        $(`#obTabs [data-t="${tab}"]`).click();
+      }
       catch (e) {error(e.message); b.disabled = false;}
     });
     $$('[data-cancel]').forEach(b => b.onclick = async () => {
@@ -600,7 +625,7 @@
     $$('[data-goto-setup], [data-resume]').forEach(b => b.onclick = () => $('#obTabs [data-t="setup"]').click());
   }
   // Up and down arrows move the selection through a ledger's runs.
-  for (const list of ['#runsT', '#archiveT']) {
+  for (const list of Object.values(RUN_LISTS)) {
     $(list).addEventListener('keydown', e => {
       const row = e.target.closest('.run-row'), step = {ArrowDown: 1, ArrowUp: -1}[e.key];
       if (!row || !step) return;
@@ -611,8 +636,17 @@
   }
   // Running runs count their elapsed time between polls.
   setInterval(() => $$('[data-since]').forEach(el => {el.textContent = elapsed(el.dataset.since);}), 1000);
-  const ledes = {setup: $('#v-onboarding>.head .lede').textContent, runs: 'Each report month, its runs, and whether it feeds history.', archive: 'Archived runs keep their results. Only settled months feed later history.'};
+  const ledes = {setup: $('#v-onboarding>.head .lede').textContent, runs: 'Current work: calculate a report, return its action plan, then settle the month.', settled: 'Official monthly results, preserved with their inputs and final action plans. Reopen a month to make changes.', archive: 'Earlier attempts kept for reference. Restore a run to continue, or delete it to free storage.'};
   $$('#obTabs .tab').forEach(tab => tab.addEventListener('click', () => {$('#v-onboarding>.head .lede').textContent = ledes[tab.dataset.t];}));
+  const returnKey = 'fsne-return-run:' + basePath;
+  try {
+    const returnRun = JSON.parse(sessionStorage.getItem(returnKey) || 'null');
+    if (RUN_LISTS[returnRun?.tab]) {
+      selectedRun[returnRun.tab] = returnRun.id;
+      $(`#obTabs [data-t="${returnRun.tab}"]`).click();
+    }
+  } catch { /* Ignore an expired navigation hint. */ }
+  sessionStorage.removeItem(returnKey);
   async function refresh() {
     if (reloadingReport) return;
     runs = await api('runs'); drawRuns();

@@ -127,6 +127,9 @@ class EvolutionScopeTests(unittest.TestCase):
                         if schema == 16:
                             self.raw = self.raw.with_columns(pl.col('exposure_bdt') * 2)
                             self.raw.write_excel(self.history / 'snapshots.xlsx')
+                            # History now retains an authoritative sibling record;
+                            # update both formats when replacing this fixture.
+                            self.raw.write_parquet(self.history / 'snapshots.parquet')
                         with evo.cached_artifact(self.history, None, out, 'exposure', 'bdt', {'brand': ['Brand A']}) as path:
                             payload = json.loads(gzip.decompress(path.read_bytes()))
                             self.assertEqual(opening(payload, 3), expected)
