@@ -897,7 +897,12 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-kv b{font:600 clamp(20px,3.2vh,26px)/1 var(--font);letter-spacing:-.02em}
 .ov-kv span{color:var(--ink3);font-size:12.5px}
 .ov-rc .ov-plot{margin:2px -16px 0}
-.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
+.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr 2.4fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
+.ov-sc-pair{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.ov-trends{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.ov-trend{padding:clamp(8px,1.4vh,12px) 14px 0}
+.ov-trend .ov-card-h{margin-bottom:0}
+.ov-trend .ov-plot{margin:0 -14px}
 .ov-card-h{flex:none;display:flex;align-items:baseline;gap:14px;margin-bottom:clamp(6px,1.2vh,12px)}
 .ov-card-h b{font-weight:600;font-size:13.5px;white-space:nowrap}
 .ov-meta{margin-left:auto;color:var(--ink3);font-size:12px;white-space:nowrap}
@@ -2398,6 +2403,37 @@ function overviewRslTrend(vals,m){return(w,h)=>{
   STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
   return ovSvg(w,h,s);
 }}
+// Small trend card: one or two series on a shared scale. The first series gets peak/trough labels,
+// the second only the selected month, so the labels stay apart on a card this size.
+function overviewTrendChart(series,m){return(w,h)=>{
+  const N=STATUS.labels.length,main=series[0].vals,saved=main.map((v,i)=>v==null?null:i).filter(i=>i!=null);
+  if(saved.length<2||w<=0||h<=0)return '';
+  const L=18,R=18,T=14,B=16,gap=13,pw=w-L-R,base=h-B,all=series.flatMap(x=>saved.map(i=>x.vals[i]).filter(v=>v!=null));
+  let lo=Math.min(...all),hi=Math.max(...all);
+  if(hi-lo<1e-9){hi+=1;lo-=1}
+  const X=i=>L+i*pw/(N-1),Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo));
+  const top=saved.reduce((a,i)=>main[i]>main[a]?i:a),low=saved.reduce((a,i)=>main[i]<main[a]?i:a);
+  const anchor=i=>i===0?'start':i===N-1?'end':'middle',nx=i=>i===0?X(i)-4:i===N-1?X(i)+4:X(i),label='font:600 10.5px var(--font);fill:var(--ink2)';
+  let s='<line x1="'+L+'" x2="'+(w-R)+'" y1="'+base+'" y2="'+base+'" style="stroke:var(--ov-grid)"/>';
+  series.slice().reverse().forEach(x=>{
+    const P=saved.filter(i=>x.vals[i]!=null).map(i=>[X(i),Y(x.vals[i])]);
+    if(P.length>1)s+='<path d="'+monotoneLine(P)+'" style="fill:none;stroke:'+x.color+';stroke-width:'+(x===series[0]?1.8:1.5)+';stroke-linejoin:round;stroke-linecap:round"/>';
+  });
+  s+=ovText(nx(top),Y(main[top])-7,ovNum(main[top]),label,anchor(top));
+  if(low!==top)s+=ovText(nx(low),Y(main[low])+14,ovNum(main[low]),label,anchor(low));
+  [top,low].forEach(i=>{if(i!==m)s+='<circle cx="'+X(i)+'" cy="'+Y(main[i])+'" r="2.6" style="fill:var(--surface);stroke:'+series[0].color+';stroke-width:1.4"/>'});
+  series.forEach((x,k)=>{
+    if(x.vals[m]==null)return;
+    s+='<circle cx="'+X(m)+'" cy="'+Y(x.vals[m])+'" r="3.4" style="fill:'+x.color+';stroke:var(--surface);stroke-width:1.6"/>';
+    if(k&&m!==top&&m!==low)s+=ovText(nx(m),Y(x.vals[m])+14,ovNum(x.vals[m]),'font:600 10.5px var(--font);fill:'+x.color,anchor(m));
+  });
+  STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
+  return ovSvg(w,h,s);
+}}
+function overviewTrendCard(title,series,key,m,plot){
+  const lg=series.length>1?'<span class="ov-lg">'+series.map(x=>'<span><i style="background:'+x.color+'"></i>'+esc(x.name)+'</span>').join('')+'</span>':'';
+  return '<section class="ov-card ov-trend"><div class="ov-card-h"><b>'+esc(title)+'</b>'+lg+'</div>'+plot(key,overviewTrendChart(series,m))+'</section>';
+}
 const ovBarLabel=(g,y)=>ovText(0,y,esc(g),'font:500 12px var(--font);fill:var(--ink2)','start','.34em');
 // LND FC change by RSL vs the previous saved month, diverging from zero.
 function overviewMoveBars(facts,m,p){return(w,h)=>{
@@ -2482,12 +2518,21 @@ function overviewScorecard(facts,m,p){
     +row('LND ÷ Stock',ovRatio(t),P&&ovRatio(P),ovChipPP(ratioDiff),ovShare)
     +'</section>';
 }
+// Exposure (national, with the part that comes from >10M stock) and LND FC by month.
+function overviewTrends(facts,m,plot){
+  const long=OVERVIEW_RSL.find(g=>g==='> 10M'),at=f=>facts.map(x=>x?f(x):null);
+  const exposure=[{name:'Total',color:'var(--ov-line)',vals:at(x=>x.exp)}];
+  if(long)exposure.push({name:'> 10M',color:'#d08a1e',vals:at(x=>x.b[long].exp)});
+  return '<div class="ov-trends">'+overviewTrendCard('Exposure trend',exposure,'trendExp',m,plot)
+    +overviewTrendCard('LND FC trend',[{name:'LND FC',color:'var(--bad)',vals:at(x=>x.lnd)}],'trendLnd',m,plot)+'</div>';
+}
 function overviewMarkup(facts,m,plots){
   const p=ovPrev(facts,m),first=facts.findIndex(Boolean);
   const plot=(key,draw)=>{plots[key]=draw;return '<div class="ov-plot" data-ov-plot="'+key+'"></div>'};
   return overviewHero(facts,m,p,first,plot)
     +'<div class="ov-rsl">'+OVERVIEW_RSL.map(g=>overviewRslCard(facts,m,p,g,plot)).join('')+'</div>'
-    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)+overviewScorecard(facts,m,p)+'</div>';
+    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)
+    +'<div class="ov-sc-pair">'+overviewScorecard(facts,m,p)+overviewTrends(facts,m,plot)+'</div></div>';
 }
 // Month buttons are rebuilt only when the saved months change, so keyboard focus survives redraws.
 function overviewMonthButtons(facts){

@@ -90,6 +90,7 @@ Town-level stock movement and action-plan cohort projections are derived from sa
 - The hero table has one row per RSL group and a Total row. Stock percentages use national stock; Exposure and LND FC percentages use that row’s own stock.
 - Each RSL card shows stock, its share of national stock and its change from the previous saved month. Trend lines use a separate scale per card, with subtle month labels and peak/trough values.
 - The bottom cards show Exposure and LND FC by RSL, the LND FC change from the previous saved month, and a comparison with that month. The first saved month shows LND ÷ Exp instead of a change.
+- Two small trend charts sit beside the comparison card, stacked: **Exposure trend** (total Exposure, with the > 10M group's Exposure as a second line on the same scale) and **LND FC trend**. Both mark the selected month and label the peak and trough.
 - Stock changes are neutral. Falling Exposure/LND FC is green and rising is red. The LND ÷ Stock change is shown in percentage points.
 - The layout fits widescreen laptop viewports without scrolling, in light and dark themes.
 
