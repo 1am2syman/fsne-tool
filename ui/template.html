@@ -637,6 +637,41 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .tools select.btn:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5' fill='none' stroke='%2314161b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),linear-gradient(180deg,#ffffff 0%,#f3f5fa 100%)}
 [data-theme=dark] .tools select.btn:hover{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 6.5 8 10l3.5-3.5' fill='none' stroke='%23edf0f5' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"),linear-gradient(180deg,#2c3244 0%,#1f2432 100%)}
 .tools>.sp{flex:1 1 auto;min-width:8px}
+/* Value filters share the compact report toolbar and Excel's checkbox interaction. */
+.value-filters{display:flex;align-items:center;gap:6px;min-width:342px;flex:1 1 420px;max-width:650px}
+.tools .value-filter{display:grid;grid-template-columns:minmax(0,1fr) 8px;grid-template-rows:10px 13px;justify-content:start;align-content:center;min-width:100px;flex:1 1 0;padding:2px 9px;column-gap:5px;row-gap:0;text-align:left}
+.value-filter-name{grid-column:1;grid-row:1;color:var(--ink3);font-size:10px;line-height:10px;white-space:nowrap}
+.value-filter-summary{grid-column:1;grid-row:2;line-height:13px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:550}
+.value-filter-arrow{grid-column:2;grid-row:1/3;align-self:center;flex:none;width:6px;height:6px;border-right:1.5px solid var(--ink3);border-bottom:1.5px solid var(--ink3);transform:translateY(-2px) rotate(45deg)}
+.tools .value-filter[data-active=true]{border-color:var(--accent);background:var(--accent-soft)}
+.tools .value-filters-reset{flex:none;width:24px;padding:0;font-size:18px;justify-content:center}
+.value-filter-popup{position:fixed;z-index:10000;display:flex;flex-direction:column;padding:8px;background:var(--surface);border:1px solid var(--line2);border-radius:9px;box-shadow:0 12px 36px rgba(18,21,40,.2);color:var(--ink);font:12.5px var(--font)}
+.value-filter-clear{border:0;background:none;text-align:left;padding:8px 7px;margin-bottom:5px;color:var(--ink);font:inherit;cursor:pointer;border-radius:4px}
+.value-filter-clear:hover:not(:disabled){background:var(--sunken)}
+.value-filter-clear:disabled{color:var(--ink3);cursor:default;opacity:.6}
+.value-filter-search{flex:none;width:100%;height:32px;border:1px solid var(--line2);border-radius:5px;background:var(--surface);padding:0 9px;font:inherit;color:var(--ink);outline:none}
+.value-filter-search:focus{border-color:var(--accent);box-shadow:var(--ring)}
+.value-filter-list{overflow-y:auto;min-height:45px;max-height:280px;margin:7px 0;border:1px solid var(--line);padding:3px}
+.value-filter-option{display:flex;align-items:center;gap:8px;min-height:29px;padding:5px 6px;cursor:pointer;border-radius:3px;line-height:1.35}
+.value-filter-option:hover{background:var(--sunken)}
+.value-filter-option input,.value-filter-add input{width:14px;height:14px;flex:none;accent-color:var(--accent);margin:0}
+.value-filter-option span{overflow-wrap:anywhere}
+.value-filter-all{font-weight:600;border-bottom:1px solid var(--line);border-radius:0;margin-bottom:2px;padding-bottom:8px}
+.value-filter-option.is-unavailable{color:var(--ink3)}
+.value-filter-add{display:flex;gap:8px;align-items:center;padding:5px 6px 9px;font-size:12px}
+.value-filter-add[hidden]{display:none}
+.value-filter-empty{padding:10px;color:var(--ink3)}
+.value-filter-footer{display:flex;justify-content:flex-end;gap:8px;padding:9px 2px 1px;border-top:1px solid var(--line)}
+.value-filter-footer .btn{height:29px;min-width:65px;padding:0 12px;font-size:12px}
+#r-plan .tools>.meta,#r-status .tools>.meta,#r-not-actionables .tools>.meta,.tools>.movement-notes{display:none}
+#mTools .value-filters{min-width:297px;max-width:540px}
+#mTools .value-filter{min-width:85px;padding:0 7px}
+#mTools .value-filter-name{font-size:10px}
+#mTools .scale{display:none}
+#sSearchChips{display:none}
+.tools:has(>.value-filters){gap:6px}
+.tools:has(>.value-filters)>.vr{display:none}
+.tools:has(>.value-filters) select.btn{max-width:185px}
 .tools>.vr{flex:none;width:1px;height:16px;background:var(--line2)}
 .tools>.search{flex:0 1 200px;width:auto;min-width:110px;height:var(--h);padding:0 10px;gap:7px;border-radius:8px}
 #mTools{gap:6px}
@@ -1547,7 +1582,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div class="stat"><small>Liquidation forecast</small><div class="v">13.1<i>KL</i></div><div class="d">৳1.29 cr</div></div>
     </div>
     <div class="tools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="bSearch" placeholder="Town, brand, material or batch" aria-label="Search batches"></label>
+      <div id="bFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="rslSeg" aria-label="Remaining shelf life"></div>
       <span class="sp"></span>
@@ -1555,14 +1590,14 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <span class="pager"><button class="btn sm" id="bPrev" aria-label="Previous page">←</button><button class="btn sm" id="bNext" aria-label="Next page">→</button></span>
     </div>
     <div data-sheet="bT"></div>
-    <p class="lede" style="margin-top:10px;font-size:12.5px">Preview shows the 400 batches with the highest closing stock value out of 27,891.</p>
+    <p class="lede" style="margin-top:10px;font-size:12.5px">Preview contains the 400 batches with the highest closing stock value. Filters apply to these batches; when filtered, the cards show their matching amounts.</p>
   </div>
 
 
 
   <div id="r-transfer" hidden>
     <div class="tools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="tfSearch" placeholder="Town, brand, material or batch" aria-label="Search transfer candidates"></label>
+      <div id="tfFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="tfFilter" role="group" aria-label="Candidate filter"><button type="button" aria-pressed="true" data-f="all">All sources</button><button type="button" aria-pressed="false" data-f="opt">With a suggestion</button><button type="button" aria-pressed="false" data-f="none">No suggestion</button></div>
       <select id="tfAssessment" class="btn" aria-label="Transfer assessment"><option value="">Both assessments</option><option value="before_300_days">Before 300-day checkpoint</option><option value="before_expiry">Already below 300 days</option></select>
@@ -1580,7 +1615,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 
   <div id="r-salespush" hidden>
     <div class="tools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="spSearch" placeholder="Town, brand or material" aria-label="Search sales-push pools"></label>
+      <div id="spFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <label class="lbl">Scenario <select class="btn" id="spScen" aria-label="Scenario"></select></label>
       <label class="lbl">Review state <select class="btn" id="spState" aria-label="Review state"><option value="">All</option><option value="supported_assumptions">Supported assumptions</option><option value="stretch_scenario">Stretch scenario</option><option value="incomplete_evidence">Incomplete evidence</option><option value="infeasible_under_stated_constraints">Infeasible under constraints</option></select></label>
@@ -1616,7 +1651,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </div>
   <div id="r-move" hidden>
     <div class="tools" id="mTools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="mSearch" placeholder="Brand" aria-label="Search brands"></label>
+      <div id="mFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="mMetric" aria-label="Metric">
         <div class="mb"><button aria-pressed="true" data-m="red">Reduction %</button><button class="help" data-help="red" aria-label="How Reduction % is calculated" title="How Reduction % is calculated">?</button></div>
@@ -1644,7 +1679,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div class="rc-split"><div class="rc-bar" id="rcSplit" role="img"></div></div>
     </div>
     <div class="tools" id="rTools">
-      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="rSearch" placeholder="Brand, parent, SKU or town" aria-label="Search brands, parents, SKUs and towns" autocomplete="off"></label>
+      <div id="rFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <select id="rOrder" class="btn" aria-label="Drill-down order"><option value="bpt">Brand → Parent → Town</option><option value="btp">Brand → Town → Parent</option><option value="tbp">Town → Brand → Parent</option></select>
       <select id="rSort" class="btn" aria-label="Sort rows"><option value="lnd:-1">LND FC · high to low</option><option value="cov:1">Coverage · low to high</option><option value="tn:-1">Towns · most first</option><option value="share:-1">LND ÷ Exp · high to low</option><option value="name:1">A–Z</option></select>
@@ -1665,22 +1700,22 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <p class="rc-empty" id="naUnavailable" hidden>This report is unavailable in this saved page. Open a completed run to load its saved stock.</p>
     <div id="naBody">
       <div class="tools" id="naTools">
-        <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="naSearch" placeholder="Brand, SKU, town or batch" aria-label="Search not-actionables" autocomplete="off"></label>
+      <div id="naFilters" aria-label="Report filters"></div>
         <i class="vr" aria-hidden="true"></i>
         <select class="btn" id="naMonth" aria-label="Not-actionables month"></select>
         <select class="btn" id="naRsl" aria-label="Not-actionables RSL"></select>
         <select class="btn" id="naSort" aria-label="Sort not-actionables"><option value="stock:-1">Stock · high to low</option><option value="stock:1">Stock · low to high</option><option value="n:-1">Batches · most first</option><option value="name:1">A–Z</option></select>
         <button class="btn" id="naExpand" type="button">Expand all</button>
         <span class="sp"></span><span class="meta" id="naCount" aria-live="polite"></span>
-        <details class="movement-notes"><summary>Notes</summary><div class="note"><span>Only batches marked Not actionable in the selected month's snapshot, across every RSL band.</span><span>Pre-action plan view uses carried statuses. Accepted action plans replace them; Final view uses the settled snapshot.</span><span>Stock retains the saved month's quantities and prices. BDT amounts are in millions.</span><span>Brand → Parent SKU → Town → Batch. Batch rows show their actual SKU; select a cell to read its full text in the formula bar.</span><span>Table totals and CSV follow search and RSL filters.</span><span>CSV exports matching batches, stock in both units and their saved status and remarks.</span></div></details>
+        <details class="movement-notes"><summary>Notes</summary><div class="note"><span>Only batches marked Not actionable in the selected month's snapshot, across every RSL band.</span><span>Pre-action plan view uses carried statuses. Accepted action plans replace them; Final view uses the settled snapshot.</span><span>Stock retains the saved month's quantities and prices. BDT amounts are in millions.</span><span>Brand → Parent SKU → Town → Batch. Batch rows show their actual SKU; select a cell to read its full text in the formula bar.</span><span>Table totals and CSV follow Brand, Parent SKU, Town and RSL filters.</span><span>CSV exports matching batches, stock in both units and their saved status and remarks.</span></div></details>
       </div>
       <div data-sheet="naT"></div>
     </div>
   </div>
   <div id="r-status" hidden>
     <div class="tools" id="sTools">
-      <div class="status-search" id="sSearchBox"><label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="sSearch" placeholder="Town, brand or parent" aria-label="Search towns, brands and parents" role="combobox" aria-autocomplete="list" aria-controls="sSearchPop" aria-expanded="false" autocomplete="off"></label><div class="status-search-pop" id="sSearchPop" role="listbox" aria-label="Search results" aria-multiselectable="true" hidden></div></div>
-      <div class="status-chips" id="sSearchChips" aria-label="Selected search filters"></div>
+      <div id="sFilters" aria-label="Report filters"></div>
+
       <i class="vr" aria-hidden="true"></i>
       <select id="sMetric" class="btn" aria-label="Status metric"><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option><option value="0">stock-bdt</option></select>
       <i class="vr" aria-hidden="true"></i>
@@ -1741,6 +1776,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+/*REPORT_FILTERS*/
 (() => {
 const HAS_REPORT = /*HAS_REPORT*/true;
 const SAMPLES = /*SAMPLES*/{};
@@ -1941,7 +1977,8 @@ document.addEventListener('keydown',e=>{
 const serial=n=>new Date(Date.UTC(1899,11,30)+n*864e5).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
 const RSL={'< 3M':[1,'var(--bad)'],'3M - 6M':[2,'var(--warn)'],'6M - 10M':[3,'var(--ink3)'],'> 10M':[4,'var(--ok)']};
 const pips=g=>{const [n,c]=RSL[g];return `<span class="pips" style="--c:${c}">${[1,2,3,4].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</span>${g}`};
-const BR=BATCH.map(r=>({...r,exp:+r['Expiry Date']}));
+const materialScope=code=>SERIES.materials?.[String(code)]||{parent:String(code??''),pdesc:String(code??'')};
+const BR=BATCH.map(r=>({...r,...materialScope(r['Material Code']),brand:r['Brand Name'],town:r.Town,exp:+r['Expiry Date']}));
 const bcols=[
  {k:'Town',h:'Town',r:r=>esc(r.Town),cls:'name'},
  {k:'Brand Name',h:'Brand',r:r=>esc(r['Brand Name'])},
@@ -1953,14 +1990,15 @@ const bcols=[
  {k:'doh',h:'DOH (days)',num:1,r:r=>`<button class="doh-value" type="button" data-doh-batch="${esc(r.batch_index)}" aria-label="Explain DOH for ${esc(r.material_desc)} in ${esc(r.Town)}">${r.avg_sec_m===0?'∞':r.doh==null?'—':f(r.doh,1)}</button>`},
  {k:'exposure',h:'Exposure',num:1,r:r=>`<span class="${r['exposure_'+reportUnit]?'badc':'dim'}">${amount(r['exposure_'+reportUnit],3)}</span>`},
  {k:'lnd',h:'Liq. forecast',num:1,r:r=>amount(r['lnd_fc_'+reportUnit],3)}];
-let rsl='All',bq='',pg=0,bs={k:'stock',d:-1};const PS=30;
+let rsl='All',pg=0,bs={k:'stock',d:-1};const PS=30;
+const batchFilters=new FSNEFilters.Group({container:$('#bFilters'),rows:()=>BR.filter(r=>rsl==='All'||r.rsl_group===rsl),onChange:()=>{pg=0;drawB()}});
 $('#rslSeg').html=['All','< 3M','3M - 6M','6M - 10M','> 10M'].map((x,i)=>`<button aria-pressed="${!i}">${x}</button>`).join('');
 $$('#rslSeg button').forEach(c=>c.onclick=()=>{rsl=c.textContent;pg=0;$$('#rslSeg button').forEach(x=>x.setAttribute('aria-pressed',x===c));drawB()});
-$('#bSearch').oninput=e=>{bq=e.target.value.toLowerCase();pg=0;drawB()};
 function drawB(){
+  const filtered=batchFilters.rows(),measures=batchFilters.active||rsl!=='All'?Object.fromEntries(['total_closing_stock','exposure','rotation_req','lnd_fc'].flatMap(k=>['bdt','kl'].map(u=>[k+'_'+u,filtered.reduce((s,r)=>s+(r[k+'_'+u]||0),0)]))):MEASURES;
   bcols.filter(c=>['stock','exposure','lnd'].includes(c.k)).forEach(c=>c.h=({stock:'Stock',exposure:'Exposure',lnd:'Liq. forecast'}[c.k])+' ('+unitLabel()+')');
-  $$('#r-batch .stat').forEach((el,i)=>{const stem=['total_closing_stock','exposure','rotation_req','lnd_fc'][i],other=reportUnit==='bdt'?'kl':'bdt';el.querySelector('.v').html=amount(MEASURES[stem+'_'+reportUnit],1)+'<i>'+unitLabel()+'</i>';el.querySelector('.d').textContent=f(MEASURES[stem+'_'+other]/(other==='bdt'?1e6:1),1)+' '+(other==='bdt'?'M BDT':'KL');el.title=[el.querySelector('small'),el.querySelector('.v'),el.querySelector('.d')].map(n=>n.textContent).join(' · ')});
-  const rows=BR.map(r=>({...r,stock:r['total_closing_stock_'+reportUnit],exposure:r['exposure_'+reportUnit],lnd:r['lnd_fc_'+reportUnit]})).filter(r=>(rsl==='All'||r.rsl_group===rsl)&&(!bq||[r.Town,r['Brand Name'],r.material_desc,r['Batch code']].join(' ').toLowerCase().includes(bq))).sort(cmp(bs.k,bs.d));
+  $$('#r-batch .stat').forEach((el,i)=>{const stem=['total_closing_stock','exposure','rotation_req','lnd_fc'][i],other=reportUnit==='bdt'?'kl':'bdt';el.querySelector('.v').html=amount(measures[stem+'_'+reportUnit],1)+'<i>'+unitLabel()+'</i>';el.querySelector('.d').textContent=f(measures[stem+'_'+other]/(other==='bdt'?1e6:1),1)+' '+(other==='bdt'?'M BDT':'KL');el.title=[el.querySelector('small'),el.querySelector('.v'),el.querySelector('.d')].map(n=>n.textContent).join(' · ')});
+  const rows=filtered.map(r=>({...r,stock:r['total_closing_stock_'+reportUnit],exposure:r['exposure_'+reportUnit],lnd:r['lnd_fc_'+reportUnit]})).sort(cmp(bs.k,bs.d));
   table({t:'#bT',cols:bcols,rows:rows.slice(pg*PS,pg*PS+PS),sort:bs,onSort:k=>{bs=bs.k===k?{k,d:-bs.d}:{k,d:-1};drawB()},onSelect:(r,c)=>{if(bcols[c].k==='doh')openBatchDoh(r,$('#bT').closest('.tw'))}});
   $('#bCount').textContent=rows.length?`${pg*PS+1}–${Math.min(rows.length,pg*PS+PS)} of ${rows.length}`:'0 results';
   $('#bPrev').disabled=!pg;$('#bNext').disabled=(pg+1)*PS>=rows.length;
@@ -1970,15 +2008,15 @@ $('#bPrev').onclick=()=>{pg--;drawB()};$('#bNext').onclick=()=>{pg++;drawB()};dr
 
 
 /* transfer suggestions: precomputed by src/transfer_opportunities.py; no allocation logic here */
-const TS=TRANSFER.src.map((a,i)=>({i,...Object.fromEntries(TRANSFER.scols.map((c,j)=>[c,a[j]]))}));
+const TS=TRANSFER.src.map((a,i)=>({i,...Object.fromEntries(TRANSFER.scols.map((c,j)=>[c,a[j]]))})).map(r=>({...r,...materialScope(r.code)}));
 const tfDest=s=>s.sug.map(d=>Object.fromEntries(TRANSFER.dcols.map((c,j)=>[c,d[j]])));
 TS.forEach(s=>{s.ok=s.sug.length;s.sent=s.sug.reduce((t,d)=>t+d[1],0);s.dn=s.checked});
-let tfQ='',tfF='all',tfA='',tfPg=0,tfSel=null;const TFPS=30;
+let tfF='all',tfA='',tfPg=0,tfSel=null;const TFPS=30;
+const transferFilters=new FSNEFilters.Group({container:$('#tfFilters'),rows:()=>TS.filter(s=>(!tfA||s.assessment===tfA)&&(tfF==='all'||(tfF==='opt')===(s.ok>0))),onChange:()=>{tfPg=0;drawTransfer()}});
 const tfRejText=s=>Object.entries(s.rej).map(([k,n])=>f(n)+' × '+(TRANSFER.reasons[k]||k)).join('; ');
 $$('#tfFilter button').forEach(b=>b.onclick=()=>{tfF=b.dataset.f;tfPg=0;$$('#tfFilter button').forEach(x=>x.setAttribute('aria-pressed',x===b));drawTransfer()});
-$('#tfSearch').oninput=e=>{tfQ=e.target.value.toLowerCase();tfPg=0;drawTransfer()};
 $('#tfAssessment').onchange=e=>{tfA=e.target.value;tfPg=0;tfSel=null;drawTransfer()};
-const tfRows=()=>TS.filter(s=>(!tfA||s.assessment===tfA)&&(tfF==='all'||(tfF==='opt')===(s.ok>0))&&(!tfQ||[s.town,s.brand,s.material,s.batch].join(' ').toLowerCase().includes(tfQ)));
+const tfRows=()=>transferFilters.rows();
 function tfN(v){if(v==null)return '—';if(Math.abs(v)<=1e-9)return '0.000';if(v>0&&v<.001)return '&lt;0.001';return f(v,3)}
 const tfWhen=s=>s.assessment==='before_300_days'?`300-day checkpoint · in ${f(s.days)} days`:`Expiry · in ${f(s.days)} days`;
 const tfStatus=s=>s.before==null?'Needs sales evidence':s.before<=1e-9?'Can sell locally':s.after<=1e-9?'No stock left at assessment':s.ok?'Partial improvement · needs another action':(TRANSFER.reasons[Object.keys(s.rej)[0]]||'No beneficial transfer found');
@@ -2034,15 +2072,15 @@ function exportTransfer(){
 }
 
 /* sales-push feasibility (Phase A): precomputed by src/sales_push_feasibility.py; no formulas here */
-const SPR=SALESPUSH.rows.map((a,i)=>({i,...Object.fromEntries(SALESPUSH.cols.map((c,j)=>[c,a[j]]))}));
-let spQ='',spPg=0,spSel=null,spS=0,spSt='';const SPPS=30;
+const SPR=SALESPUSH.rows.map((a,i)=>({i,...Object.fromEntries(SALESPUSH.cols.map((c,j)=>[c,a[j]]))})).map(r=>({...r,...materialScope(r.code)}));
+let spPg=0,spSel=null,spS=0,spSt='';const SPPS=30;
+const salesFilters=new FSNEFilters.Group({container:$('#spFilters'),rows:()=>SPR.filter(r=>!spSt||r.review===spSt),onChange:()=>{spPg=0;spSel=null;drawSP()}});
 const spStateLabel={supported_assumptions:'Supported assumptions',stretch_scenario:'Stretch scenario',incomplete_evidence:'Incomplete evidence',infeasible_under_stated_constraints:'Infeasible under constraints'};
 const spScLabel=c=>c.id.replace(/_/g,' ')+(c.mult!==1?` (${c.mult}× from day ${c.delay}${c.duration?' for '+c.duration+' d':' to deadline'})`:'');
 $('#spScen').html=SALESPUSH.scenarios.map((c,i)=>`<option value="${i}">${esc(spScLabel(c))}</option>`).join('');
 $('#spScen').onchange=e=>{spS=+e.target.value;spPg=0;drawSP()};
 $('#spState').onchange=e=>{spSt=e.target.value;spPg=0;drawSP()};
-$('#spSearch').oninput=e=>{spQ=e.target.value.toLowerCase();spPg=0;drawSP()};
-const spRows=()=>SPR.filter(r=>(!spSt||r.review===spSt)&&(!spQ||[r.town,r.brand,r.material].join(' ').toLowerCase().includes(spQ)));
+const spRows=()=>salesFilters.rows();
 const spNA='<span class="dim" title="Unavailable: see review state">n/a</span>';
 const spN=(v,d=3)=>v==null?spNA:f(v,d);
 const spCols=[
@@ -2073,7 +2111,8 @@ function spExplain(){
   el.html=L.map(x=>`<span>${x}</span>`).join('');
 }
 function drawSP(){
-  const rows=spRows(),cnt=k=>SPR.filter(r=>r.review===k).length;
+  const rows=spRows();
+  if(spSel&&!rows.includes(spSel))spSel=null;
   const page=rows.slice(spPg*SPPS,spPg*SPPS+SPPS);
   table({t:'#spT',cols:spCols,rows:page,onSelect:r=>{if(r){spSel=r;spExplain()}}});
   $('#spCount').textContent=rows.length?`${spPg*SPPS+1}–${Math.min(rows.length,spPg*SPPS+SPPS)} of ${f(rows.length)}`:'0 results';
@@ -2094,6 +2133,7 @@ drawTransfer();
 /* stock movement: brand x month heatmap, computed by src/movement.py (series) */
 const NM=SERIES.labels.length, num=v=>v==null?0:v, sum=a=>a.reduce((x,y)=>x+num(y),0);
 const GROUPS=SERIES.groups; let gsel=new Set(GROUPS.map((_,i)=>i));
+const moveFilters=new FSNEFilters.Group({container:$('#mFilters'),rows:()=>(SERIES.facets||[]).filter(r=>r.m.some(m=>m?.some((c,i)=>c&&gsel.has(i)))),onChange:()=>{buildData();drawM();$('#mv').hidden=true}});
 /* Merge selected RSL groups in the selected source unit. */
 const agg=cs=>{
   const c=cs.filter((x,i)=>x&&gsel.has(i)).map(x=>reportUnit==='bdt'?x:{...x.kl,rem:x.rem});if(!c.length)return null;
@@ -2121,14 +2161,15 @@ function dohSummary(pairs,selected){
 }
 let B,TOT,TPTS;
 function buildData(){
-  B=SERIES.brands.map(b=>({brand:b.b,...mk(aggs(b.m)),kids:(b.p||[]).map(p=>({brand:b.b,parent:1,code:p.c,desc:p.d,...mk(aggs(p.m))}))}))
+  const source=moveFilters.active?FSNEFilters.mergeMovement(moveFilters.rows(),NM,GROUPS.length):SERIES;
+  B=source.brands.map(b=>({brand:b.b,...mk(aggs(b.m)),kids:(b.p||[]).map(p=>({brand:b.b,parent:1,code:p.c,desc:p.d,...mk(aggs(p.m))}))}))
     .filter(b=>b.m.some(Boolean));
   B.forEach(b=>b.kids=b.kids.filter(k=>k.m.some(Boolean)));
-  TOT=aggs(SERIES.total).map(x=>x||{lm:null,o:null,n:null,r:null,p:null});
+  TOT=aggs(source.total).map(x=>x||{lm:null,o:null,n:null,r:null,p:null});
   TPTS=[...TOT.map(x=>num(x.lm)),num(TOT[NM-1].o)+num(TOT[NM-1].n)];
 }
 const open=new Set();
-let metric='red',minStock=0,mq='',ms={k:'now',d:-1},sel=null;
+let metric='red',minStock=0,ms={k:'now',d:-1},sel=null;
 buildData();
 const mix=(c,t)=>`color-mix(in srgb, var(--${c}) ${Math.round(8+80*t)}%, var(--surface))`;
 const mval=x=>!x?null:!(x.lm>0)?null:metric==='red'?x.p:(num(x.o)+num(x.n)-x.lm)/x.lm;
@@ -2218,10 +2259,7 @@ function drawM(){
   const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
   const cmpK=ms.k==='brand'?(a,b)=>a.desc.localeCompare(b.desc):cmp(ms.k,ms.d);
   const rows=[];
-  B.filter(r=>r.now>=minStock).forEach(r=>{
-    const byName=!mq||r.brand.toLowerCase().includes(mq),byKid=!!mq&&r.kids.some(k=>(k.desc+' '+k.code).toLowerCase().includes(mq));
-    if(byName||byKid)rows.push({...dec(r),isOpen:open.has(r.brand)||(byKid&&!byName)});
-  });
+  B.filter(r=>r.now>=minStock).forEach(r=>rows.push({...dec(r),isOpen:open.has(r.brand)}));
   rows.sort(cmp(ms.k,ms.d));
   const flat=[];
   rows.forEach(r=>{flat.push(r);if(r.isOpen){const ks=r.kids.map(dec).sort(cmpK);ks.forEach((k,i)=>flat.push({...k,trc:'par'+(i===0?' par-first':'')+(i===ks.length-1?' par-last':'')}))}});
@@ -2248,7 +2286,6 @@ $('#mRslPop').addEventListener('click',e=>{const a=e.target.dataset.a;if(!a)retu
 document.addEventListener('click',e=>{const d=$('#mRsl');if(d.open&&!d.contains(e.target))d.open=false});
 $$('#mSize button').forEach(c=>c.onclick=()=>{minStock=+c.dataset.s;$$('#mSize button').forEach(x=>x.setAttribute('aria-pressed',x===c));drawM()});
 $('#mSort').onchange=e=>{const [k,d]=e.target.value.split(':');ms={k,d:+d};drawM()};
-$('#mSearch').oninput=e=>{mq=e.target.value.trim().toLowerCase();drawM()};
 const togBrand=b=>{open.has(b)?open.delete(b):open.add(b);drawM();const e=$(`#mT [data-tg="${CSS.escape(b)}"]`);e&&e.focus({preventScroll:true})};
 $('#mT').closest('.tw').addEventListener('click',e=>{const g=e.target.closest('.tg');if(!g)return;e.stopPropagation();togBrand(g.dataset.tg)},true);
 $('#mExp').onclick=e=>{const all=e.currentTarget.dataset.all;B.forEach(r=>{if(r.now>=minStock&&r.kids.length)all?open.delete(r.brand):open.add(r.brand)});drawM()};
@@ -2498,75 +2535,37 @@ let statusMetricNames=['stock-bdt','exposure-bdt','lnd-bdt'];
 let statusOpen=new Set(),statusNodes=new Map(),statusRoot=STATUS.total,statusView='town';
 function indexStatus(n){statusNodes.set(n.id,n);n.kids.forEach(indexStatus)}
 indexStatus(statusRoot);
-let statusMetric=1,statusQuery='',statusSelected=new Set(),statusSort={k:'total',d:-1},statusFocus=null;
-const normalizeSearch=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
-function statusSearchType(n){
-  if(n.code)return 'parent';
-  const townLevel={town:0,'brand-town':1,'brand-parent':2}[statusView];
-  return n.level===townLevel?'town':'brand';
-}
-const statusSearchKey=n=>JSON.stringify([statusSearchType(n),n.code||n.name]);
-let statusSearchOptions=[];
-function indexStatusSearch(){
-  const unique=new Map();
-  statusNodes.forEach(n=>{if(n.id==='total')return;const key=statusSearchKey(n);if(!unique.has(key))unique.set(key,{key,name:n.name,code:n.code,type:statusSearchType(n),text:normalizeSearch(n.name+' '+(n.code||''))})});
-  statusSearchOptions=[...unique.values()];
-}
-// One edit (including a transposition) or an ordered abbreviation matches a token.
-function fuzzyToken(query,word){
-  if(word.includes(query))return 0;
-  if(query.length<3)return Infinity;
-  let j=0;for(const c of word)if(c===query[j])j++;
-  if(j===query.length)return 2+(word.length-query.length)/100;
-  if(Math.abs(query.length-word.length)>1)return Infinity;
-  let i=0,k=0,edits=0;
-  while(i<query.length&&k<word.length){if(query[i]===word[k]){i++;k++;continue}if(++edits>1)return Infinity;
-    if(query[i]===word[k+1]&&query[i+1]===word[k]){i+=2;k+=2}
-    else if(query.length>word.length)i++;else if(word.length>query.length)k++;else{i++;k++}}
-  return edits+(query.length-i)+(word.length-k)<=1?1:Infinity;
-}
-function statusSearchScore(option,query){
-  if(option.text.includes(query))return option.text===query?0:1;
-  const words=option.text.split(' ');let score=2;
-  for(const token of query.split(' ')){const best=Math.min(...words.map(word=>fuzzyToken(token,word)));if(!Number.isFinite(best))return Infinity;score+=best}
-  return score;
-}
-function drawStatusSuggestions(){
-  const query=normalizeSearch(statusQuery),pop=$('#sSearchPop');
-  const options=statusSearchOptions.map(o=>({o,score:query?statusSearchScore(o,query):0})).filter(x=>Number.isFinite(x.score)).sort((a,b)=>a.score-b.score||a.o.name.localeCompare(b.o.name)).slice(0,40);
-  pop.html=options.map(({o},i)=>`<button type="button" id="sOption${i}" role="option" aria-selected="${statusSelected.has(o.key)}" data-search-key="${esc(o.key)}">${statusSelected.has(o.key)?'✓ ':''}${esc(o.name)}<small>${esc(o.type)}${o.code?' · '+esc(o.code):''}</small></button>`).join('')||'<p class="sub">No matches. Try a name or parent code.</p>';
-  pop.hidden=false;$('#sSearch').setAttribute('aria-expanded','true');$('#sSearch').removeAttribute('aria-activedescendant');
-}
-function closeStatusSuggestions(){$('#sSearchPop').hidden=true;$('#sSearch').setAttribute('aria-expanded','false');$('#sSearch').removeAttribute('aria-activedescendant')}
-function drawStatusChips(){
-  $('#sSearchChips').html=[...statusSelected].map(key=>{const o=statusSearchOptions.find(o=>o.key===key);return `<button class="btn" type="button" data-remove-key="${esc(key)}" aria-label="Remove ${esc(o?.name||key)}">${esc(o?.name||key)} ×</button>`}).join('')+(statusSelected.size?'<button class="btn ghost" type="button" data-search-clear>Clear all</button>':'');
-}
-function toggleStatusSelection(key){statusSelected.has(key)?statusSelected.delete(key):statusSelected.add(key);drawStatusChips();drawStatus();drawStatusSuggestions();$('#sSearch').focus({preventScroll:true})}
-const statusTrees=new Map([['town',STATUS.total]]),statusStates=new Map();
-function brandStatusTree(order){
-  const key='brand-'+order;if(statusTrees.has(key))return statusTrees.get(key);
-  const root={name:'All brands',id:'total',m:(reportUnit==='bdt'?STATUS.total:STATUS.total_kl).m,kids:[]},nodes=new Map();
-  const node=(id,name,level,path,code)=>({id,name,level,path,code,m:STATUS.labels.map(()=>null),kids:[]});
-  const add=(n,m)=>m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>c.forEach((v,j)=>n.m[i][g][j]+=v))});
-  (reportUnit==='bdt'?STATUS.total:STATUS.total_kl).kids.forEach(t=>t.kids.forEach(b=>b.kids.forEach(p=>{
-    const specs=order==='town'?[[b.name,b.name],[t.name,t.name],[p.code,p.name,p.code]]:[[b.name,b.name],[p.code,p.name,p.code],[t.name,t.name]];
-    let parent=root;const ids=[],path=[];
-    specs.forEach(([identity,name,code],level)=>{ids.push(identity);path.push(name);const id=JSON.stringify(ids);let n=nodes.get(id);
-      if(!n){n=node('v'+nodes.size,name,level,[...path],code);if(order==='parent'&&level===2)n.parentCode=p.code;nodes.set(id,n);parent.kids.push(n)}
-      add(n,p.m);parent=n;
+let statusMetric=1,statusSort={k:'total',d:-1},statusFocus=null;
+const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),rows:()=>statusLeaves(STATUS.total),onChange:()=>{drawStatus();$('#mv').hidden=true}});
+statusFilters.use('town');
+const statusStates=new Map();
+function statusLeaves(root){return root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))))}
+function filteredStatusTree(){
+  const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
+  const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:STATUS.labels.map(()=>null),kids:[]};
+  const nodes=new Map();
+  function add(n,m){m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>c.forEach((v,j)=>n.m[i][g][j]+=v))})}
+  for(const row of statusLeaves(source)){
+    if(!statusFilters.matches(row))continue;
+    add(root,row.m);
+    const order=statusView==='town'?['town','brand','parent']:statusView==='brand-town'?['brand','town','parent']:['brand','parent','town'];
+    let parent=root;const path=[],ids=[];
+    order.forEach((key,level)=>{
+      ids.push(row[key]);path.push(key==='parent'?row.pdesc:row[key]);const id=encodeURIComponent(JSON.stringify(ids));
+      let n=nodes.get(id);
+      if(!n){n={id,name:path.at(-1),level,path:[...path],town:row.town,brand:row.brand,code:key==='parent'?row.parent:undefined,parentCode:row.parent,m:STATUS.labels.map(()=>null),kids:[]};nodes.set(id,n);parent.kids.push(n)}
+      add(n,row.m);parent=n;
     });
-  })));
-  statusTrees.set(key,root);return root;
+  }
+  return root;
 }
 function setStatusView(view){
-  statusStates.set(statusView,{metric:statusMetric,query:statusQuery,selected:new Set(statusSelected),sort:statusSort,open:statusOpen});
+  statusStates.set(statusView,{metric:statusMetric,sort:statusSort,open:statusOpen});
   const key=view==='town'?'town':'brand-'+$('#sOrder').value;
-  const previous=statusStates.get(key),brandFromTown=view!=='town'&&statusView==='town';
-  const state=previous||{metric:statusMetric,query:brandFromTown?'':statusQuery,selected:new Set(),sort:{k:'total',d:-1},open:new Set()};
-  statusView=key;statusRoot=key==='town'?(reportUnit==='bdt'?STATUS.total:STATUS.total_kl):brandStatusTree($('#sOrder').value);
-  statusMetric=state.metric;statusQuery=state.query;statusSelected=state.selected;statusSort=state.sort;statusOpen=state.open;
-  statusNodes=new Map();indexStatus(statusRoot);indexStatusSearch();drawStatusChips();closeStatusSuggestions();
-  $('#sOrder').hidden=key==='town';$('#sMetric').value=String(statusMetric);$('#sSearch').value=statusQuery;
+  const state=statusStates.get(key)||{metric:statusMetric,sort:{k:'total',d:-1},open:new Set()};
+  statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
+  statusFilters.use(key==='town'?'town':'brand');
+  $('#sOrder').hidden=key==='town';$('#sMetric').value=String(statusMetric);
   $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
   $('#sSort option[value="name:1"]').textContent=key==='town'?'Town A–Z':'Brand A–Z';
   if(SHEETS['#sT'])SHEETS['#sT'].on=false;
@@ -2574,15 +2573,15 @@ function setStatusView(view){
   drawStatus();
 }
 function statusEvolutionFilters(n,view){
-  if(n.id==='total')return {};
+  if(n.id==='total')return statusFilters.selection();
   let town,brand,parent;
-  if(view==='town'){town=n.level===0?n.name:n.town;brand=n.level===1?n.name:n.brand;parent=n.code}
+  if(view==='town'){town=n.level===0?n.name:n.town;brand=n.level>=1?(n.level===1?n.name:n.brand):undefined;parent=n.code}
   else{brand=n.path[0];if(view==='brand-town'){town=n.path[1];parent=n.code}else{parent=n.level>=1?n.code:undefined;town=n.level===2?n.path[2]:undefined;if(n.level===2)parent=n.parentCode}}
-  return Object.fromEntries(Object.entries({town,brand,parent}).filter(([,value])=>value!=null).map(([key,value])=>[key,[String(value)]]));
+  return {...statusFilters.selection(),...Object.fromEntries(Object.entries({town,brand,parent}).filter(([,value])=>value!=null).map(([key,value])=>[key,[String(value)]]))};
 }
 function statusDohPairs(n,view,pairs){
   const filters=statusEvolutionFilters(n,view);
-  return pairs.filter(p=>(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
+  return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p})&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
 const statusPts=n=>n.m.map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
@@ -2610,24 +2609,19 @@ function statusCell(n,i){
   const tail=(exp&&share?'<i class="risk exp"></i>':'')+(lnd&&share?'<i class="risk lnd"></i>':'');
   return `<div class="long-value ${color}" style="--fill:${share}%"${tip?` title="${tip}"`:''}><span class="long-track" style="--exp:${exp};--lnd:${lnd}">${tail}</span>${main.replace(/" title="([^"]*)"/,(m,t)=>`" title="${t}${tip?' · '+tip:''}"`)}</div>`;
 }
-const statusMatches=n=>statusSelected.has(statusSearchKey(n));
 function statusName(n){
   const label=n.code?`<span title="${esc(n.name)}">${esc(n.name)}</span><small>${esc(n.code)}</small>`:esc(n.name);
   return `<span class="pn" style="padding-left:${n.level*22}px">${n.kids.length?`<button class="tg" data-stg="${n.id}" aria-expanded="${n.isOpen}" aria-label="${n.isOpen?'Collapse':'Expand'} ${esc(n.name)}">▸</button>`:''}${label}</span>`;
 }
 function drawStatus(){
+  statusRoot=filteredStatusTree();statusNodes=new Map();indexStatus(statusRoot);
   const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,SERIES.doh.pairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
   const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
   const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
-  const matches=new Map(),hasMatch=new Map();
-  function mark(n){const match=statusMatches(n);matches.set(n.id,match);let descendant=false;n.kids.forEach(k=>{if(mark(k))descendant=true});hasMatch.set(n.id,match||descendant);return match||descendant}
-  if(statusSelected.size)mark(statusRoot);
-  function visit(n,ancestorMatches=false){
-    const match=matches.get(n.id),showAll=!statusSelected.size||ancestorMatches||match;
-    if(!showAll&&!hasMatch.get(n.id))return;
-    const isOpen=statusOpen.has(n.id)||!!statusSelected.size&&!showAll;
+  function visit(n){
+    const isOpen=statusOpen.has(n.id);
     const entry={...row(n),isOpen,trc:n.level?'par':''};flat.push(entry);
-    if(isOpen){const start=flat.length;n.kids.slice().sort(compare).forEach(k=>visit(k,showAll));
+    if(isOpen){const start=flat.length;n.kids.slice().sort(compare).forEach(k=>visit(k));
       if(flat.length>start){flat[start].trc+=' par-first';flat.at(-1).trc+=' par-last'}}
   }
   statusRoot.kids.slice().sort(compare).forEach(n=>visit(n));
@@ -2641,7 +2635,7 @@ function drawStatus(){
   const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
   table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
-    onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No towns, brands or parents match this search.'});
+    onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.'});
   if(statusMetric===1||statusMetric===2){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
@@ -2657,22 +2651,6 @@ function drawStatus(){
   $('#sHierarchyNote').textContent='▸ '+statusHierarchy();
 }
 $('#sT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[data-stg]');if(!b)return;e.stopPropagation();const id=b.dataset.stg;statusOpen.has(id)?statusOpen.delete(id):statusOpen.add(id);drawStatus();$(`#sT [data-stg="${id}"]`)?.focus({preventScroll:true})},true);
-$('#sSearch').oninput=e=>{statusQuery=e.target.value;drawStatusSuggestions()};
-$('#sSearch').onfocus=()=>drawStatusSuggestions();
-$('#sSearchPop').onmousedown=e=>e.preventDefault();
-$('#sSearchPop').onclick=e=>{const option=e.target.closest('[data-search-key]');if(option)toggleStatusSelection(option.dataset.searchKey)};
-$('#sSearchChips').onclick=e=>{const remove=e.target.closest('[data-remove-key]');if(remove)statusSelected.delete(remove.dataset.removeKey);else if(e.target.closest('[data-search-clear]'))statusSelected.clear();else return;drawStatusChips();drawStatus();closeStatusSuggestions()};
-$('#sSearch').onkeydown=e=>{
-  if(e.key==='Escape'){closeStatusSuggestions();return}
-  if(e.key==='Tab'){closeStatusSuggestions();return}
-  if(!['ArrowDown','ArrowUp','Enter'].includes(e.key))return;
-  e.preventDefault();if($('#sSearchPop').hidden)drawStatusSuggestions();
-  const options=$$('#sSearchPop [data-search-key]');if(!options.length)return;
-  const current=options.findIndex(o=>o.id===e.target.getAttribute('aria-activedescendant'));
-  if(e.key==='Enter'){toggleStatusSelection(options[Math.max(0,current)].dataset.searchKey);return}
-  const next=options[(current+(e.key==='ArrowDown'?1:-1)+options.length)%options.length];e.target.setAttribute('aria-activedescendant',next.id);next.scrollIntoView({block:'nearest'});
-};
-document.addEventListener('click',e=>{if(!$('#sSearchBox').contains(e.target))closeStatusSuggestions()});
 $('#sMetric').onchange=e=>{statusMetric=+e.target.value;drawStatus()};
 $('#sOrder').onchange=()=>setStatusView('status');
 $('#sSort').onchange=e=>{const [k,d]=e.target.value.split(':');statusSort={k,d:+d};drawStatus()};
@@ -2719,7 +2697,6 @@ $$('#reportUnit button').forEach(button=>button.onclick=()=>{
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
   if(minStock)minStock=+size.dataset.s;
   buildData();drawB();drawNote();drawM();drawTransfer();drawRescue();
-  statusTrees.clear();statusTrees.set('town',reportUnit==='bdt'?STATUS.total:STATUS.total_kl);
   setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
   if(curRep==='not-actionables')drawNotActionables();
@@ -2895,7 +2872,8 @@ let RESCUE={},RCR=[],RC_CATS=[];
 const rcRows=d=>(d.rows||[]).map(a=>Object.fromEntries(d.cols.map((c,j)=>[c,a[j]])));
 const RC_ORDER={bpt:['brand','parent','town'],btp:['brand','town','parent'],tbp:['town','brand','parent']};
 const RC_LEVEL={brand:'Brand',parent:'Parent',town:'Town'};
-let rcOrder='bpt',rcQ='',rcSort={k:'lnd',d:-1},rcOpen=new Set(),rcExpandable=[],rcNodes=new Map();
+let rcOrder='bpt',rcSort={k:'lnd',d:-1},rcOpen=new Set(),rcExpandable=[],rcNodes=new Map();
+const planFilters=new FSNEFilters.Group({container:$('#rFilters'),rows:()=>RCR,onChange:()=>drawRescue()});
 let rcPlans={},rcPlanIdx=new Map(),rcNotesState='idle',rcNotesError='',rcNotesEditable=false;
 const RC_SCOPE={brand:'Brand',sku:'SKU',town:'Town'};
 const rcExp=r=>reportUnit==='bdt'?r.exp_bdt:r.exp_kl, rcLndOf=r=>reportUnit==='bdt'?r.lnd_bdt:r.lnd_kl, rcRotOf=r=>reportUnit==='bdt'?r.rot_bdt:r.rot_kl;
@@ -2904,8 +2882,8 @@ let rcCur=null;
 function rcSelect(k){
   if(rcCur===k)return; /* back on the same page: keep its search, order and open rows */
   rcCur=k;RESCUE=ACTIONPLANS[k]||{};RCR=rcRows(RESCUE);RC_CATS=RESCUE.categories||[];
-  rcOrder='bpt';rcQ='';rcSort={k:'lnd',d:-1};rcOpen=new Set();
-  $('#rSearch').value='';$('#rOrder').value='bpt';$('#rSort').value='lnd:-1';
+  planFilters.use(k);rcOrder='bpt';rcSort={k:'lnd',d:-1};rcOpen=new Set();
+  $('#rOrder').value='bpt';$('#rSort').value='lnd:-1';
   if(SHEETS['#rT'])SHEETS['#rT'].on=false;
 }
 const rcMonth=d=>new Date(d+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
@@ -2931,7 +2909,14 @@ function rcTree(rows){
     n.plansTxt=[...n.plans].sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(', ');n.kids.forEach(done)};
   done(root);return root;
 }
-function rcMatches(r,q){return [r.brand,r.pdesc,r.parent,r.town,r.mdesc,r.material,r.batch].join(' ').toLowerCase().includes(q)}
+function rcFilteredLots(rows){
+  if(!planFilters.active)return RESCUE.lots;
+  if(!SERIES.regions||!Object.keys(SERIES.regions).length)return null;
+  const pools=new Map(),threshold=RESCUE.lots?.threshold_bdt??20000;
+  for(const r of rows){if(!(r.lnd_kl>0))continue;const key=JSON.stringify([r.material,SERIES.regions[r.town]??null]);const p=pools.get(key)||{kl:0,bdt:0};p.kl+=r.lnd_kl;p.bdt+=r.lnd_bdt;pools.set(key,p)}
+  const big=[...pools.values()].filter(p=>p.bdt>=threshold);
+  return {threshold_bdt:threshold,lots:pools.size,big:big.length,kl:big.reduce((s,p)=>s+p.kl,0),bdt:big.reduce((s,p)=>s+p.bdt,0)};
+}
 function rcName(n){
   const label=n.code?`<span title="${esc(n.name)}">${esc(n.name)}</span><small>${esc(n.code)}</small>`:esc(n.name);
   return `<span class="pn" style="padding-left:${n.level*22}px">${n.kids.length?`<button class="tg" data-rtg="${esc(n.id)}" aria-expanded="${n.isOpen}" aria-label="${n.isOpen?'Collapse':'Expand'} ${esc(n.name)}">▸</button>`:''}${label}</span>`;
@@ -2947,8 +2932,8 @@ function rcCovCell(n){
   return `<div class="rc-v rc-cov" title="${esc(RESCUE.lm_label)} action plan on ${rcPct(n.covShare)} of this row's ${reportUnit==='bdt'?'value':'volume'} · ${esc(parts)}${n.unc.length?` · ${n.unc.length} uncovered batches, ${n.noted} with a new plan`:''}"><span class="rc-layer"><i class="rc-green" style="width:${s}%"></i></span>${badge}<span>${rcPct(n.covShare)}</span></div>`;
 }
 function drawRescueSummary(){
-  const all=rcTree(RCR),u=unitLabel(),pg=rcMeta(),soon=RCR.filter(r=>r.rsl<=pg.soon_days),lots=RESCUE.lots;
-  const nLnd=RCR.filter(r=>r.lnd_kl>0).length,soonLnd=soon.reduce((s,r)=>s+(rcLndOf(r)||0),0);
+  const rows=planFilters.rows(),all=rcTree(rows),u=unitLabel(),pg=rcMeta(),soon=rows.filter(r=>r.rsl<=pg.soon_days),lots=rcFilteredLots(rows);
+  const nLnd=rows.filter(r=>r.lnd_kl>0).length,soonLnd=soon.reduce((s,r)=>s+(rcLndOf(r)||0),0);
   const card=(l,v,d)=>`<div class="rc-card" title="${esc(l.replaceAll('&lt;','<'))}: ${esc(d)}"><small>${l}</small><div><b>${v}</b><span>${d}</span></div></div>`;
   $('#rcCards').html=card(pg.exposure_only?'Exposure (not sold before 300 days RSL)':'Exposure (= stock)',`${amount(all.exp)}<i>${u}</i>`,`${f(all.n)} batches · ${f(all.cs,0)} cases · ${f(all.tn)} towns`)
     +card('LND FC · the target',`${amount(all.lnd)}<i>${u}</i>`,`${rcPct(all.share)} of exposure · ${f(nLnd)} batches`)
@@ -2961,10 +2946,10 @@ function drawRescueSummary(){
 }
 function drawRescueTable(){
   const pg=rcMeta(),rot=pg.rotation?1:0;
-  const q=rcQ.trim().toLowerCase(),rows=q?RCR.filter(r=>rcMatches(r,q)):RCR,root=rcTree(rows);
+  const rows=planFilters.rows(),root=rcTree(rows);
   const lv=RC_ORDER[rcOrder],hier=lv.map(k=>RC_LEVEL[k]).join(' → '),flat=[];
   rcNodes=new Map([['all',root]]);
-  (function visit(nodes){nodes.slice().sort(cmp(rcSort.k,rcSort.d)).forEach(n=>{rcNodes.set(n.id,n);n.isOpen=!!q||rcOpen.has(n.id);n.trc=n.level?'par':'';flat.push(n);
+  (function visit(nodes){nodes.slice().sort(cmp(rcSort.k,rcSort.d)).forEach(n=>{rcNodes.set(n.id,n);n.isOpen=rcOpen.has(n.id);n.trc=n.level?'par':'';flat.push(n);
     if(n.isOpen&&n.kids.length){const start=flat.length;visit(n.kids);flat[start].trc+=' par-first';flat.at(-1).trc+=' par-last'}})})(root.kids);
   flat.forEach((n,i)=>{if(i%2)n.trc+=' alt'});
   const cols=[{k:'name',h:hier.replaceAll(' → ',' / '),cls:'name',r:rcName},
@@ -2979,12 +2964,12 @@ function drawRescueTable(){
     {k:'plans',h:'Action plans',nosort:1,cls:'rc-plans',r:n=>n.plansTxt?`<span title="${esc(n.plansTxt)}">${esc(n.plansTxt)}</span>`:'<span style="color:var(--ink3)">No action plan</span>'}];
   const foot=['Total',rcExpCell(root),amount(root.lnd,3),...(rot?[amount(root.rot,3)]:[]),rcPct(root.share),f(root.n),f(root.cs,1),f(root.tn),rcCovCell(root),`${f(root.plans.size)} distinct plan${root.plans.size===1?'':'s'}`];
   $('#rT').classList.toggle('rc-rot',!!rot);
-  table({t:'#rT',cols,rows:flat,sort:rcSort,foot,emptyMsg:'No brands, parents, SKUs, towns or batches match this search.',
+  table({t:'#rT',cols,rows:flat,sort:rcSort,foot,emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.',
     groups:[{span:1,label:hier},{span:3+rot,label:`${rcMonth(RESCUE.date)} · ${pg.label} · ${unitLabel()}`},{span:3,label:'Spread'},{span:2,label:`${RESCUE.lm_label} action plan`}],
     onSort:k=>{rcSort=rcSort.k===k?{k,d:-rcSort.d}:{k,d:k==='name'||k==='covShare'?1:-1};$('#rSort').value='';drawRescueTable()}});
   const scope=n=>{
     const values=n.id==='all'?[]:n.id.split('\u0001').slice(1);
-    const filters=Object.fromEntries(lv.slice(0,values.length).map((key,i)=>[key,[values[i]]]));
+    const filters={...planFilters.selection(),...Object.fromEntries(lv.slice(0,values.length).map((key,i)=>[key,[values[i]]]))};
     filters.rsl=[normalizeEvolutionRsl(pg.label)];
     return {filters,asOf:RESCUE.date,label:[...values,pg.label].join(' · ')};
   };
@@ -3004,8 +2989,20 @@ function fitRescue(){
   const top=tw.getBoundingClientRect().top+$('main').scrollTop-$('main').getBoundingClientRect().top;
   tw.style.maxHeight=Math.max(200,Math.floor($('main').clientHeight-top-14))+'px';
 }
+function rcScopedTrend(){
+  if(!planFilters.active)return RESCUE.trend||[];
+  const by=new Map();
+  for(const r of RESCUE.filter_trend||[]){if(!planFilters.matches(r))continue;const p=by.get(r.date)||{lm:{bdt:0,kl:0},cm:{bdt:0,kl:0},batches:0};for(const u of ['bdt','kl']){p.lm[u]+=r.lm[u];p.cm[u]+=r.cm[u]}p.batches+=r.batches;by.set(r.date,p)}
+  return (RESCUE.trend||[]).map(r=>({...r,...(by.get(r.date)||{lm:{bdt:0,kl:0},cm:{bdt:0,kl:0},batches:0})}));
+}
+function rcScopedOutcomes(){
+  if(!planFilters.active)return RESCUE.outcomes||{rows:[],window:[]};
+  const source=RESCUE.filter_outcomes||[],dates=[...new Set(source.map(r=>r.date))].sort().slice(-3),by=new Map();
+  for(const r of source){if(!dates.includes(r.date)||!planFilters.matches(r))continue;const p=by.get(r.c)||{c:r.c,n:0,lm:{bdt:0,kl:0},cm:{bdt:0,kl:0}};p.n+=r.n;for(const u of ['bdt','kl']){p.lm[u]+=r.lm[u];p.cm[u]+=r.cm[u]}by.set(r.c,p)}
+  return {rows:[...by.values()].sort((a,b)=>b.lm.bdt-a.lm.bdt),window:RESCUE.outcomes?.window||[]};
+}
 function drawRescueOutcomes(){
-  const u=reportUnit,T=RESCUE.trend||[],pct=x=>x.lm[u]>0?(x.lm[u]-x.cm[u])/x.lm[u]:null;
+  const u=reportUnit,T=rcScopedTrend(),pct=x=>x.lm[u]>0?(x.lm[u]-x.cm[u])/x.lm[u]:null;
   const W=560,H=172,L=8,Z=80,bw=Math.min(44,(W-L*2)/Math.max(1,T.length)-16),vals=T.map(pct),mx=Math.max(.1,...vals.map(v=>Math.abs(v??0)));
   let g=`<line x1="0" x2="${W}" y1="${Z}" y2="${Z}" style="stroke:var(--ink3)"/>`;
   T.forEach((x,i)=>{const v=vals[i],cx=L+i*(W-L*2)/T.length+(W-L*2)/T.length/2,h=v==null?0:Math.abs(v)/mx*56,y=v>0?Z-h:Z,col=v>0?'var(--ok)':'var(--bad)';
@@ -3016,7 +3013,7 @@ function drawRescueOutcomes(){
   $('#rcTrendSub').textContent=`Each month vs the saved report before it · ${u==='bdt'?'saved BDT values':'KL'}`;
   $('#rcTrendH').textContent=`LND FC reduced from last month · ${rcMeta().label} incumbents`;
   $('#rcTrendNote').textContent=`Cohort: last month’s ${rcMeta().label} batches with LND FC > 0, matched by batch key (no new inclusions). If sales run at the forecast pace this stays near 0; only beating the forecast moves it up.`;
-  const O=RESCUE.outcomes||{rows:[],window:[]},win=O.window.length?O.window[0]+'–'+O.window.at(-1):'';
+  const O=rcScopedOutcomes(),win=O.window.length?O.window[0]+'–'+O.window.at(-1):'';
   $('#rcOutH').textContent=`Which remark moved LND · ${rcMeta().outcome_label}`+(win?', '+win:'');
   $('#rcOutSub').textContent=`LND FC (${unitLabel()}) of last month’s ${rcMeta().outcome_label} batches, by their action plan · same batches this month · ${O.window.length} months pooled`;
   const rows=O.rows.map(x=>({...x,lmv:x.lm[u],red:x.lm[u]>0?(x.lm[u]-x.cm[u])/x.lm[u]:null}));
@@ -3052,7 +3049,7 @@ function rcIndexPlans(){rcPlanIdx=new Map(Object.values(rcPlans).map(p=>[rcPK(p.
 function rcEffective(r){return rcPlanIdx.get(rcKey('town',r.brand,r.material,r.town))||rcPlanIdx.get(rcKey('sku',r.brand,r.material))||rcPlanIdx.get(rcKey('brand',r.brand))||null}
 function rcPlanStatus(p){const st=new Set(p.categories.map(c=>RC_CATS.find(x=>x.c===c)?.status));return ['Actionable','Incorrect Stock','Not actionable'].find(s=>st.has(s))||null}
 function rcPlanText(p){return [...RC_CATS.map(x=>x.c).filter(c=>p.categories.includes(c)),...(p.remarks?[p.remarks]:[])].join('; ')||null}
-function rcCount(){const unc=RCR.filter(r=>!r.has_plan);$('#rNotesN').textContent=`${unc.filter(r=>rcEffective(r)).length}/${unc.length}`}
+function rcCount(){const unc=planFilters.rows().filter(r=>!r.has_plan);$('#rNotesN').textContent=`${unc.filter(r=>rcEffective(r)).length}/${unc.length}`}
 async function rcLoadNotes(){
   if(!RUN_ID||rcNotesState!=='idle')return;
   rcNotesState='loading';
@@ -3162,9 +3159,9 @@ document.addEventListener('click',e=>{if($('#rcNotes').hidden)return;$$('#rcnBod
 $('#rcnExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;(function walk(ns){ns.forEach(n=>{if(n.kids.length){close?rcnOpen.delete(n.id):rcnOpen.add(n.id);walk(n.kids)}})})(rcnTree.kids);drawRescueNotes()};
 function exportRescue(){
   if(!RCR.length){toast(`This run has no ${rcMeta().key} data`);return}
-  const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v,s=rcQ.trim().toLowerCase();
+  const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
   const head=['snapshot_date','batch_index','brand','parent_material_code','parent_desc','town','material_code','material_desc','batch_code','rsl_days','exposure_kl','exposure_bdt','lnd_fc_kl','lnd_fc_bdt','cases','lm_report_date','lm_action_plan','lm_mitigation_status','lm_plan_counted','new_action_plan','new_mitigation_status','new_plan_scope'];
-  const lines=RCR.filter(r=>!s||rcMatches(r,s)).sort((a,b)=>b.lnd_bdt-a.lnd_bdt).map(r=>{const p=rcEffective(r);return [RESCUE.date,r.batch_index,r.brand,r.parent,r.pdesc,r.town,r.material,r.mdesc,r.batch,r.rsl,r.exp_kl,r.exp_bdt,r.lnd_kl,r.lnd_bdt,r.cs,RESCUE.lm_date,r.plan,r.status,r.has_plan,p&&rcPlanText(p),p&&rcPlanStatus(p),p&&p.scope].map(q).join(',')});
+  const lines=planFilters.rows().sort((a,b)=>b.lnd_bdt-a.lnd_bdt).map(r=>{const p=rcEffective(r);return [RESCUE.date,r.batch_index,r.brand,r.parent,r.pdesc,r.town,r.material,r.mdesc,r.batch,r.rsl,r.exp_kl,r.exp_bdt,r.lnd_kl,r.lnd_bdt,r.cs,RESCUE.lm_date,r.plan,r.status,r.has_plan,p&&rcPlanText(p),p&&rcPlanStatus(p),p&&p.scope].map(q).join(',')});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[head.join(','),...lines].join('\n')+'\n'],{type:'text/csv'}));
   a.download=`${rcMeta().key}-${rcMeta().label.toLowerCase().replace('>','gt').replace('–','-')}-${RESCUE.date}.csv`;a.click();URL.revokeObjectURL(a.href);toast(`Exported ${lines.length} batches`);
 }
@@ -3173,27 +3170,26 @@ $('#rT').closest('.tw').addEventListener('click',e=>{
   if(n){const node=rcNodes.get(n.dataset.rcn);if(node)openRescueNotes(node.rows,node.name,n);return}
   const id=b.dataset.rtg;rcOpen.has(id)?rcOpen.delete(id):rcOpen.add(id);drawRescueTable()},true);
 $('#rT').closest('.tw').addEventListener('keydown',e=>{const n=e.target.closest?.('[data-rcn]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();e.stopPropagation();const node=rcNodes.get(n.dataset.rcn);if(node)openRescueNotes(node.rows,node.name,n)}},true);
-$('#rNotesBtn').onclick=e=>{const q=rcQ.trim().toLowerCase();openRescueNotes(q?RCR.filter(r=>rcMatches(r,q)):RCR,q?`Matching “${rcQ.trim()}”`:`All ${rcMeta().label} stock`,e.currentTarget)};
+$('#rNotesBtn').onclick=e=>openRescueNotes(planFilters.rows(),(planFilters.active?'Filtered ':'All ')+rcMeta().label+' stock',e.currentTarget);
 $('#rcNotes').addEventListener('click',e=>{if(e.target.closest('[data-rcn-close]'))closeRescueNotes()});
 document.addEventListener('keydown',e=>{if(e.key!=='Escape'||$('#rcNotes').hidden)return;const d=$('#rcnBody details[open]');if(d){d.open=false;d.querySelector('summary').focus();return}closeRescueNotes()});
 document.addEventListener('click',e=>$$('.movement-notes[open]').forEach(d=>{if(!d.contains(e.target))d.open=false}));
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.movement-notes[open]').forEach(d=>d.open=false)});
 addEventListener('resize',fitRescue);
-$('#rSearch').oninput=e=>{rcQ=e.target.value;drawRescueTable()};
 $('#rOrder').onchange=e=>{rcOrder=e.target.value;rcOpen=new Set();drawRescueTable()};
 $('#rSort').onchange=e=>{const [k,d]=e.target.value.split(':');rcSort={k:k==='cov'?'covShare':k,d:+d};drawRescueTable()};
 $('#rExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;rcExpandable.forEach(id=>close?rcOpen.delete(id):rcOpen.add(id));drawRescueTable()};
 
 /* Not-actionables: full snapshot rows, summed through the same hierarchy in either unit. */
 const naMonths=NOTACTIONABLES.months||[];
-let naMonth=naMonths.length-1,naBand='',naQuery='',naSort={k:'stock',d:-1},naOpen=new Set(),naExpandable=[];
+let naMonth=naMonths.length-1,naBand='',naSort={k:'stock',d:-1},naOpen=new Set(),naExpandable=[];
+const notActionableFilters=new FSNEFilters.Group({container:$('#naFilters'),rows:()=>naRows().filter(r=>!naBand||r.rsl===naBand),onChange:()=>{naResetSelection();drawNotActionables()}});
 const naValue=(r,k)=>r[k+'_'+reportUnit]||0;
 function naRows(){
   const m=naMonths[naMonth];
   return (m?.rows||[]).map(a=>Object.fromEntries(NOTACTIONABLES.cols.map((c,i)=>[c,a[i]])));
 }
-function naMatches(r){return [r.brand,r.parent,r.pdesc,r.material,r.mdesc,r.town,r.batch,r.batch_index,r.plan].join(' ').toLowerCase().includes(naQuery.trim().toLowerCase())}
-function naFiltered(){return naRows().filter(r=>naMatches(r)&&(!naBand||r.rsl===naBand))}
+function naFiltered(){return notActionableFilters.rows()}
 function naNode(id,level,name,code=null){return {id,level,name,code,kids:[],map:new Map(),stock:0,n:0,rsls:new Set(),plans:new Map()}}
 function naAdd(n,r){
   n.stock+=naValue(r,'stock');n.n++;n.rsls.add(r.rsl);
@@ -3229,11 +3225,11 @@ function drawNotActionables(){
     $('#naRsl').html='<option value="">All RSL</option>'+NOTACTIONABLES.groups.map(g=>`<option value="${esc(g)}">${esc(g.replaceAll(' ',''))}</option>`).join('');
   }
   $('#naMonth').value=String(naMonth);$('#naRsl').value=naBand;
-  const searched=naRows().filter(naMatches),rows=searched.filter(r=>!naBand||r.rsl===naBand),root=naTree(rows);
+  const rows=naFiltered(),root=naTree(rows);
   const flat=[];naExpandable=[];
   (function visit(nodes){nodes.slice().sort(cmp(naSort.k,naSort.d)).forEach(n=>{
     if(n.kids.length)naExpandable.push(n.id);
-    n.isOpen=!!naQuery.trim()||naOpen.has(n.id);n.trc=n.level?'par':'';flat.push(n);
+    n.isOpen=naOpen.has(n.id);n.trc=n.level?'par':'';flat.push(n);
     if(n.isOpen&&n.kids.length){const start=flat.length;visit(n.kids);flat[start].trc+=' par-first';flat.at(-1).trc+=' par-last'}
     else if(n.kids.length)(function collect(kids){kids.forEach(c=>{if(c.kids.length){naExpandable.push(c.id);collect(c.kids)}})})(n.kids);
   })})(root.kids);
@@ -3247,11 +3243,11 @@ function drawNotActionables(){
       {k:'plans',h:'Action-plan remarks',nosort:1,cls:'na-plans',r:n=>n.plansText?`<span title="${esc(n.plansText)}">${esc(n.plansText)}</span>`:'<span class="dim">No remarks</span>'}],
     foot:['Total',amount(root.stock,3),f(root.n),root.n?rsl(root):'–',`${f(root.plans.size)} distinct remark${root.plans.size===1?'':'s'}`],
     groups:[{span:1,label:'Not actionable'},{span:1,label:m.label+' · '+unitLabel()},{span:2,label:'Batches / RSL'},{span:1,label:'Saved plan'}],
-    emptyMsg:naRows().length?'No batches match this search and RSL filter. Clear the search or choose All RSL.':'No batches are marked Not actionable in this month’s snapshot.',
+    emptyMsg:naRows().length?'No batches match these filters. Clear a filter or choose All RSL.':'No batches are marked Not actionable in this month’s snapshot.',
     onSort:k=>{naSort=naSort.k===k?{k,d:-naSort.d}:{k,d:k==='name'?1:-1};$('#naSort').value='';drawNotActionables()}});
   const allOpen=naExpandable.length>0&&naExpandable.every(id=>naOpen.has(id));
   $('#naExpand').textContent=allOpen?'Collapse all':'Expand all';$('#naExpand').dataset.all=allOpen?'1':'';
-  $('#naExpand').disabled=!naExpandable.length||!!naQuery.trim();
+  $('#naExpand').disabled=!naExpandable.length;
   $('#naCount').textContent=`${f(root.n)} batches · ${f(root.kids.length)} brands`;
   requestAnimationFrame(fitNotActionables);
 }
@@ -3262,7 +3258,6 @@ function fitNotActionables(){
 }
 function naResetSelection(){if(SHEETS['#naT'])SHEETS['#naT'].on=false}
 $('#naMonth').onchange=e=>{naMonth=+e.target.value;naOpen.clear();naResetSelection();drawNotActionables()};
-$('#naSearch').oninput=e=>{naQuery=e.target.value;naResetSelection();drawNotActionables()};
 $('#naRsl').onchange=e=>{naBand=e.target.value;naResetSelection();drawNotActionables()};
 $('#naSort').onchange=e=>{const [k,d]=e.target.value.split(':');naSort={k,d:+d};drawNotActionables()};
 $('#naExpand').onclick=e=>{if(e.currentTarget.dataset.all)naOpen.clear();else naExpandable.forEach(id=>naOpen.add(id));drawNotActionables()};

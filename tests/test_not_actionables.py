@@ -117,7 +117,11 @@ class RunLifecycleTests(unittest.TestCase):
         for name, frame in [('saved-0000', self.july), ('snapshot', self.august)]:
             frame.write_excel(self.run_dir / 'history' / (name + '.xlsx'))
             frame.write_parquet(self.run_dir / 'history' / (name + '.parquet'))
-        self.payload = {'SERIES': {'doh': {}}, 'STATUS': {'labels': ['Jul 2026', 'Aug 2026']}}
+        # Completed runs retain the report and movement calendar used by lazy projections.
+        self.august.write_parquet(self.run_dir / 'output/inferred_report.parquet')
+        self.payload = {'SERIES': {'doh': {}, 'labels': ['Aug'], 'year': 2026,
+                                   'groups': ['< 3M', '3M - 6M', '6M - 10M', '> 10M']},
+                        'STATUS': {'labels': ['Jul 2026', 'Aug 2026']}}
         (self.run_dir / 'data.json').write_text(json.dumps(self.payload))
 
     def test_existing_run_loads_full_report_from_private_parquet_and_caches_it(self):

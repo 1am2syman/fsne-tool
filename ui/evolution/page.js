@@ -19,6 +19,7 @@
   const filters = { town: [], parent: [], material: [], brand: [], rsl: [] };
   let reportScope = {}, filterSeq = 0, materialLabels = {};
   const filterCatalogs = new Map();
+  const filterDropdowns = new Map();
   const DATASETS = { default_metric: LENSES[0].key, metric_options: LENSES.map((l) => ({ key: l.key, label: l.label, category_dimension: l.dimension, included_good_stock_policy: l.policy })), metrics: {} };
   let env = null, ctrl = null, mounted = false, seq = 0, lockSeq = 0, pendingLockId = null, current = null, observer = null, lastWidth = 0, drill = null;
 
@@ -126,139 +127,67 @@
   }
 
   function updateFilterLabels() {
-    Object.entries(filters).forEach(([key, values]) => {
-      const dropdown = $(`#evFilter-${key}`);
-      dropdown.dataset.active = String(values.length > 0);
-      const valueLabel = value => filterLabel(key, value);
-      dropdown.querySelector('summary span').textContent = values.length === 1 ? valueLabel(values[0]) : values.length ? `${values.length} selected` : 'All';
-      dropdown.querySelector('summary').title = values.map(valueLabel).join(', ');
-      dropdown.dataset.scoped = String(Boolean(reportScope[key]?.length));
+    filterDropdowns.forEach((dropdown, key) => {
+      dropdown.refresh();
+      dropdown.button.dataset.scoped = String(Boolean(reportScope[key]?.length));
     });
     $('#evFilterClear').hidden = !Object.entries(filters).some(([key, values]) => JSON.stringify(values) !== JSON.stringify(reportScope[key] || []));
   }
 
   function mountFilters() {
-    const element = (tag, attrs, text) => {
-      const node = document.createElement(tag);
-      Object.entries(attrs || {}).forEach(([key, value]) => node.setAttribute(key, value));
-      if (text) node.textContent = text;
-      return node;
-    };
-    const controls = Object.keys(filters).map(key => {
-      const title = key === 'rsl' ? 'RSL' : key[0].toUpperCase() + key.slice(1);
-      const dropdown = element('details', { class: 'evo-filter', id: `evFilter-${key}`, 'data-filter': key });
-      const summary = element('summary', { 'aria-label': `${title} filter` }, title);
-      summary.append(element('span', {}, 'All'));
-      const pop = element('div', { class: 'evo-filter-pop' });
-      const search = element('input', { type: 'search', 'aria-label': `Search ${key} options`, placeholder: `Search ${key}`, autocomplete: 'off' });
-      const options = element('div', { class: 'evo-options', role: 'group', 'aria-label': `${title} options` });
-      options.append(element('p', { class: 'evo-filter-empty' }, 'Loading options…'));
-      const actions = element('div', { class: 'evo-filter-actions' });
-      actions.append(element('button', { type: 'button', class: 'btn', 'data-all': '' }, 'All in scope'), element('button', { type: 'button', class: 'btn primary', 'data-apply': '', disabled: '' }, 'Apply'));
-      pop.append(search, options, actions);
-      dropdown.append(summary, pop);
-      return dropdown;
-    });
-    $('#evFilters').replaceChildren(...controls, element('button', { type: 'button', class: 'btn ghost', id: 'evFilterClear', hidden: '' }, 'Clear filters'), element('span', { id: 'evFilterStatus', role: 'status' }));
-    document.querySelectorAll('#evFilters details').forEach(dropdown => {
-      dropdown.addEventListener('toggle', () => {
-        if (!dropdown.open) return;
-        document.querySelectorAll('#evFilters details').forEach(other => { if (other !== dropdown) other.open = false; });
-        const selected = filters[dropdown.dataset.filter];
-        dropdown.querySelectorAll('input[type=checkbox]').forEach(input => { input.checked = selected.includes(input.value); });
-        dropdown.querySelector('input[type=search]').value = '';
-        searchFilterOptions(dropdown);
-        dropdown.querySelector('input[type=search]').focus();
+    const container = $('#evFilters');
+    const dimensions = [
+      { key: 'brand', label: 'Brand' }, { key: 'parent', label: 'Parent SKU' },
+      { key: 'town', label: 'Town' }, { key: 'material', label: 'Material' }, { key: 'rsl', label: 'RSL' },
+    ];
+    container.replaceChildren();
+    dimensions.forEach(({ key, label }) => {
+      const dropdown = new root.FSNEFilters.Dropdown({
+        container, key, label,
+        options: () => filterOptions(key),
+        selection: () => filters[key].length ? new Set(filters[key]) : null,
+        apply: selected => {
+          filters[key] = selected === null ? [...(reportScope[key] || [])] : [...selected].sort();
+          applyFilters();
+        },
       });
-      dropdown.querySelector('input[type=search]').oninput = () => searchFilterOptions(dropdown);
-      dropdown.querySelector('[data-all]').onclick = () => dropdown.querySelectorAll('input[type=checkbox]').forEach(input => { input.checked = false; });
-      dropdown.querySelector('[data-apply]').onclick = () => {
-        const inputs = [...dropdown.querySelectorAll('input[type=checkbox]')];
-        const selected = inputs.filter(input => input.checked).map(input => input.value).sort();
-        const key = dropdown.dataset.filter;
-        filters[key] = selected.length === inputs.length || !selected.length ? [...(reportScope[key] || [])] : selected;
-        dropdown.open = false;
-        dropdown.querySelector('summary').focus();
-        applyFilters();
-      };
-      dropdown.addEventListener('keydown', event => {
-        if (event.key !== 'Escape') return;
-        dropdown.open = false;
-        dropdown.querySelector('summary').focus();
-        event.stopPropagation();
-      });
+      dropdown.button.id = 'evFilter-' + key;
+      filterDropdowns.set(key, dropdown);
     });
-    document.addEventListener('click', event => {
-      if (!event.target.closest('#evFilters')) document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
-    });
-    $('#evFilterClear').onclick = () => {
+    const clear = document.createElement('button');
+    clear.id = 'evFilterClear';
+    clear.className = 'btn ghost';
+    clear.type = 'button';
+    clear.textContent = 'Clear filters';
+    clear.hidden = true;
+    clear.onclick = () => {
       Object.keys(filters).forEach(key => { filters[key] = [...(reportScope[key] || [])]; });
-      document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
       applyFilters();
     };
+    container.append(clear);
   }
 
-  function searchFilterOptions(dropdown) {
-    const query = dropdown.querySelector('input[type=search]').value.trim().toLowerCase();
-    let visible = 0;
-    dropdown.querySelectorAll('.evo-options label').forEach(label => {
-      label.hidden = !label.textContent.toLowerCase().includes(query);
-      if (!label.hidden) visible++;
-    });
-    const empty = dropdown.querySelector('[data-empty]');
-    if (empty) empty.hidden = visible > 0;
+  async function filterOptions(key) {
+    const request = filterSeq;
+    // Keep the clicked report bounds while letting each dropdown expand its own selection.
+    const context = { ...filters, [key]: reportScope[key] || [] };
+    const path = 'evolution/filters?' + filterQuery(context).slice(1);
+    const cacheKey = env.api(path);
+    if (!filterCatalogs.has(cacheKey)) {
+      const pending = getJson(path).catch(error => { filterCatalogs.delete(cacheKey); throw error; });
+      filterCatalogs.set(cacheKey, pending);
+      if (filterCatalogs.size > 64) filterCatalogs.delete(filterCatalogs.keys().next().value);
+    }
+    const options = await filterCatalogs.get(cacheKey);
+    if (request !== filterSeq) throw new Error('Filter scope changed');
+    materialLabels = { ...materialLabels, ...options.material_labels };
+    return (options[key] || []).map(value => ({ value, label: filterLabel(key, value) }));
   }
 
   function loadFilters() {
-    const request = ++filterSeq;
-    const requests = Object.keys(filters).map(async key => {
-      const dropdown = $(`#evFilter-${key}`);
-      dropdown.querySelector('[data-apply]').disabled = true;
-      dropdown.querySelector('.evo-options').textContent = 'Loading options…';
-      // Keep the clicked report bounds while letting each dropdown expand its own selection.
-      const context = { ...filters, [key]: reportScope[key] || [] };
-      const path = 'evolution/filters?' + filterQuery(context).slice(1);
-      const cacheKey = env.api(path);
-      if (!filterCatalogs.has(cacheKey)) {
-        const pending = getJson(path).catch(error => { filterCatalogs.delete(cacheKey); throw error; });
-        filterCatalogs.set(cacheKey, pending);
-        if (filterCatalogs.size > 64) filterCatalogs.delete(filterCatalogs.keys().next().value);
-      }
-      const options = await filterCatalogs.get(cacheKey);
-      if (request !== filterSeq) return;
-      materialLabels = { ...materialLabels, ...options.material_labels };
-      const labels = (options[key] || []).map(value => {
-        const label = document.createElement('label');
-        const input = document.createElement('input');
-        input.type = 'checkbox';
-        input.value = value;
-        input.checked = filters[key].includes(value);
-        label.append(input, document.createTextNode(filterLabel(key, value)));
-        return label;
-      });
-      const empty = document.createElement('p');
-      empty.className = 'evo-filter-empty';
-      empty.dataset.empty = '';
-      empty.hidden = labels.length > 0;
-      empty.textContent = labels.length ? 'No matches' : 'No options in this scope';
-      dropdown.querySelector('.evo-options').replaceChildren(...labels, empty);
-      dropdown.querySelector('[data-apply]').disabled = false;
-      searchFilterOptions(dropdown);
-    });
-    return Promise.all(requests).then(() => {
-      if (request !== filterSeq) return;
-      updateFilterLabels();
-      $('#evFilterStatus').textContent = '';
-    }).catch(() => {
-      if (request !== filterSeq) return;
-      $('#evFilterStatus').textContent = 'Filters unavailable. ';
-      const retry = document.createElement('button');
-      retry.className = 'btn';
-      retry.type = 'button';
-      retry.textContent = 'Retry';
-      retry.onclick = loadFilters;
-      $('#evFilterStatus').append(retry);
-    });
+    ++filterSeq;
+    filterDropdowns.forEach(dropdown => dropdown.close());
+    updateFilterLabels();
   }
 
   function applyFilters() {
@@ -525,7 +454,6 @@
     loadFilters();
     $('#evTip').style.opacity = 0;
     $('#evMenu').classList.remove('open');
-    document.querySelectorAll('#evFilters details').forEach(dropdown => { dropdown.open = false; });
     updateFilterLabels();
     syncToolbar();
   }

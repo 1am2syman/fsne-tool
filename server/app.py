@@ -35,8 +35,11 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import polars as pl
+
 from src import evolution
 from src.movement import read_raw_reports
+from ui.filter_data import enrich_payload
 from ui.not_actionables_data import COLS as NOT_ACTIONABLE_COLS
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import extract_legacy, render
@@ -340,6 +343,19 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     data = json.loads(payload.read_text())
                 except (OSError, ValueError) as exc:
                     raise RunError("Could not read this run's dashboard data") from exc
+                if 'SERIES' in data and (
+                    not {'facets', 'materials', 'regions'} <= data['SERIES'].keys()
+                    or any(not {'filter_trend', 'filter_outcomes'} <= page.keys()
+                           for page in data.get('ACTIONPLANS', {}).values())
+                ):
+                    # Derive filters from this run's private facts; never rebuild its report.
+                    data = enrich_payload(
+                        data, read_raw_reports(run / 'history'),
+                        pl.read_parquet(run / 'output' / 'inferred_report.parquet'), run / 'input',
+                    )
+                    tmp = run / 'data.json.tmp'
+                    tmp.write_text(json.dumps(data, separators=(',', ':'), allow_nan=False))
+                    tmp.replace(payload)
                 if data.get('NOTACTIONABLES', {}).get('cols') != NOT_ACTIONABLE_COLS:
                     # Upgrade this derived view from private snapshots; preserve all frozen results.
                     data['NOTACTIONABLES'] = not_actionables_payload(read_raw_reports(run / 'history'))

@@ -13,7 +13,7 @@ Right-click an **Exposure** or **LND FC** cell and choose **Show evolution**. Th
 | loading-watch | >10M |
 | brand-status / town-status | Clicked RSL column, or all groups for a total; selected metric must be Exposure or LND |
 
-The full-page overlay carries the selected measure, BDT/KL display, report date and available Brand, Parent and Town dimensions. Its dropdowns stay within that report scope: Town, Parent and Material options reflect the other active filters and the report date. **All in scope** and **Clear filters** restore the opened report's bounds; they do not broaden a brand or town drill-down to the entire company. Material options show the description and exact child code, and filter by that code. A total omits row dimensions that do not apply. The report RSL condition filters each saved snapshot at this first level. Closing the overlay returns to the report with its expanded rows, selection and scroll intact; the standalone evolution chart retains its previous filter state.
+The full-page overlay carries the selected measure, BDT/KL display, report date and available Brand, Parent and Town dimensions. Its dropdowns stay within that report scope: Town, Parent and Material options reflect the other active filters and the report date. **Clear filter from…** restores that field's report bound; **Clear filters** restores all opened report bounds; they do not broaden a brand or town drill-down to the entire company. Material options show the description and exact child code, and filter by that code. A total omits row dimensions that do not apply. The report RSL condition filters each saved snapshot at this first level. Closing the overlay returns to the report with its expanded rows, selection and scroll intact; the standalone evolution chart retains its previous filter state.
 
 A snapshot is closing stock for its report month and appears as the **next month’s opening**. For example, an August snapshot appears as September opening stock. The report date limits which saved snapshots are available.
 
@@ -39,7 +39,7 @@ Selected views hide the lens and scope controls to keep the selection fixed. The
 | RSL | Closing stock by RSL group, including good stock |
 | >10M cohort | Eligible Exposure originating in >10M, retained while eligible |
 
-The standalone chart offers Town, Parent, Material, Brand and RSL filters. Each dropdown lists options compatible with the other selections. The chart keeps separate timeline columns even when filtered stock disappears and reappears in disconnected periods; label widths set a minimum column spacing so tight spacing cannot overlap adjacent labels. Mitigation lenses exclude good stock and unclassified amounts. Sales attribution uses secondary-sales inputs when available; unavailable sales are shown explicitly.
+The standalone chart offers **Brand**, **Parent SKU**, **Town**, **Material** and **RSL** filters, in that order. Each dropdown lists options compatible with the other selections and provides the same Excel-style search, checkboxes, Select All, **OK** and **Cancel** as the report filters. Empty selections cannot be applied, and incompatible selections remain visible until explicitly changed. See [Report filters](../README.md#report-filters) for search and clearing behavior. The chart keeps separate timeline columns even when filtered stock disappears and reappears in disconnected periods; label widths set a minimum column spacing so tight spacing cannot overlap adjacent labels. Mitigation lenses exclude good stock and unclassified amounts. Sales attribution uses secondary-sales inputs when available; unavailable sales are shown explicitly.
 
 Report overlays display **M BDT** or **KL**. Standalone BDT uses **crore BDT**. API graph values are BDT or litres; consumers must apply `unit_div` and `unit_label`, rather than treating raw `unit=kl` values as displayed KL. The report overlay deliberately overrides the BDT divisor to 1,000,000.
 
@@ -49,7 +49,8 @@ Report overlays display **M BDT** or **KL**. Standalone BDT uses **crore BDT**. 
 
 - `src/evolution.py` loads saved history, classifies rows, builds flows and selected histories in both groupings, and caches graph/detail payloads.
 - `ui/template.html` owns report-cell scopes, the dialog and lazy asset loading. Edit this template rather than generated `ui/index.html`.
-- `ui/evolution/page.js` owns filters, data requests, selection state, Back navigation and CSV export.
+- `ui/report_filters.js` owns the shared searchable checkbox dropdown and its draft/apply behavior.
+- `ui/evolution/page.js` connects those dropdowns to bounded catalogs and owns data requests, selection state, Back navigation and CSV export.
 - `ui/evolution/refchart.js` and `refchart.css` own the Sankey renderer and interactions. The adapted renderer is maintained here; no external generator is required.
 - `server/app.py` serves the local assets and gzip JSON with ETag revalidation. Each run uses its own frozen `history/` and `input/`; sample endpoints use the configured shared history and bundled sample inputs.
 
@@ -59,7 +60,7 @@ Run routes start at `/api/runs/<id>/evolution/`. Sample routes start at `/api/ev
 
 | Route suffix | Result |
 | --- | --- |
-| `filters` | Town, Parent, Brand and RSL catalogs |
+| `filters` | Brand, Parent, Town, Material and RSL catalogs |
 | `<lens>` | Graph summary |
 | `<lens>/detail` | Lineage details for that graph |
 | `<lens>/selection` | Selected history, alternating RSL and category grouping at each step |
@@ -91,7 +92,7 @@ Serve the normal app for interactive charts; a copied static HTML file does not 
 POLARS_MAX_THREADS=2 uv run python -m unittest tests.test_evolution -v
 node --check ui/evolution/page.js
 node --check ui/evolution/refchart.js
-node --test tests/evolution_layout.test.cjs tests/evolution_page.test.cjs
+node --unhandled-rejections=strict --test tests/report_filters.test.cjs tests/doh_summary.test.cjs tests/evolution_layout.test.cjs tests/evolution_page.test.cjs
 ```
 
 The regression suite covers intersecting scopes, units, report dates, full-path cache isolation, sample/run HTTP routes, exact forward/reverse/nested quantities, blended anchor shares, good/unclassified stock, >10M identifiers, and exclusion of later growth. Cache regressions inject Windows-style permission failures for obsolete files, retention, timestamps and required writes; they cover schema upgrades, warm-build reuse and active-read protection. These injections run on Linux and do not replace verification on a Windows machine. Page tests cover parent restoration, delayed responses after Back/Close, Retry and CSV provenance.

@@ -77,6 +77,7 @@ def normalise(frame: pl.DataFrame) -> pl.DataFrame:
         pl.col("report_date").cast(pl.String).str.slice(0, 10).str.to_date(strict=False),
         pl.col("batch_index").cast(pl.String),
         pl.col(BRAND).cast(pl.String),
+        _optional(frame, "Town").fill_null("").alias("town"),
         _optional(frame, "Material Code").alias("material_code"),
         _optional(frame, "parent_material_code").alias("parent_code"),
         _optional(frame, "material_desc").alias("material_desc"),

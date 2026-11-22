@@ -65,9 +65,17 @@ Evolution reads frozen snapshots, so its endpoint can differ from a report forec
 
 The server binds to localhost. Large HTML dashboards are gzip-compressed when the browser accepts gzip, so previews and live runs share the same delivery path without a separate preview server. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
 
+## Report filters
+
+Detailed reports use three connected value filters: **Brand**, **Parent SKU**, and **Town**. Open a dropdown, search names or parent codes, and check the values to include. **(Select All)** toggles the displayed values; during search it applies to the search results. **Add current selection to filter** combines search results with the previous selection. **OK** applies changes; **Cancel**, Escape or clicking outside discards them. An empty selection cannot be applied. Use **Clear filter from…** for one field or the × button to clear the three fields.
+
+Values within a field combine with OR; fields combine with AND. Each dropdown offers values matching the other two fields and the report’s month, RSL or review controls. Existing selections are retained when another filter excludes them, so incompatible selections show an empty result instead of silently broadening the report. Filters persist when changing units, sorting or hierarchy and remain separate between reports. Table totals, related charts, DOH explanations, evolution scopes and connected CSV exports follow the selected facts. The batch-wise report remains a top-400 preview; its filters and filtered cards apply to that preview population. The national Overview retains its national scope. Inventory evolution uses the same dropdown interaction for its additional Material and RSL fields.
+
+Town-level stock movement and action-plan cohort projections are derived from saved snapshots. Opening an older completed run adds these derived fields without changing its frozen report calculations or prices. After updating, restart the app server and refresh the browser to load both the filter data support and the new controls.
+
 ## Not-actionables
 
-**Reports → not-actionables** lists stock explicitly marked `Not actionable`, across all RSL bands, with Stock, Batches, RSL and Action-plan remarks in its expandable table. Expand Brand → Parent SKU → Town → Batch, search, filter by RSL, switch BDT/KL or export matching batches to CSV. Accepted action plans refresh the population; earlier months retain their own values and prices. Existing completed runs load the report from their private snapshots on first visit. See [Not-actionables](docs/not-actionables.md) for the selection rule and lifecycle behavior.
+**Reports → not-actionables** lists stock explicitly marked `Not actionable`, across all RSL bands, with Stock, Batches, RSL and Action-plan remarks in its expandable table. Expand Brand → Parent SKU → Town → Batch, select Brand, Parent SKU and Town in the searchable multiselect dropdowns, filter by RSL, switch BDT/KL or export matching batches to CSV. Accepted action plans refresh the population; earlier months retain their own values and prices. Existing completed runs load the report from their private snapshots on first visit. See [Not-actionables](docs/not-actionables.md) for the selection rule and lifecycle behavior.
 
 ## National overview
 
@@ -168,11 +176,13 @@ uv run python -m unittest discover -s tests -v
 uv run --with pytest python -m pytest -q tests/test_fsne_month.py tests/test_form_config.py tests/test_upload_samples.py tests/test_onboarding_must_have.py tests/test_server.py tests/test_run_rates.py
 uv run python -m unittest tests.test_history_parquet -v
 uv run python -m unittest tests.test_action_plans -v
+POLARS_MAX_THREADS=2 uv run python -m pytest tests/test_filter_data.py tests/test_movement.py tests/test_server.py -q
+node --unhandled-rejections=strict --test tests/report_filters.test.cjs tests/doh_summary.test.cjs tests/evolution_page.test.cjs tests/evolution_layout.test.cjs
 uvx ruff check src tests ui server
 uvx pyright --project pyrightconfig.json
 ```
 
-The focused pytest checks cover FSNE-month detection, previous-month sales validation, month-end and year rollover, upload persistence and calculation integration. UI validation uses widescreen laptop screenshots; the `tests/e2e_*` suites are separate and are not required for UI-only work.
+The focused pytest checks cover FSNE-month detection, previous-month sales validation, month-end and year rollover, upload persistence and calculation integration. Filter regressions cover connected catalogs, Excel selection/search behavior, frozen movement reconciliation in both units, completed-run upgrades and filtered DOH/evolution scopes. UI validation uses light-mode screenshots at widescreen laptop widths; use `validation-artifacts/` for temporary screenshots and browser evidence, then remove task-owned artifacts before delivery. The `tests/e2e_*` suites are separate and are not required for UI-only work.
 
 ## Rebuild generated outputs and the UI
 

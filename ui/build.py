@@ -25,6 +25,7 @@ from src.movement import (
     transform_parent_series,
     transform_series,
 )
+from ui.filter_data import enrich_payload
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import render
 from ui.rescue_data import build_pages as action_plan_pages
@@ -135,6 +136,7 @@ else:
 # Planning statuses belong to the saved snapshot, including accepted uploads in --frozen mode.
 # Read every batch and preserve each month's stored measures and prices.
 payload['NOTACTIONABLES'] = not_actionables_payload(raw_history)
+payload = enrich_payload(payload, raw_history, pl.read_parquet(OUT / 'inferred_report.parquet'), DATA)
 # Inventory evolution graphs for every lens and unit; the server builds any missing one on first request.
 try:
     evo = evolution.build_all(HIST, DATA, OUT / 'evolution')

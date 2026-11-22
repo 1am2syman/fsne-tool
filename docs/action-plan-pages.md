@@ -4,7 +4,7 @@ Sidebar: **Action plans → rescue · 3M–6M**, **rebalance · 6M–10M**, **lo
 
 ## What it shows
 
-Only established report measures; nothing is re-forecast. Every page has the summary strip, the Exposure split bar, the spreadsheet-style sheet (drill-down hierarchies, search, Expand all, BDT/KL switch, Export CSV), the Coverage and Action plans columns, **New plans**, and the two outcome panels.
+Only established report measures; nothing is re-forecast. Every page has the summary strip, the Exposure split bar, the spreadsheet-style sheet (drill-down hierarchies, connected Brand/Parent SKU/Town dropdowns, Expand all, BDT/KL switch, Export CSV), the Coverage and Action plans columns, **New plans**, and the two outcome panels.
 
 | Element | Definition |
 | --- | --- |
@@ -20,6 +20,8 @@ Only established report measures; nothing is re-forecast. Every page has the sum
 **Last month** is the latest saved report in the previous calendar month, joined by exact `batch_index`: the same join that fills the `lm_` columns of the action plan input file. Batches absent from it are new and count as uncovered. A remark of `RSL>10M_Good stock` is a label, not a plan.
 
 The sheet ends at the viewport bottom, so its sticky total row is visible on load; the outcome panels follow below.
+
+The three dropdowns use the shared [Excel-style filter behavior](../README.md#report-filters). Each field lists values compatible with the other two. Selected facts drive the summary, table totals, outcome panels, CSV and the batches opened through **New plans**. Report filters persist through unit, hierarchy and sort changes, with independent selections on rescue, rebalance and loading-watch. Informational row/brand counts and Notes are omitted from the toolbar to keep the controls on one row.
 
 ## Band differences
 
