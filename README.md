@@ -20,6 +20,14 @@ To update on Windows, close the FSNE launcher window and double-click `update.ba
 
 By default, user runs and settled history live outside the repository under `Documents/FSNE/runs` and `Documents/FSNE/history` (using the Windows Documents known folder on Windows), so repository updates never overwrite user data. On first launch, a new external `history/` folder is seeded with the baseline snapshots shipped in the repository's `history/` folder. You can inspect or change both folders live from the **Storage** page in the sidebar (saved to `Documents/FSNE/settings.json`), or lock them at startup with `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` (existing in-repo `runs/` folders can be pointed to directly or moved to `Documents/FSNE/runs`).
 
+### Upgrading from in-repository data folders
+
+Before updating an existing installation, close the app and **copy the complete `runs/` and `history/` folders to a safe location outside the repository**. Preserve every run's subfolders, metadata and outputs, and all history files, including locally settled months. The updater resets tracked files to upstream, so local history commits alone are not a backup.
+
+For the new defaults, copy the folders to `FSNE/runs` and `FSNE/history` inside your actual Documents folder (which may be redirected to OneDrive on Windows). Copy into new folders rather than overwriting another installation's data. Keep the original folders or a separate backup until you have verified the copied data. Then update and start the app, confirm the paths on the **Storage** page, and check your run list, saved results and settled months. If you copied elsewhere, select those folders on Storage or set `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` before starting. Changing a storage path selects that folder; it does not move or merge its contents. An existing external history folder is not replaced by baseline seeding.
+
+Windows runs use private copies of history. On Linux, older runs may contain symlinks into the original checkout: when copying those runs, dereference the links so the backup contains the actual files before removing or changing their targets. Move or back up Excel and Parquet history files together. Existing Excel-only months remain readable.
+
 Alternatively, start the app from the repository checkout:
 
 ```bash
