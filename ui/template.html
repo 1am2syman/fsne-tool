@@ -2603,13 +2603,26 @@ let statusMetric=1,statusSort={k:'total',d:-1},statusFocus=null;
 const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),rows:()=>statusLeaves(STATUS.total),onChange:()=>{drawStatus();$('#mv').hidden=true}});
 statusFilters.use('town');
 const statusStates=new Map();
-/* While the scoped overlay is open, statusScope holds the JSON [town,brand,parent] keys of the rows it may show. */
-let statusScope=null;
+/* While the scoped overlay is open, statusScope maps each JSON [town,brand,parent] key it may show to the amount the
+ * chart traced for that row, and statusSnap is the saved snapshot (index into STATUS.labels) the chart node refers to. */
+let statusScope=null,statusSnap=null,statusGroup=null;
 const statusLeafKey=(town,brand,parent)=>JSON.stringify([town,brand,String(parent)]);
 function statusLeaves(root){
   const leaves=root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
-  return statusScope?leaves.filter(r=>statusScope.has(statusLeafKey(r.town,r.brand,r.parent))):leaves;
+  if(!statusScope)return leaves;
+  // Keep the snapshot the node belongs to and scale every cell of a row so its metric equals the traced amount.
+  const scaled=[];
+  for(const r of leaves){
+    const amount=statusScope.get(statusLeafKey(r.town,r.brand,r.parent));
+    if(amount==null)continue;
+    const at=r.m[statusSnap],have=at?statusGroup==null?sum(at.map(c=>c[statusMetric])):at[statusGroup][statusMetric]:0,k=have>0?amount/have:0;
+    if(!(k>0))continue;
+    // A node that sits in one RSL group traces only that group; every other group's cell is zero.
+    scaled.push({...r,m:r.m.map(cs=>cs&&cs.map((c,g)=>statusGroup==null||g===statusGroup?c.map(v=>v*k):c.map(()=>0)))});
+  }
+  return scaled;
 }
+// DOH always describes the latest saved cohort of the rows, whichever snapshot the node refers to.
 const statusPairs=()=>statusScope?SERIES.doh.pairs.filter(p=>statusScope.has(statusLeafKey(p.t,p.b,p.p))):SERIES.doh.pairs;
 function filteredStatusTree(){
   const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
@@ -2655,11 +2668,12 @@ function statusDohPairs(n,view,pairs){
   return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p})&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
-const statusPts=n=>n.m.map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
-const statusLatest=n=>n.m.at(-1);
+const statusEnd=()=>statusScope?statusSnap:STATUS.labels.length-1;
+const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
+const statusLatest=n=>n.m[statusEnd()];
 const statusAmount=n=>statusLatest(n)==null?null:sum(statusLatest(n).map(c=>c[statusMetric]));
 function statusSpark(n){
-  const p=statusPts(n);if(p.every(v=>v==null))return '—';
+  const p=statusPts(n);if(p.every(v=>v==null)||p.length<2)return '—';
   if(p.every(v=>v!=null))return spark(p);
   const vals=p.filter(v=>v!=null),lo=Math.min(...vals),rg=Math.max(...vals)-lo||1;
   let path='';p.forEach((v,i)=>{if(v!=null)path+=`${i&&p[i-1]!=null?'L':'M'}${2+i*80/(p.length-1)},${18-(v-lo)/rg*16} `});
@@ -2717,9 +2731,9 @@ function drawStatus(){
     {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
     {k:'spark',h:'Stock trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
     {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
-    {k:'now',h:STATUS.labels[0].split(' ')[0]+'→'+STATUS.labels.at(-1).split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
+    {k:'now',h:(statusEnd()?STATUS.labels[0].split(' ')[0]+'→':'')+STATUS.labels[statusEnd()].split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);if(p.length<2)return `<b style="font-weight:600">${p[0]==null?'—':amount(p[0],1)}</b>`;return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
   const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
-  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.'});
   if(!statusScope&&(statusMetric===1||statusMetric===2)){
@@ -2747,7 +2761,7 @@ function openStatusChart(n){
   const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=STATUS.labels.length;
   const cs=n.m,totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
   const raw=mx/5,power=10**Math.floor(Math.log10(raw)),fraction=raw/power,step=(fraction<=1?1:fraction<=2?2:fraction<=5?5:10)*power,top=Math.ceil(mx/step)*step;
-  const X=i=>L+i*(W-L-R)/(N-1),Y=v=>T+ph*(1-v/top);
+  const X=i=>N>1?L+i*(W-L-R)/(N-1):(L+W-R)/2,Y=v=>T+ph*(1-v/top);
   let g='';
   for(let j=0;j<=Math.round(top/step);j++){const v=j*step;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)" stroke-dasharray="3 4"/><text x="${L-10}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);font:11px var(--mono)">${amount(v)}</text>`}
   g+=`<text x="${L}" y="14" style="fill:var(--ink3);font:500 11px var(--font)">${statusMetricNames[statusMetric]} (${unitLabel()})</text>`;
@@ -2763,7 +2777,7 @@ function openStatusChart(n){
     g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-(W-L-R)/(N-1)/2)}" y="${T}" width="${(W-L-R)/(N-1)/2+(i&&i<N-1?(W-L-R)/(N-1)/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
   });
   $('#mvTitle').textContent=(n.path||[n.town,n.brand,n.name].filter(Boolean)).join(' · ');
-  $('#mvSub').textContent=`${STATUS.labels[0]} → ${STATUS.labels.at(-1)} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
+  $('#mvSub').textContent=`${STATUS.labels[0]}${N>1?' → '+STATUS.labels.at(-1):''} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
   $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly ${statusMetricNames[statusMetric]} stacked by RSL group">${g}</svg>`;
   function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${STATUS.groups.map((group,j)=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(group)}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
   monthInfo(N-1);
@@ -2776,10 +2790,11 @@ drawStatus();
 const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
 const SCOPE_ORDERS='<option value="parent">Brand → Parent → Town</option><option value="town">Brand → Town → Parent</option><option value="town-first">Town → Brand → Parent</option>';
 let statusSaved=null,scopeHomes=[];
-function openStatusScope({leaves,lens,note}){
+function openStatusScope({leaves,lens,snapshot,group,note}){
   const order=$('#sOrder');
   statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
-  statusScope=new Set(leaves.map(l=>statusLeafKey(...l)));
+  statusSnap=snapshot;statusGroup=group;statusScope=new Map();
+  leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
   statusFilters.states=new Map();statusStates.clear();
   statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
   order.html=SCOPE_ORDERS;order.value='parent';
@@ -2788,7 +2803,7 @@ function openStatusScope({leaves,lens,note}){
 }
 function closeStatusScope(){
   const saved=statusSaved;if(!saved)return;
-  statusSaved=null;statusScope=null;
+  statusSaved=null;statusScope=null;statusSnap=null;statusGroup=null;
   statusStates.clear();saved.states.forEach((v,k)=>statusStates.set(k,v));
   statusFilters.states=saved.filterStates;
   const order=$('#sOrder');order.html=saved.orderHtml;order.value=saved.order;
@@ -2799,16 +2814,21 @@ function closeStatusScope(){
   setStatusView(saved.view==='town'?'town':'status');
   order.hidden=saved.orderHidden;
 }
+/* request: {lens,title,scope,snapshot:'YYYY-MM-DD',group:RSL name|null,leaves:[[town,brand,parent,amount]]} */
 function showScopedData(request){
   const dialog=$('#scopeDialog'),page=$('#r-status');
   if(dialog.open)return;
+  const when=new Date(request.snapshot+'T00:00:00Z'),snapshot=STATUS.labels.findIndex(l=>{const d=new Date('1 '+l+' UTC');return d.getUTCFullYear()===when.getUTCFullYear()&&d.getUTCMonth()===when.getUTCMonth()});
+  if(snapshot<0){toast('No saved stock snapshot for '+when.toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}));return}
+  const groupIndex=request.group==null?-1:STATUS.groups.findIndex(g=>normalizeEvolutionRsl(g)===request.group);
+  request={...request,snapshot,group:groupIndex<0?null:groupIndex};
   const homeOf=el=>{const mark=document.createComment('scope home');el.before(mark);return {el,mark}};
   scopeHomes=[homeOf(page),...SCOPE_MODALS.map(id=>homeOf($(id)))];
   const pageWasHidden=page.hidden;scopeHomes[0].wasHidden=pageWasHidden;
   $('#scopeDialogBody').append(page);page.hidden=false;
   SCOPE_MODALS.forEach(id=>dialog.append($(id)));
   $('#scopeDialogTitle').textContent='Show data · '+request.title;
-  const note=`${request.scope} · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · full stock of each row`;
+  const note=`${request.scope} · ${STATUS.labels[snapshot]} snapshot · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock the chart traced to this selection`;
   $('#scopeDialogScope').textContent=note;
   dialog.showModal();
   openStatusScope({...request,note});
