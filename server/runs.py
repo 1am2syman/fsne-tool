@@ -36,6 +36,8 @@ from openpyxl.styles import Protection
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.table import Table
 
+from src.saved_reports import copy_saved_report, read_saved_report
+
 from . import plan_notes
 from .action_plans import STATUSES, ActionPlanCycle, decorate, previous_month
 from .errors import RunError
@@ -413,13 +415,13 @@ class Store:
             # race a settlement/reopen. Later changes flag this dependency.
             sources = self.path(run_id) / "history-source"
             sources.mkdir(exist_ok=True)
-            for old in sources.glob("*.xlsx"):
+            for old in sources.iterdir():
                 old.unlink()
             dependencies = []
             for dt, source in sorted(by_date.items()):
                 if dt[:7] >= meta["report_date"][:7]:
                     continue
-                shutil.copyfile(source, sources / (dt + ".xlsx"))
+                copy_saved_report(source, sources / (dt + ".xlsx"))
                 dependencies.append({"report_date": dt, "source": str(source)})
             meta["history_dependencies"] = dependencies
             if label is not None:
@@ -678,7 +680,7 @@ def run_summary(out: Path, hist: Path, report_date: str) -> dict:
     totals = current.select(pl.col("total_closing_stock_bdt").sum(), pl.col("exposure_bdt").sum()).row(0, named=True)
     previous = None
     for path in hist.glob("saved-*.xlsx"):
-        frame = pl.read_excel(path, sheet_id=1, infer_schema_length=0)
+        frame = read_saved_report(path)
         dates = frame["report_date"].drop_nulls().cast(pl.String).str.slice(0, 10)
         if len(dates) and (previous is None or dates[0] > previous[0]):
             previous = (dates[0], frame)
@@ -855,7 +857,7 @@ def history_by_date(paths: list[Path]) -> dict[str, Path]:
     result: dict[str, Path] = {}
     for path in paths:
         # Reading bytes releases the OS handle before retaining parsed sheets.
-        dates = pl.read_excel(path.read_bytes(), columns=["report_date"], infer_schema_length=0)["report_date"]
+        dates = read_saved_report(path, columns=["report_date"])["report_date"]
         unique = dates.drop_nulls().cast(pl.String).str.slice(0, 10).unique().to_list()
         if len(unique) != 1:
             raise RunError(f"Saved history {path.name} must contain exactly one report date")
@@ -880,7 +882,7 @@ def write_action_plan(frame, report_date: str, target: Path, by_date: dict[str, 
     frame = frame.drop([c for c in planning if c in frame.columns])
     if candidates:
         path = by_date[max(candidates)]
-        previous = pl.read_excel(path.read_bytes(), infer_schema_length=0)
+        previous = read_saved_report(path)
         if "batch_index" not in previous.columns:
             raise RunError(f"Saved history {path.name} has no batch_index column")
         keys = previous["batch_index"].cast(pl.String)
@@ -959,7 +961,7 @@ def snapshot(
     if candidates:
         from src.movement import KEY, batch_key
 
-        previous = pl.read_excel(by_date[max(candidates)], sheet_id=1, infer_schema_length=0)
+        previous = read_saved_report(by_date[max(candidates)])
         labels = previous.select(
             batch_key(), *[
                 pl.col(c if c in previous.columns else legacy).cast(pl.String).alias(c)
@@ -981,6 +983,7 @@ def snapshot(
     for old in hist_dir.iterdir():
         old.unlink()
     for i, (_, path) in enumerate(sorted(by_date.items())):
-        shutil.copyfile(path, hist_dir / f"saved-{i:04d}.xlsx")
+        copy_saved_report(path, hist_dir / f"saved-{i:04d}.xlsx")
     saved.write_excel(hist_dir / "snapshot.xlsx", worksheet="Sheet1", float_precision=15)
+    saved.write_parquet(hist_dir / "snapshot.parquet")
     return frame.height

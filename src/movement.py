@@ -27,6 +27,7 @@ import polars as pl
 
 from .cli import run
 from .io import EXCEL_SUFFIXES, resolve_path
+from .saved_reports import read_saved_report
 
 BRAND = "Brand Name"
 KEY = "_key"
@@ -90,7 +91,7 @@ def normalise(frame: pl.DataFrame) -> pl.DataFrame:
 
 
 def read_raw_reports(history_dir: str | Path) -> list[pl.DataFrame]:
-    """Every saved workbook as text columns, read once for all consumers."""
+    """Read each monthly record once, preferring Parquet to its Excel export."""
     root = resolve_path(history_dir)
     paths = (
         sorted(p for p in root.rglob("*") if p.suffix.lower() in EXCEL_SUFFIXES)
@@ -99,7 +100,7 @@ def read_raw_reports(history_dir: str | Path) -> list[pl.DataFrame]:
     )
     if not paths:
         raise FileNotFoundError(f"No saved reports in {root}")
-    return [pl.read_excel(p, sheet_id=1, infer_schema_length=0) for p in paths]
+    return [read_saved_report(p) for p in paths]
 
 
 def read_reports(history_dir: str | Path) -> pl.DataFrame:

@@ -32,6 +32,7 @@ from pathlib import Path
 import polars as pl
 
 from .io import EXCEL_SUFFIXES, resolve_path
+from .saved_reports import read_saved_report
 
 EPS = 1e-9
 CR = 1e7
@@ -138,13 +139,15 @@ def load_history(history_dir: str | Path, cache_dir: Path | None = None) -> pl.D
     cache.mkdir(parents=True, exist_ok=True)
     frames = []
     for path in paths:
+        if path.with_suffix(".parquet").is_file():
+            path = path.with_suffix(".parquet")
         digest = hashlib.blake2b(f"{SCHEMA}:{path.resolve()}:{_stat_key(path)}".encode(), digest_size=10).hexdigest()
         owner = hashlib.blake2b(str(path.resolve()).encode(), digest_size=6).hexdigest()
         target = cache / f"{owner}-{path.stem}-{digest}.parquet"
         if target.exists():
             frames.append(pl.read_parquet(target))
             continue
-        frame = _normalise(pl.read_excel(path, sheet_id=1, infer_schema_length=0))
+        frame = _normalise(read_saved_report(path))
         tmp = target.with_suffix(f".{os.getpid()}.tmp")
         frame.write_parquet(tmp, compression="zstd")
         tmp.replace(target)

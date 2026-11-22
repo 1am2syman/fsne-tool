@@ -20,6 +20,8 @@ from typing import TYPE_CHECKING
 import polars as pl
 from openpyxl.utils.datetime import from_excel
 
+from src.saved_reports import read_saved_report
+
 from .errors import RunError
 
 if TYPE_CHECKING:
@@ -206,6 +208,7 @@ class ActionPlanCycle:
             shutil.copytree(run / "output", out)
             shutil.copyfile(run / "data.json", stage / "data.json")
             saved.write_excel(hist / "snapshot.xlsx", worksheet="Sheet1", float_precision=15)
+            saved.write_parquet(hist / "snapshot.parquet")
             commands = [["-m", "src", name, "--history-dir", str(hist), "--output", str(out / f"{name}.parquet")]
                         for name in ("movement_series", "movement_parents")]
             commands.append(["ui/build.py", "--data-dir", str(run / "input"), "--history-dir", str(hist),
@@ -222,10 +225,11 @@ class ActionPlanCycle:
                 (out / name).replace(run / "output" / name)
             (stage / "data.json").replace(run / "data.json")
             (hist / "snapshot.xlsx").replace(run / "history/snapshot.xlsx")
+            (hist / "snapshot.parquet").replace(run / "history/snapshot.parquet")
 
     def settlement_check(self, run_id: str) -> dict:
         meta = self.completed(run_id)
-        saved = pl.read_excel(self.store.path(run_id) / "history/snapshot.xlsx", infer_schema_length=0)
+        saved = read_saved_report(self.store.path(run_id) / "history/snapshot.xlsx")
         blank = saved["mitigation_status"].cast(pl.String).str.strip_chars().fill_null("") == ""
         return {"month": meta["report_date"][:7], "batches": saved.height, "without_status": int(blank.sum()),
                 "without_plan": not bool(meta.get("plan_upload")), "snapshot": digest(self.store.path(run_id) / "history/snapshot.xlsx")}
@@ -247,16 +251,30 @@ class ActionPlanCycle:
             replaced = [p for p in history.glob("*.xlsx")
                         if next(iter(history_by_date([p])))[:7] == check["month"] and p != target]
             self.store.freeze_history_links([target, *replaced])
-            with tempfile.NamedTemporaryFile(dir=history, suffix=".tmp", delete=False) as handle:
-                temporary = Path(handle.name)
-            try:
-                shutil.copyfile(self.store.path(run_id) / "history/snapshot.xlsx", temporary)
-                temporary.replace(target)
-            finally:
-                temporary.unlink(missing_ok=True)
-            for old in replaced:
-                old.unlink()
-            settlement = {"time": now(), "settler": user[:255], "history_file": target.name,
+            # Prepare both formats before replacing either published file.
+            parquet = target.with_suffix(".parquet")
+            with tempfile.TemporaryDirectory(dir=history) as directory:
+                stage = Path(directory)
+                snapshot = self.store.path(run_id) / "history/snapshot.xlsx"
+                shutil.copyfile(snapshot, stage / target.name)
+                read_saved_report(snapshot).write_parquet(stage / parquet.name)
+                originals = [p for p in (target, parquet) if p.exists()]
+                for original in originals:
+                    shutil.copyfile(original, stage / (original.name + ".backup"))
+                try:
+                    (stage / target.name).replace(target)
+                    (stage / parquet.name).replace(parquet)
+                except OSError:
+                    for published in (target, parquet):
+                        if published in originals:
+                            shutil.copyfile(stage / (published.name + ".backup"), published)
+                        else:
+                            published.unlink(missing_ok=True)
+                    raise
+            replaced_parquets = [p.with_suffix(".parquet") for p in replaced if p.with_suffix(".parquet").exists()]
+            for old in [*replaced, *replaced_parquets]:
+                old.unlink(missing_ok=True)
+            settlement = {"time": now(), "settler": user[:255], "history_file": target.name, "history_parquet": parquet.name,
                           "without_plan": check["without_plan"], "commit": {"ok": False, "error": "Commit pending"}}
             self.store.update(run_id, plan_state="settled", settlement=settlement, archived=None, superseded_by=None)
             for other in self.store.list():
@@ -265,7 +283,7 @@ class ActionPlanCycle:
                     if other["plan_state"] == "settled":
                         fields.update(plan_state="plan_uploaded" if other.get("plan_upload") else "provisional", superseded_by=run_id)
                     self.store.update(other["id"], **fields)
-            settlement["commit"] = commit_history(history, [target, *replaced], f"Settle {check['month']} ({run_id})")
+            settlement["commit"] = commit_history(history, [target, parquet, *replaced, *replaced_parquets], f"Settle {check['month']} ({run_id})")
             return self.store.update(run_id, settlement=settlement)
 
     def reopen(self, run_id: str, confirm: bool, user: str) -> dict:
@@ -276,6 +294,9 @@ class ActionPlanCycle:
             target = self.store.history_dir / meta["settlement"]["history_file"]
             self.store.freeze_history_links([target])
             target.unlink(missing_ok=True)
+            parquet = target.with_suffix(".parquet")
+            removed = [target, parquet] if parquet.exists() else [target]
+            parquet.unlink(missing_ok=True)
             reopened = {"time": now(), "user": user[:255], "commit": {"ok": False, "error": "Commit pending"}}
             self.store.update(run_id, plan_state="plan_uploaded" if meta.get("plan_upload") else "provisional", reopened=reopened)
             month = meta["report_date"][:7]
@@ -290,5 +311,5 @@ class ActionPlanCycle:
                     dependencies = [{"report_date": dt} for dt in dates]
                 if any(d["report_date"][:7] == month for d in dependencies):
                     self.store.update(other["id"], out_of_date={"month": month, "reopened_run": run_id, "time": now()})
-            reopened["commit"] = commit_history(self.store.history_dir, [target], f"Reopen {month} ({run_id})")
+            reopened["commit"] = commit_history(self.store.history_dir, removed, f"Reopen {month} ({run_id})")
             return self.store.update(run_id, reopened=reopened)

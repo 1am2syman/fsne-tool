@@ -48,9 +48,9 @@ The state is stored in the run's metadata (state, upload time, uploader, file na
 - Confirmation shows the month, batch count and number of batches without a status.
 - Settling with no plan uploaded is allowed behind a stronger confirmation, so a month where sales never responds does not block the next one. The settled file then holds the carried-over statuses.
 - One settled run per calendar month. Settling a run archives the month's other runs.
-- Settling writes the run's snapshot to `<history folder>/<report date>.xlsx` (`Documents/FSNE/history` by default; change it on the Storage page or with `FSNE_HISTORY_DIR`). When that folder lives inside a Git repository, the file is committed locally on its own; otherwise the export is written without a commit. It never pushes.
+- Settling writes the run's complete frozen snapshot to `<history folder>/<report date>.parquet` and an Excel export to `<history folder>/<report date>.xlsx` (`Documents/FSNE/history` by default; change it on the Storage page or with `FSNE_HISTORY_DIR`). When that folder lives inside a Git repository, both files and any replaced exports for that month are committed locally together; otherwise the files are written without a commit. It never pushes.
 - When a commit is expected and fails (no git, no identity, any other error), the run stays settled and shows "settled, not committed".
-- The run's snapshot is the authority; the file in `history/` is its export.
+- The run's snapshot is the authority. New runs retain both `snapshot.parquet` and `snapshot.xlsx`, including accepted statuses and remarks. Shared history readers prefer the Parquet record beside an Excel export; older Excel-only months still work. New runs freeze both formats before queueing. Replacing a settlement removes both formats of the old shared record, and reopening removes both formats of the current one. Existing months are not automatically converted or recalculated.
 
 ## Reopen
 
