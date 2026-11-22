@@ -94,6 +94,12 @@ class EvolutionScopeTests(unittest.TestCase):
                 self.assertEqual(payload['as_of'], as_of)
                 self.assertEqual(payload['filters']['rsl'], ['3M–6M'])
                 self.assertEqual(set(detail['links']), {link['id'] for link in payload['links']})
+                # Show data resolves lineages to brand · parent · town rows through these tables.
+                lineages = detail['lineages']
+                self.assertEqual(len(lineages['town']), len(lineages['brand']))
+                self.assertEqual(len(lineages['parent']), len(lineages['brand']))
+                self.assertTrue(all(0 <= i < len(detail['towns']) for i in lineages['town']))
+                self.assertTrue(all(0 <= i < len(detail['parents']) for i in lineages['parent']))
         self.assertNotEqual(paths[0], paths[1])
         self.assertEqual(len(json.loads(gzip.decompress(paths[0].read_bytes()))['months']), 2)
         for filters, as_of in [({'rsl': ['wrong']}, None), ({}, 'not-a-date')]:

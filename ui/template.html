@@ -900,7 +900,12 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-kv b{font:600 clamp(20px,3.2vh,26px)/1 var(--font);letter-spacing:-.02em}
 .ov-kv span{color:var(--ink3);font-size:12.5px}
 .ov-rc .ov-plot{margin:2px -16px 0}
-.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
+.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr 2.4fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
+.ov-sc-pair{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.ov-trends{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:14px}
+.ov-trend{padding:clamp(8px,1.4vh,12px) 14px 0}
+.ov-trend .ov-card-h{margin-bottom:0}
+.ov-trend .ov-plot{margin:0 -14px}
 .ov-card-h{flex:none;display:flex;align-items:baseline;gap:14px;margin-bottom:clamp(6px,1.2vh,12px)}
 .ov-card-h b{font-weight:600;font-size:13.5px;white-space:nowrap}
 .ov-meta{margin-left:auto;color:var(--ink3);font-size:12px;white-space:nowrap}
@@ -908,16 +913,22 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-.5px}
 .ov-fd{flex:none;font-size:13.5px;line-height:1.45;color:var(--ink2);margin-bottom:clamp(4px,1vh,10px)}
 .ov-fd b{color:var(--ink);font-weight:600}
-.ov-br{flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(4px,.7vh,6px);padding:clamp(3px,.7vh,6px) 0;border-top:1px solid var(--ov-grid)}
+.ov-br{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:3px 0;border-top:1px solid var(--ov-grid);line-height:1.15}
 .ov-br-t{display:flex;align-items:baseline;gap:8px;font-size:13px}
 .ov-br-t b{font-weight:500;white-space:nowrap}
-.ov-br-t .v{margin-left:auto;font-weight:600;white-space:nowrap}
-.ov-br-t .v small{font-weight:450;color:var(--ink3)}
-.ov-rate{width:52px;justify-content:center}
-.ov-track{position:relative;height:10px;border-radius:5px;background:var(--ov-grid)}
-.ov-track i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
-:is(.ov-track,.ov-lg) .exp{background:var(--ov-exp)}
-:is(.ov-track,.ov-lg) .lnd{background:var(--bad)}
+.ov-br-t .v{margin-left:auto;font-weight:500;color:var(--ink3);font-size:11.5px;white-space:nowrap}
+.ov-bar-key{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;color:var(--ink3);font-size:11px;white-space:nowrap}
+.ov-bar-key .ov-lg{gap:10px;font-size:11px}
+.ov-br-values{display:flex;justify-content:space-between;gap:8px;font-size:11px;white-space:nowrap}
+.ov-br-values span{display:flex;align-items:baseline;gap:5px}
+.ov-br-values small{font-size:inherit;color:var(--ink3)}
+.ov-br-values b{font-weight:600}
+.ov-br-values em{font-style:normal;color:var(--ink2)}
+/* Match the >10M status track: green Stock, pink Exposure tail, dark red LND tip. */
+.ov-track{flex:none;position:relative;height:8px;border-radius:5px;background:#dcf3e4}
+.ov-track i{position:absolute;right:0;top:0;bottom:0;border-radius:5px}
+:is(.ov-track,.ov-lg) .exp{background:#ee8b96}
+:is(.ov-track,.ov-lg) .lnd{background:#b01f2c}
 .ov-sc{flex:1;max-height:58px;display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 66px;align-items:center;gap:0 6px;border-top:1px solid var(--ov-grid);font-size:13px}
 .ov-sc.h{flex:none;border-top:0;padding-bottom:clamp(4px,.8vh,7px);border-bottom:1px solid var(--line);color:var(--ink3);font-size:11.5px;font-weight:500}
 .ov-sc.h+.ov-sc{border-top:0}
@@ -1113,6 +1124,14 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #evoDialog #evStatus .evo-skel,#evoDialog #evStatus .evo-state{height:100%}
 #evoDialog .rc-legend{padding:12px 18px 6px;font-size:11px;gap:8px 18px}
 #evoDialog .legnote{padding:2px 18px 12px;font-size:10.5px;line-height:1.5}
+#scopeDialog{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:var(--canvas);color:var(--ink)}
+#scopeDialog[open]{display:flex;flex-direction:column}
+#scopeDialog::backdrop{background:var(--canvas)}
+#scopeDialogBody{flex:1;min-height:0;overflow:hidden;padding:20px 28px 22px}
+#scopeDialog #r-status:not([hidden]){height:100%;display:flex;flex-direction:column;min-height:0}
+#scopeDialog #sTools{flex:none}
+#scopeDialog #r-status>.sheet{flex:1;min-height:0;display:flex;flex-direction:column}
+#scopeDialog #r-status .tw{flex:1;height:auto;min-height:0}
 #reportEvolutionMenu{position:fixed;z-index:80;min-width:180px;padding:5px;background:var(--surface);border:1px solid var(--line);border-radius:9px;box-shadow:0 8px 24px #0002}
 #reportEvolutionMenu[hidden]{display:none}
 #reportEvolutionMenu button{width:100%;border:0;background:transparent;color:var(--ink);padding:9px 12px;border-radius:5px;text-align:left;font:500 13px var(--font);cursor:pointer}
@@ -1723,7 +1742,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <button class="btn" id="sExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta" id="sCount"></span>
-      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>3–6M and 6–10M bars show the selected metric as a share of the row total. Each &gt;10M bar represents 100% of that cell’s stock.</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>3–6M and 6–10M bars show the selected metric as a share of the row total. Each &gt;10M bar represents 100% of that cell’s stock.</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
     </div>
     <div data-sheet="sT"></div>
   </div>
@@ -1768,6 +1787,10 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   </section>
 </div>
 <div id="reportEvolutionMenu" role="menu" aria-label="Cell actions" hidden><button type="button" role="menuitem" id="showCellEvolution">Show evolution</button></div>
+<dialog id="scopeDialog" aria-labelledby="scopeDialogTitle" aria-describedby="scopeDialogScope">
+  <header class="evo-dialog-head"><div><h2 id="scopeDialogTitle">Show data</h2><p id="scopeDialogScope"></p></div><span class="sp"></span><button class="btn" id="scopeDialogClose" type="button" aria-label="Close data view">Back to chart</button></header>
+  <div id="scopeDialogBody"></div>
+</dialog>
 <dialog id="evoDialog" aria-labelledby="evoDialogTitle" aria-describedby="evoDialogScope">
   <header class="evo-dialog-head"><div><h2 id="evoDialogTitle">Inventory evolution</h2><p id="evoDialogScope"></p></div><span class="sp"></span><button class="btn" id="evoDialogExport" type="button">Export CSV</button><button class="btn" id="evoDialogClose" type="button" aria-label="Close inventory evolution">Back to report</button></header>
   <div id="evoDialogBody"></div>
@@ -1848,7 +1871,7 @@ function openEvolution(scope){
     if(request!==evoRequest||(scope&&!$('#evoDialog').open))return;
     const evolution=window.FSNE.evolution;
     if(scope)evoPrevious=evolution.captureScope();
-    return evolution.open({root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
+    return evolution.open({showData:showScopedData,root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
   }).catch(e=>{if(scope)$('#evoDialogScope').textContent='Could not load evolution: '+e.message;else toast(e.message)});
 }
 const ACTION_PLANS=['rescue','rebalance','loading-watch'];
@@ -2401,6 +2424,37 @@ function overviewRslTrend(vals,m){return(w,h)=>{
   STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
   return ovSvg(w,h,s);
 }}
+// Small trend card: one or two series on a shared scale. The first series gets peak/trough labels,
+// the second only the selected month, so the labels stay apart on a card this size.
+function overviewTrendChart(series,m){return(w,h)=>{
+  const N=STATUS.labels.length,main=series[0].vals,saved=main.map((v,i)=>v==null?null:i).filter(i=>i!=null);
+  if(saved.length<2||w<=0||h<=0)return '';
+  const L=18,R=18,T=14,B=16,gap=13,pw=w-L-R,base=h-B,all=series.flatMap(x=>saved.map(i=>x.vals[i]).filter(v=>v!=null));
+  let lo=Math.min(...all),hi=Math.max(...all);
+  if(hi-lo<1e-9){hi+=1;lo-=1}
+  const X=i=>L+i*pw/(N-1),Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo));
+  const top=saved.reduce((a,i)=>main[i]>main[a]?i:a),low=saved.reduce((a,i)=>main[i]<main[a]?i:a);
+  const anchor=i=>i===0?'start':i===N-1?'end':'middle',nx=i=>i===0?X(i)-4:i===N-1?X(i)+4:X(i),label='font:600 10.5px var(--font);fill:var(--ink2)';
+  let s='<line x1="'+L+'" x2="'+(w-R)+'" y1="'+base+'" y2="'+base+'" style="stroke:var(--ov-grid)"/>';
+  series.slice().reverse().forEach(x=>{
+    const P=saved.filter(i=>x.vals[i]!=null).map(i=>[X(i),Y(x.vals[i])]);
+    if(P.length>1)s+='<path d="'+monotoneLine(P)+'" style="fill:none;stroke:'+x.color+';stroke-width:'+(x===series[0]?1.8:1.5)+';stroke-linejoin:round;stroke-linecap:round"/>';
+  });
+  s+=ovText(nx(top),Y(main[top])-7,ovNum(main[top]),label,anchor(top));
+  if(low!==top)s+=ovText(nx(low),Y(main[low])+14,ovNum(main[low]),label,anchor(low));
+  [top,low].forEach(i=>{if(i!==m)s+='<circle cx="'+X(i)+'" cy="'+Y(main[i])+'" r="2.6" style="fill:var(--surface);stroke:'+series[0].color+';stroke-width:1.4"/>'});
+  series.forEach((x,k)=>{
+    if(x.vals[m]==null)return;
+    s+='<circle cx="'+X(m)+'" cy="'+Y(x.vals[m])+'" r="3.4" style="fill:'+x.color+';stroke:var(--surface);stroke-width:1.6"/>';
+    if(k&&m!==top&&m!==low)s+=ovText(nx(m),Y(x.vals[m])+14,ovNum(x.vals[m]),'font:600 10.5px var(--font);fill:'+x.color,anchor(m));
+  });
+  STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
+  return ovSvg(w,h,s);
+}}
+function overviewTrendCard(title,series,key,m,plot){
+  const lg=series.length>1?'<span class="ov-lg">'+series.map(x=>'<span><i style="background:'+x.color+'"></i>'+esc(x.name)+'</span>').join('')+'</span>':'';
+  return '<section class="ov-card ov-trend"><div class="ov-card-h"><b>'+esc(title)+'</b>'+lg+'</div>'+plot(key,overviewTrendChart(series,m))+'</section>';
+}
 const ovBarLabel=(g,y)=>ovText(0,y,esc(g),'font:500 12px var(--font);fill:var(--ink2)','start','.34em');
 // LND FC change by RSL vs the previous saved month, diverging from zero.
 function overviewMoveBars(facts,m,p){return(w,h)=>{
@@ -2450,15 +2504,17 @@ function overviewRslCard(facts,m,p,g,plot){
     +plot('rsl'+OVERVIEW_RSL.indexOf(g),overviewRslTrend(vals,m))+'</section>';
 }
 function overviewExposureCard(t){
-  const top=Math.max(...OVERVIEW_RSL.map(g=>t.b[g].exp))||1,width=v=>Math.min(100,100*v/top).toFixed(1)+'%';
   const rows=OVERVIEW_RSL.map(g=>{
-    const b=t.b[g],r=b.exp?b.lnd/b.exp:null;
-    const title=g+' · Stock '+ovNum(b.stock)+' · Exposure '+ovNum(b.exp)+' · LND FC '+ovNum(b.lnd)+' '+unitLabel();
-    return '<div class="ov-br" title="'+esc(title)+'"><div class="ov-br-t"><b>'+esc(g)+'</b><span class="v">'+ovNum(b.lnd)+' <small>of '+ovNum(b.exp)+'</small></span>'
-      +'<span class="ov-chip ov-rate '+(r>.5?'bad':'flat')+'" title="LND ÷ Exp">'+(r==null?'–':ovPct(r))+'</span></div>'
+    const b=t.b[g],pct=v=>b.stock?ovShare(v/b.stock):'–';
+    const width=v=>(b.stock>0?Math.max(0,Math.min(100,100*v/b.stock)):0)+'%';
+    const title=g+' · Stock '+ovNum(b.stock)+' · Exposure '+ovNum(b.exp)+' ('+pct(b.exp)+') · LND FC '+ovNum(b.lnd)+' ('+pct(b.lnd)+') '+unitLabel();
+    return '<div class="ov-br" title="'+esc(title)+'"><div class="ov-br-t"><b>'+esc(g)+'</b><span class="v">Stock '+ovNum(b.stock)+'</span></div>'
+      +'<div class="ov-br-values"><span><small>Exposure</small><b>'+ovNum(b.exp)+'</b><em>'+pct(b.exp)+'</em></span>'
+      +'<span><small>LND FC</small><b>'+ovNum(b.lnd)+'</b><em>'+pct(b.lnd)+'</em></span></div>'
       +'<div class="ov-track"><i class="exp" style="width:'+width(b.exp)+'"></i><i class="lnd" style="width:'+width(b.lnd)+'"></i></div></div>';
   }).join('');
-  return '<section class="ov-card"><div class="ov-card-h"><b>Exposure by RSL</b><span class="ov-lg"><span><i class="exp"></i>Exposure</span><span><i class="lnd"></i>LND FC</span></span></div>'+rows+'</section>';
+  return '<section class="ov-card"><div class="ov-card-h"><b>Exposure by RSL</b><span class="ov-meta">'+unitLabel()+'</span></div>'
+    +'<div class="ov-bar-key"><span>Bars: % of group Stock</span><span class="ov-lg"><span><i class="exp"></i>Exposure</span><span><i class="lnd"></i>LND FC</span></span></div>'+rows+'</section>';
 }
 function overviewMoveText(facts,m,p){
   const t=facts[m],P=facts[p],diff=g=>t.b[g].lnd-P.b[g].lnd,total=t.lnd-P.lnd;
@@ -2485,12 +2541,21 @@ function overviewScorecard(facts,m,p){
     +row('LND ÷ Stock',ovRatio(t),P&&ovRatio(P),ovChipPP(ratioDiff),ovShare)
     +'</section>';
 }
+// Exposure (national, with the part that comes from >10M stock) and LND FC by month.
+function overviewTrends(facts,m,plot){
+  const long=OVERVIEW_RSL.find(g=>g==='> 10M'),at=f=>facts.map(x=>x?f(x):null);
+  const exposure=[{name:'Total',color:'var(--ov-line)',vals:at(x=>x.exp)}];
+  if(long)exposure.push({name:'> 10M',color:'#d08a1e',vals:at(x=>x.b[long].exp)});
+  return '<div class="ov-trends">'+overviewTrendCard('Exposure trend',exposure,'trendExp',m,plot)
+    +overviewTrendCard('LND FC trend',[{name:'LND FC',color:'var(--bad)',vals:at(x=>x.lnd)}],'trendLnd',m,plot)+'</div>';
+}
 function overviewMarkup(facts,m,plots){
   const p=ovPrev(facts,m),first=facts.findIndex(Boolean);
   const plot=(key,draw)=>{plots[key]=draw;return '<div class="ov-plot" data-ov-plot="'+key+'"></div>'};
   return overviewHero(facts,m,p,first,plot)
     +'<div class="ov-rsl">'+OVERVIEW_RSL.map(g=>overviewRslCard(facts,m,p,g,plot)).join('')+'</div>'
-    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)+overviewScorecard(facts,m,p)+'</div>';
+    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)
+    +'<div class="ov-sc-pair">'+overviewScorecard(facts,m,p)+overviewTrends(facts,m,plot)+'</div></div>';
 }
 // Month buttons are rebuilt only when the saved months change, so keyboard focus survives redraws.
 function overviewMonthButtons(facts){
@@ -2538,7 +2603,27 @@ let statusMetric=1,statusSort={k:'total',d:-1},statusFocus=null;
 const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),rows:()=>statusLeaves(STATUS.total),onChange:()=>{drawStatus();$('#mv').hidden=true}});
 statusFilters.use('town');
 const statusStates=new Map();
-function statusLeaves(root){return root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))))}
+/* While the scoped overlay is open, statusScope maps each JSON [town,brand,parent] key it may show to the amount the
+ * chart traced for that row, and statusSnap is the saved snapshot (index into STATUS.labels) the chart node refers to. */
+let statusScope=null,statusSnap=null,statusGroup=null;
+const statusLeafKey=(town,brand,parent)=>JSON.stringify([town,brand,String(parent)]);
+function statusLeaves(root){
+  const leaves=root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
+  if(!statusScope)return leaves;
+  // Keep the snapshot the node belongs to and scale every cell of a row so its metric equals the traced amount.
+  const scaled=[];
+  for(const r of leaves){
+    const amount=statusScope.get(statusLeafKey(r.town,r.brand,r.parent));
+    if(amount==null)continue;
+    const at=r.m[statusSnap],have=at?statusGroup==null?sum(at.map(c=>c[statusMetric])):at[statusGroup][statusMetric]:0,k=have>0?amount/have:0;
+    if(!(k>0))continue;
+    // A node that sits in one RSL group traces only that group; every other group's cell is zero.
+    scaled.push({...r,m:r.m.map(cs=>cs&&cs.map((c,g)=>statusGroup==null||g===statusGroup?c.map(v=>v*k):c.map(()=>0)))});
+  }
+  return scaled;
+}
+// DOH always describes the latest saved cohort of the rows, whichever snapshot the node refers to.
+const statusPairs=()=>statusScope?SERIES.doh.pairs.filter(p=>statusScope.has(statusLeafKey(p.t,p.b,p.p))):SERIES.doh.pairs;
 function filteredStatusTree(){
   const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
   const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:STATUS.labels.map(()=>null),kids:[]};
@@ -2560,11 +2645,11 @@ function filteredStatusTree(){
 }
 function setStatusView(view){
   statusStates.set(statusView,{metric:statusMetric,sort:statusSort,open:statusOpen});
-  const key=view==='town'?'town':'brand-'+$('#sOrder').value;
+  const order=$('#sOrder').value,key=view==='town'||order==='town-first'?'town':'brand-'+order;
   const state=statusStates.get(key)||{metric:statusMetric,sort:{k:'total',d:-1},open:new Set()};
   statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
-  statusFilters.use(key==='town'?'town':'brand');
-  $('#sOrder').hidden=key==='town';$('#sMetric').value=String(statusMetric);
+  statusFilters.use(statusScope?'scoped':key==='town'?'town':'brand');
+  $('#sOrder').hidden=view==='town';$('#sMetric').value=String(statusMetric);
   $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
   $('#sSort option[value="name:1"]').textContent=key==='town'?'Town A–Z':'Brand A–Z';
   if(SHEETS['#sT'])SHEETS['#sT'].on=false;
@@ -2583,11 +2668,12 @@ function statusDohPairs(n,view,pairs){
   return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p})&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
-const statusPts=n=>n.m.map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
-const statusLatest=n=>n.m.at(-1);
+const statusEnd=()=>statusScope?statusSnap:STATUS.labels.length-1;
+const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
+const statusLatest=n=>n.m[statusEnd()];
 const statusAmount=n=>statusLatest(n)==null?null:sum(statusLatest(n).map(c=>c[statusMetric]));
 function statusSpark(n){
-  const p=statusPts(n);if(p.every(v=>v==null))return '—';
+  const p=statusPts(n);if(p.every(v=>v==null)||p.length<2)return '—';
   if(p.every(v=>v!=null))return spark(p);
   const vals=p.filter(v=>v!=null),lo=Math.min(...vals),rg=Math.max(...vals)-lo||1;
   let path='';p.forEach((v,i)=>{if(v!=null)path+=`${i&&p[i-1]!=null?'L':'M'}${2+i*80/(p.length-1)},${18-(v-lo)/rg*16} `});
@@ -2629,7 +2715,7 @@ function statusName(n){
 function drawStatus(){
   statusTip.hidden=true;
   statusRoot=filteredStatusTree();statusNodes=new Map();indexStatus(statusRoot);
-  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,SERIES.doh.pairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
+  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,statusPairs()),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
   const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
   const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
   function visit(n){
@@ -2645,12 +2731,12 @@ function drawStatus(){
     {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
     {k:'spark',h:'Stock trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
     {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
-    {k:'now',h:STATUS.labels[0].split(' ')[0]+'→'+STATUS.labels.at(-1).split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
+    {k:'now',h:(statusEnd()?STATUS.labels[0].split(' ')[0]+'→':'')+STATUS.labels[statusEnd()].split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);if(p.length<2)return `<b style="font-weight:600">${p[0]==null?'—':amount(p[0],1)}</b>`;return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
   const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
-  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels.at(-1)+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.'});
-  if(statusMetric===1||statusMetric===2){
+  if(!statusScope&&(statusMetric===1||statusMetric===2)){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
     const specs=[...STATUS.groups.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
@@ -2675,7 +2761,7 @@ function openStatusChart(n){
   const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=STATUS.labels.length;
   const cs=n.m,totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
   const raw=mx/5,power=10**Math.floor(Math.log10(raw)),fraction=raw/power,step=(fraction<=1?1:fraction<=2?2:fraction<=5?5:10)*power,top=Math.ceil(mx/step)*step;
-  const X=i=>L+i*(W-L-R)/(N-1),Y=v=>T+ph*(1-v/top);
+  const X=i=>N>1?L+i*(W-L-R)/(N-1):(L+W-R)/2,Y=v=>T+ph*(1-v/top);
   let g='';
   for(let j=0;j<=Math.round(top/step);j++){const v=j*step;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)" stroke-dasharray="3 4"/><text x="${L-10}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);font:11px var(--mono)">${amount(v)}</text>`}
   g+=`<text x="${L}" y="14" style="fill:var(--ink3);font:500 11px var(--font)">${statusMetricNames[statusMetric]} (${unitLabel()})</text>`;
@@ -2691,7 +2777,7 @@ function openStatusChart(n){
     g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-(W-L-R)/(N-1)/2)}" y="${T}" width="${(W-L-R)/(N-1)/2+(i&&i<N-1?(W-L-R)/(N-1)/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
   });
   $('#mvTitle').textContent=(n.path||[n.town,n.brand,n.name].filter(Boolean)).join(' · ');
-  $('#mvSub').textContent=`${STATUS.labels[0]} → ${STATUS.labels.at(-1)} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
+  $('#mvSub').textContent=`${STATUS.labels[0]}${N>1?' → '+STATUS.labels.at(-1):''} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
   $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly ${statusMetricNames[statusMetric]} stacked by RSL group">${g}</svg>`;
   function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${STATUS.groups.map((group,j)=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(group)}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
   monthInfo(N-1);
@@ -2699,6 +2785,65 @@ function openStatusChart(n){
   $('#mv').hidden=false;$('#mvClose').focus();
 }
 drawStatus();
+
+/* Show data: the brand-status page itself, moved into a full-screen dialog and limited to the rows behind a Sankey node or band. */
+const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
+const SCOPE_ORDERS='<option value="parent">Brand → Parent → Town</option><option value="town">Brand → Town → Parent</option><option value="town-first">Town → Brand → Parent</option>';
+let statusSaved=null,scopeHomes=[];
+function openStatusScope({leaves,lens,snapshot,group,note}){
+  const order=$('#sOrder');
+  statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
+  statusSnap=snapshot;statusGroup=group;statusScope=new Map();
+  leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
+  statusFilters.states=new Map();statusStates.clear();
+  statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
+  order.html=SCOPE_ORDERS;order.value='parent';
+  $('#sScopeNote').textContent=note;$('#sScopeNote').hidden=false;
+  setStatusView('scope');
+}
+function closeStatusScope(){
+  const saved=statusSaved;if(!saved)return;
+  statusSaved=null;statusScope=null;statusSnap=null;statusGroup=null;
+  statusStates.clear();saved.states.forEach((v,k)=>statusStates.set(k,v));
+  statusFilters.states=saved.filterStates;
+  const order=$('#sOrder');order.html=saved.orderHtml;order.value=saved.order;
+  $('#sScopeNote').hidden=true;
+  statusStates.set(saved.view,{metric:saved.metric,sort:saved.sort,open:saved.open});
+  // setStatusView('town') would force the town page, so restore the exact view key through the saved selector.
+  statusView=saved.view;statusMetric=saved.metric;statusSort=saved.sort;statusOpen=saved.open;
+  setStatusView(saved.view==='town'?'town':'status');
+  order.hidden=saved.orderHidden;
+}
+/* request: {lens,title,scope,snapshot:'YYYY-MM-DD',group:RSL name|null,leaves:[[town,brand,parent,amount]]} */
+function showScopedData(request){
+  const dialog=$('#scopeDialog'),page=$('#r-status');
+  if(dialog.open)return;
+  const when=new Date(request.snapshot+'T00:00:00Z'),snapshot=STATUS.labels.findIndex(l=>{const d=new Date('1 '+l+' UTC');return d.getUTCFullYear()===when.getUTCFullYear()&&d.getUTCMonth()===when.getUTCMonth()});
+  if(snapshot<0){toast('No saved stock snapshot for '+when.toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}));return}
+  const groupIndex=request.group==null?-1:STATUS.groups.findIndex(g=>normalizeEvolutionRsl(g)===request.group);
+  request={...request,snapshot,group:groupIndex<0?null:groupIndex};
+  const homeOf=el=>{const mark=document.createComment('scope home');el.before(mark);return {el,mark}};
+  scopeHomes=[homeOf(page),...SCOPE_MODALS.map(id=>homeOf($(id)))];
+  const pageWasHidden=page.hidden;scopeHomes[0].wasHidden=pageWasHidden;
+  $('#scopeDialogBody').append(page);page.hidden=false;
+  SCOPE_MODALS.forEach(id=>dialog.append($(id)));
+  $('#scopeDialogTitle').textContent='Show data · '+request.title;
+  const note=`${request.scope} · ${STATUS.labels[snapshot]} snapshot · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock the chart traced to this selection`;
+  $('#scopeDialogScope').textContent=note;
+  dialog.showModal();
+  openStatusScope({...request,note});
+  $('#scopeDialogClose').focus({preventScroll:true});
+}
+function closeScopedData(){
+  closeStatusScope();
+  $('#mv').hidden=true;if(!$('#doh').hidden)closeDohExplanation();$('#help').hidden=true;
+  scopeHomes.forEach(({el,mark,wasHidden})=>{mark.replaceWith(el);if(wasHidden!==undefined)el.hidden=wasHidden});
+  scopeHomes=[];
+}
+$('#scopeDialogClose').onclick=()=>$('#scopeDialog').close();
+$('#scopeDialog').addEventListener('close',closeScopedData);
+// Escape belongs to an open chart, DOH or help sheet first; only a bare overlay closes the dialog.
+$('#scopeDialog').addEventListener('keydown',e=>{if(e.key==='Escape'&&SCOPE_MODALS.some(id=>!$(id).hidden))e.preventDefault()},true);
 
 $$('#reportUnit button').forEach(button=>button.onclick=()=>{
   if(!$('#doh').hidden)closeDohExplanation();

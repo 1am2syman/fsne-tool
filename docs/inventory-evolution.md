@@ -29,6 +29,14 @@ Blended Sales push/Rotation categories retain their selected share. If you selec
 
 Selected views hide the lens and scope controls to keep the selection fixed. The toolbar shows the selection trail; hover it to read the full trail. **Back to categories** or **Back to RSL** restores the immediate parent graph, filters, selected node/band, keyboard focus, spacing and scroll. Back remains available during loading or after an error; **Retry** repeats the complete selected request. Superseded requests cannot replace the active view after Back or Close. A trail supports up to 32 selections; at that limit, go Back to choose another branch.
 
+## Show data behind a node or band
+
+Every evolution chart, including the standalone page, report-cell overlays and selected RSL/category views, adds **Show data** to the right-click menu for any node or band. It opens a full-screen overlay that is the brand-status page itself — same filters, metric, sort, expand, stock trend and DOH explanation — limited to the brand · parent · town rows whose batch lineages sit behind the chosen node or band. The default order is Brand → Parent → Town; the order selector also offers Brand → Town → Parent and Town → Brand → Parent. The metric starts on the chart's lens (Exposure, L&D FC or Closing stock).
+
+The table is scoped to the clicked item's own saved snapshot, not the latest one: a month hub, a category after it, or an exit shows the snapshot behind that month's opening (a hub labelled Mar opening is the February snapshot); "added" stock and bands entering a month use that month's snapshot. Each row's figures are scaled so its chosen metric equals the amount the chart traced to the selection, so the table total matches the node or band value (within the tiny-lineage floor). A node that sits in one RSL group, as in the RSL view or the selected-RSL views, fills only that group's column. Stock trend and the first-to-snapshot column use the same scaled rows up to that snapshot; DOH always describes each row's latest cohort. If the snapshot month has no saved stock, a notice appears instead of the overlay.
+
+Lineages below the chart's tiny-lineage floor are not listed, so rows can be fewer than the selection's lineage count. **Back to chart** or **Esc** returns to the chart with its selection intact; the brand-status page keeps its own filters and view.
+
 ## Lenses, display and export
 
 | Lens | Measure and grouping |

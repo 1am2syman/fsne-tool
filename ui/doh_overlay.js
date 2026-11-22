@@ -146,7 +146,7 @@ function openDohExplanation(view,opener){
   $('#dohTrace').value='-1';drawDohExplanation();$('#dohBody').scrollTop=0;$('#doh').hidden=false;$('#dohClose').focus();
 }
 function openStatusDoh(row,opener){
-  const selected=new Set(STATUS.groups),pairs=statusDohPairs(row,statusView,SERIES.doh.pairs);
+  const selected=new Set(STATUS.groups),pairs=statusDohPairs(row,statusView,statusPairs());
   const title=(row.path||[row.town,row.brand,row.name].filter(Boolean)).join(' · ');
   openDohExplanation({title,scope:'Latest all-stock cohort',rslLabel:[...selected].join(', '),pairs,cover:dohSummary(pairs,selected)},opener);
 }

@@ -70,7 +70,7 @@ LENSES = [
 LENS_BY_ID = {lens["id"]: lens for lens in LENSES}
 UNITS = {"bdt": {"div": CR, "label": "Cr", "title": "Cr BDT", "scale": 1.0}, "kl": {"div": 1000.0, "label": "KL", "title": "KL", "scale": 1000.0}}
 
-SCHEMA = 15
+SCHEMA = 16
 MAX_SELECTION_DEPTH = 32
 FILTER_KEYS = ("town", "parent", "material", "brand", "rsl")
 MIN_LINK = 0.5  # a link below half a BDT (or half a litre) is rounding noise; the cut is made after summing the link
@@ -666,13 +666,13 @@ def snapshot_ym(date: dt.date) -> int:
 
 
 def _lineage_attributes(prep: Prepared, entries: pl.DataFrame, lens: dict, unit: str) -> pl.DataFrame:
-    """Brand, RSL group and exposure share of each lineage, fixed at the month it entered."""
+    """Brand, town, parent, RSL group and exposure share of each lineage, fixed at the month it entered."""
     f = prep.frame.group_by("b", "j").agg(
-        pl.col("brand").sort().first(), pl.col("rsl").sort().first(),
+        pl.col("brand").sort().first(), pl.col("town").sort().first(), pl.col("parent").sort().first(), pl.col("rsl").sort().first(),
         pl.col(f"exposure_{unit}").sum().alias("exp"), pl.col(f"total_closing_stock_{unit}").sum().alias("stock"),
     ).with_columns(pl.when(pl.col("stock") > EPS).then((pl.col("exp") / pl.col("stock")).clip(0.0, 1.0)).otherwise(0.0).alias("exp_share"))
     return entries.join(f.rename({"j": "e"}), on=["b", "e"], how="left").with_columns(
-        pl.col("brand").fill_null("Unknown brand"), pl.col("rsl").fill_null("Unknown"), pl.col("exp_share").fill_null(0.0)
+        pl.col("brand").fill_null("Unknown brand"), pl.col("town").fill_null("Unknown town"), pl.col("parent").fill_null("Unknown parent"), pl.col("rsl").fill_null("Unknown"), pl.col("exp_share").fill_null(0.0)
     )
 
 
@@ -788,6 +788,10 @@ def _assemble(prep: Prepared, lens: dict, unit: str, links: pl.DataFrame, transi
     used = {k["source"] for k in out_links} | {k["target"] for k in out_links}
     brands = sorted(attrs["brand"].unique().to_list())
     brand_index = {b: i for i, b in enumerate(brands)}
+    towns = sorted(attrs["town"].unique().to_list())
+    town_index = {t: i for i, t in enumerate(towns)}
+    parents = sorted(attrs["parent"].unique().to_list())
+    parent_index = {p: i for i, p in enumerate(parents)}
     rsl_index = {g: i for i, g in enumerate(RSL_ORDER)}
     lineage = attrs.sort("lid")
     lens_meta = {
@@ -807,11 +811,13 @@ def _assemble(prep: Prepared, lens: dict, unit: str, links: pl.DataFrame, transi
         "links": out_links, "transitions": out_trs,
         "lineages": {
             "brand": [brand_index[b] for b in lineage["brand"].to_list()],
+            "town": [town_index[t] for t in lineage["town"].to_list()],
+            "parent": [parent_index[p] for p in lineage["parent"].to_list()],
             "rsl": [rsl_index.get(g, 4) for g in lineage["rsl"].to_list()],
             "exp": [round(v, 3) for v in lineage["exp_share"].to_list()],
             "entry": lineage["e"].to_list(),
         },
-        "brands": brands, "rsl_groups": RSL_ORDER,
+        "brands": brands, "towns": towns, "parents": parents, "rsl_groups": RSL_ORDER,
         "excluded": [{k: round(v * scale, digits) for k, v in row.items()} for row in excluded],
         "sales_unavailable_months": uncovered,
     }
@@ -821,7 +827,7 @@ def _empty_payload(prep: Prepared, lens: dict, unit: str) -> dict:
     return {
         "schema": SCHEMA, "lens": lens["id"], "unit": unit, "unit_div": UNITS[unit]["div"], "unit_label": UNITS[unit]["label"],
         "metadata": {"lens": {"key": lens["key"], "lens_key": lens["key"], "label": lens["label"]}}, "months": [], "nodes": [], "links": [], "transitions": [],
-        "lineages": {"batch": [], "brand": [], "rsl": [], "exp": [], "entry": []}, "brands": [], "rsl_groups": RSL_ORDER, "excluded": [], "sales_unavailable_months": [],
+        "lineages": {"brand": [], "town": [], "parent": [], "rsl": [], "exp": [], "entry": []}, "brands": [], "towns": [], "parents": [], "rsl_groups": RSL_ORDER, "excluded": [], "sales_unavailable_months": [],
     }
 
 
@@ -843,7 +849,7 @@ def artifact_path(out_dir: Path, lens: str, unit: str, part: str = "") -> Path:
 
 def split_detail(payload: dict) -> dict:
     """Move per-lineage trace lists out of the first-paint payload; returns them as the lazy detail payload."""
-    detail = {"links": {}, "transitions": {}, "lineages": payload.pop("lineages"), "brands": payload.pop("brands"), "rsl_groups": payload["rsl_groups"]}
+    detail = {"links": {}, "transitions": {}, "lineages": payload.pop("lineages"), "brands": payload.pop("brands"), "towns": payload.pop("towns"), "parents": payload.pop("parents"), "rsl_groups": payload["rsl_groups"]}
     for name in ("links", "transitions"):
         for record in payload[name]:
             detail[name][record["id"]] = [record.pop("li"), record.pop("lv")]
