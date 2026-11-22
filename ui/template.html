@@ -596,7 +596,8 @@ td.mono{font-size:12px}
 .rn{position:sticky;left:0;z-index:2;width:44px;min-width:44px;max-width:44px;padding:0;text-align:center!important;background:var(--sunken)!important;color:var(--ink3);font:500 11px var(--mono)!important;border-right:1px solid var(--line2)}
 th.rn{z-index:5}
 td.rn.hl{background:var(--accent-soft)!important;color:var(--accent)}
-tbody tr:hover td:not(.rn){background:var(--hover)}
+/* Not in #sT: rows sliding under a still pointer while scrolling would repaint the whole status table every frame. */
+:where(table:not(#sT)) tbody tr:hover td:not(.rn){background:var(--hover)}
 td:nth-child(2),th:nth-child(2){position:sticky;left:44px;z-index:1;border-right:1px solid var(--line2)}
 th:nth-child(2){z-index:4}
 td.empty{position:static;white-space:normal;text-align:center;color:var(--ink3);padding:40px 16px}
@@ -891,36 +892,33 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #naT td.na-plans{min-width:140px;max-width:210px;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
 #r-not-actionables .tw{min-height:200px}
 /* brand-status uses the movement sheet's existing tokens and expansion treatment */
-#sT{min-width:100%;--exposure-fill:#ee8b96}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+#sT{min-width:100%;--exposure-fill:#ee8b96;--lnd-fill:#b01f2c}[data-theme=dark] #sT{--lnd-fill:#e2505e}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
 #sT th .ar{width:0;margin-left:2px;overflow:visible}
 #sT td.num{text-align:left}
 #sT td.rsl-cell{padding:0}
 #sT .status-value{min-width:104px;display:flex;align-items:center;justify-content:flex-start;height:25px;padding:0 8px}
 #sT .long-value{min-width:140px;height:25px;display:flex;align-items:center;padding:0 8px}
-#sT .status-value,#sT .long-value{position:relative;isolation:isolate}
 #sT .rsl-red{--fill-light:#fce1e4;--fill-deep:#c62d3a}
 #sT .rsl-amber{--fill-light:#fff0cf;--fill-deep:#d99519}
 #sT .rsl-green{--fill-light:#dcf3e4;--fill-deep:#17803d}
-#sT .exposure-value.has-exposure{background:var(--exposure-fill)}
-#sT .exposure-value .risk.lnd{right:0;width:calc(100% * var(--lnd,0))}
+#sT .exposure-value.has-exposure{background:linear-gradient(270deg,var(--lnd-fill) 0 calc(100% * var(--lnd,0)),transparent 0),var(--exposure-fill)}
 #sT .exposure-value.loss-heavy .status-main{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 [data-theme=dark] #sT .rsl-red{--fill-light:#382027;--fill-deep:#a74350}
 [data-theme=dark] #sT .rsl-amber{--fill-light:#34291a;--fill-deep:#986a21}
 [data-theme=dark] #sT .rsl-green{--fill-light:#1a3024;--fill-deep:#296f45}
-#sT :is(.rsl-red,.rsl-amber,.rsl-green)::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));z-index:-1;pointer-events:none}
-#sT .status-main{position:relative;text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}
+/* Bars are background layers of the value cell, not positioned boxes: thousands of positioned boxes made every scroll frame's hit test slow. */
+#sT :is(.rsl-red,.rsl-amber,.rsl-green){--bar:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light))}
+#sT .status-value:is(.rsl-red,.rsl-amber,.rsl-green){background:linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
+#sT .status-main{text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}
 #sT .long-value.has-stock .status-main{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 .status-tip{position:fixed;z-index:100;pointer-events:none;padding:10px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--surface);box-shadow:0 8px 24px rgba(18,21,40,.18);color:var(--ink);font-size:12px}
 .status-tip[hidden]{display:none}.status-tip strong{display:block;margin-bottom:6px}.status-tip table{width:auto;min-width:0;border-collapse:collapse;font-size:12px}.status-tip th,.status-tip td{position:static;height:auto;padding:3px 8px;border:0;background:none;text-align:right;white-space:nowrap;font:inherit}.status-tip th:first-child,.status-tip td:first-child{text-align:left;padding-left:0}.status-tip th{color:var(--ink3);font-weight:500}.status-tip small{display:block;margin-top:6px;color:var(--ink3)}
-/* >10M: the full-width bar sits behind the number; its tail is Exposure and its tip LND, both as a share of the bar. */
-#sT .long-value::before{content:none}
-#sT .long-track{position:absolute;inset:0;pointer-events:none}
-#sT .long-track::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));pointer-events:none}
-#sT .risk{position:absolute;top:0;bottom:0;right:calc(100% - var(--fill,0%));width:min(var(--fill,0%),var(--w));pointer-events:none}
-#sT .risk.exp{--w:max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px));background:var(--exposure-fill)}
-#sT .risk.lnd{--w:max(2px,calc(var(--fill,0%) * var(--lnd,0)));background:#b01f2c}
-[data-theme=dark] #sT .risk.exp{background:#8a3a46}
-[data-theme=dark] #sT .risk.lnd{background:#e2505e}
+/* >10M: the full-width bar sits behind the number; its right-hand tail is Exposure and its tip LND, both as a share of the bar.
+   Layers paint top first: LND tip, Exposure tail, bar. */
+#sT .long-value{--exp-c:var(--exposure-fill);--exp-w:0px;--lnd-w:0px;background:linear-gradient(270deg,var(--lnd-fill) 0 var(--lnd-w),transparent 0),linear-gradient(270deg,var(--exp-c) 0 var(--exp-w),transparent 0),linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
+#sT .long-value.has-exp{--exp-w:min(var(--fill,0%),max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px)))}
+#sT .long-value.has-lnd{--lnd-w:min(var(--fill,0%),max(2px,calc(var(--fill,0%) * var(--lnd,0))))}
+[data-theme=dark] #sT .long-value{--exp-c:#8a3a46}
 :is(#sT,#rT) td.bk,:is(#sT,#rT) th.bk{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
 :is(#sT,#rT) .bk-l{border-left:2px solid var(--accent)}:is(#sT,#rT) .bk-r{border-right:2px solid var(--accent)}
 :is(#sT,#rT) th.group-h.bk{background:var(--accent-soft);color:var(--accent);font-weight:600;border-top:2px solid var(--accent);border-bottom:1px solid var(--accent)}
@@ -1813,6 +1811,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div class="seg" id="mMetric" aria-label="Metric">
         <div class="mb"><button aria-pressed="true" data-m="red">Net reduction %</button><button class="help" data-help="red" aria-label="How Net reduction % is calculated" title="How Net reduction % is calculated">?</button></div>
         <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="false" data-m="stock">Total stock</button></div>
       </div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
@@ -2123,7 +2122,7 @@ $('#evoDialog').addEventListener('close',()=>{
 });
 document.addEventListener('contextmenu',e=>{const td=e.target.closest('td[data-evolution]');if(!td)return;e.preventDefault();showEvolutionMenu(td,e.clientX,e.clientY)});
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('#reportEvolutionMenu'))closeEvolutionMenu()});
-document.addEventListener('scroll',()=>closeEvolutionMenu(),true);
+document.addEventListener('scroll',()=>{if(!$('#reportEvolutionMenu').hidden)closeEvolutionMenu()},{capture:true,passive:true});
 addEventListener('resize',()=>closeEvolutionMenu());
 document.addEventListener('keydown',e=>{
   if(!$('#reportEvolutionMenu').hidden&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeEvolutionMenu(true);return}
@@ -2341,6 +2340,8 @@ let metric='red',minStock=0,ms={k:'now',d:-1},sel=null;
 buildData();
 const mix=(c,t)=>`color-mix(in srgb, var(--${c}) ${Math.round(8+80*t)}%, var(--surface))`;
 const mval=x=>!x?null:!(x.lm>0)?null:metric==='red'?x.p:(num(x.o)+num(x.n)-x.lm)/x.lm;
+const pastStock=x=>num(x?.o)+num(x?.n);
+const pastCell=x=>metric==='stock'?hm({t:amount(pastStock(x))}):hm(cell(x));
 function cell(x){
   if(!x)return {t:'·',s:'color:var(--line2)'};
   if(!(x.lm>0))return {t:'new',s:'color:var(--bad);font-style:italic'};
@@ -2374,7 +2375,7 @@ const components=[
 const componentCell=(x,c)=>!x||c.value(x)==null?'–':amount(c.value(x));
 const mcols=[
  {k:'brand',h:'Brand',r:r=>r.parent?`<span class="pn" title="${esc(r.desc)} · parent ${esc(r.code)}">${esc(r.desc)}<small>${esc(r.code)}</small></span>`:`<button class="tg" data-tg="${esc(r.brand)}" aria-expanded="${!!r.isOpen}" aria-label="${r.isOpen?'Collapse':'Expand'} ${esc(r.brand)} parents" title="${r.kids.length} parent${r.kids.length===1?'':'s'}" ${r.kids.length?'':'disabled'}>▸</button>${esc(r.brand)}`,cls:'name'},
- ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>hm(cell(r.m[i]))})),
+ ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>pastCell(r.m[i])})),
  ...components.map(c=>({k:c.k,h:c.h,num:1,cls:c.cls||'',r:r=>componentCell(r.m[NM-1],c)})),
  {k:'m'+(NM-1),h:'Net reduction % / Net %',ctr:1,cls:'hmc',r:r=>hm(cell(r.m[NM-1]))},
  {k:'spark',h:'Stock trend',help:'trend',ctr:1,nosort:1,cls:'hmc sp',r:r=>spark(r.pts)},
@@ -2382,9 +2383,10 @@ const mcols=[
  {k:'avg',h:'Avg',num:1,r:r=>avgCell(r.avg)}];
 const full=i=>new Date(SERIES.dates[i]+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function drawNote(){
-  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Each month compares with the previous saved report</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
+  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Total stock shows closing amounts in ${unitLabel()} in the earlier-month columns. Reduction and Net change compare each month with the previous saved report.</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
 }
 function drawScale(){
+  if(metric==='stock'){$('#mScale').textContent='Earlier months · total stock in '+unitLabel();return}
   $('#mScale').html=metric==='red'
    ? `<span>Reduction on existing batches as a share of opening stock</span>0%<i style="background:linear-gradient(90deg,var(--surface),var(--accent))"></i>60%+`
    : `<span>Stock change vs last month</span>−50%<i style="background:linear-gradient(90deg,var(--ok),var(--surface),var(--bad))"></i>+50%`;
@@ -2689,7 +2691,7 @@ function drawDetail(){
 }
 function drawM(){
   mcols.find(c=>c.k==='now').h=SERIES.start+'→'+latestMonth+' ('+unitLabel()+')';
-  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
+  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,metric==='stock'&&i<NM-1?pastStock(x):mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
   const cmpK=ms.k==='brand'?(a,b)=>a.desc.localeCompare(b.desc):cmp(ms.k,ms.d);
   const rows=[];
   B.filter(r=>r.now>=minStock).forEach(r=>rows.push({...dec(r),isOpen:open.has(r.brand)}));
@@ -2700,7 +2702,7 @@ function drawM(){
   rows.length=0;rows.push(...flat);
   const nb=B.filter(r=>r.now>=minStock&&r.kids.length),allOpen=nb.length>0&&nb.every(r=>open.has(r.brand));
   $('#mExp').textContent=allOpen?'Collapse all':'Expand all';$('#mExp').dataset.all=allOpen?1:'';
-  const foot=['All stock',...TOT.slice(0,-1).map(x=>hm(cell(x))),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
+  const foot=['All stock',...TOT.slice(0,-1).map(pastCell),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
   mcols[NM+5].h=metric==='red'?'Net reduction %':'Net change %';
   table({t:'#mT',cols:mcols,rows,groups:[{span:NM,label:'Earlier months'},{span:6,label:latestMonth+' breakdown · '+unitLabel()},{span:3,label:'Stock overview'}],sort:ms,onSort:k=>{if(k==='spark')return;ms=ms.k===k?{k,d:-ms.d}:{k,d:k==='brand'?1:-1};$('#mSort').value='';drawM()},foot,
     onSelect:(r,c)=>{sel={brand:r.brand,code:r.parent?r.code:null,mi:c>=1&&c<NM?c-1:NM-1};drawDetail()},emptyMsg:'No brands match these filters.'});
@@ -3098,7 +3100,8 @@ function statusDohPairs(n,view,pairs){
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
 const statusEnd=()=>statusScope?statusSnap:STATUS.labels.length-1;
-const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
+const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[statusMetric])));
+const statusMetricLabel=()=>['Stock','Exposure','LND FC'][statusMetric];
 const statusLatest=n=>n.m[statusEnd()];
 const statusAmount=n=>statusLatest(n)==null?null:sum(statusLatest(n).map(c=>c[statusMetric]));
 function statusSpark(n){
@@ -3118,21 +3121,22 @@ function statusCell(n,i){
   const info=esc(JSON.stringify({group:STATUS.groups[i],values:c??null,totals:totals??null,stockComposition,exposureComposition}));
   const main=`<span class="status-main">${v==null?'—':amount(v)}</span>`;
   if(exposureComposition){
-    // Each cell is its own exposure denominator; light red exposure contains red LND.
+    // Each cell is its own exposure denominator; light red exposure contains red LND, both painted as the cell background.
     const lnd=group!=='<3M'&&c?.[1]>0&&c?.[2]>0?Math.min(1,c[2]/c[1]):0;
-    return `<div class="status-value exposure-value${group!=='<3M'&&v>0?' has-exposure':''}${lnd===1?' loss-heavy':''}" style="--fill:${v>0?100:0}%;--lnd:${lnd}" data-status-info="${info}">${lnd?'<i class="risk lnd"></i>':''}${main}</div>`;
+    return `<div class="status-value exposure-value${group!=='<3M'&&v>0?' has-exposure':''}${lnd===1?' loss-heavy':''}" style="--fill:${v>0?100:0}%;--lnd:${lnd}" data-status-info="${info}">${main}</div>`;
   }
-  const fill=`class="${stockComposition?'long-value'+(c?.[0]>0?' has-stock':''):'status-value'} ${color}" style="--fill:${stockComposition?(c?.[0]>0?100:0):statusMetric===0?share:0}%" data-status-info="${info}"`;
-  if(!stockComposition)return `<div ${fill}>${main}</div>`;
+  if(!stockComposition)return `<div class="status-value ${color}" style="--fill:${statusMetric===0?share:0}%" data-status-info="${info}">${main}</div>`;
   // Exposure and LND as fractions of this cell's >10M stock; LND is always part of Exposure.
   const ratio=j=>{if(!c||!(c[0]>0)||!(c[j]>0))return 0;const r=c[j]/c[0];return Number((r*100).toFixed(1))===0?0:Math.min(1,r)};
-  const exp=ratio(1),lnd=Math.min(ratio(2),exp);
-  const tail=(exp?'<i class="risk exp"></i>':'')+(lnd?'<i class="risk lnd"></i>':'');
-  return `<div ${fill}><span class="long-track" style="--exp:${exp};--lnd:${lnd}">${tail}</span>${main}</div>`;
+  const stock=c?.[0]>0,exp=ratio(1),lnd=Math.min(ratio(2),exp);
+  const cls='long-value'+(stock?' has-stock':'')+' '+color+(exp?' has-exp':'')+(lnd?' has-lnd':'');
+  return `<div class="${cls}" style="--fill:${stock?100:0}%;--exp:${exp};--lnd:${lnd}" data-status-info="${info}">${main}</div>`;
 }
 const statusTip=document.createElement('div');statusTip.className='status-tip';statusTip.hidden=true;document.body.append(statusTip);
-$('#sT').addEventListener('pointerover',e=>{
-  const cell=e.target.closest('[data-status-info]');if(!cell)return;
+// Wheel scrolling slides a new cell under a still pointer every frame; building a tooltip for each one stalls scrolling.
+let statusScrolledAt=-Infinity;
+const statusScrolling=()=>performance.now()-statusScrolledAt<200;
+function showStatusTip(cell){
   const {group,values,totals,stockComposition,exposureComposition}=JSON.parse(cell.dataset.statusInfo);
   const pct=(value,total)=>value==null||!(total>0)?'—':f(value/total*100,1)+'%';
   const rows=['Stock','Exposure','L&D FC'].map((name,j)=>`<tr><td>${name}${j===statusMetric?' •':''}</td><td>${values?amount(values[j]):'—'}</td><td>${exposureComposition&&j===0?'—':pct(values?.[j],stockComposition?values?.[0]:exposureComposition?values?.[1]:totals?.[j])}</td></tr>`).join('');
@@ -3140,9 +3144,13 @@ $('#sT').addEventListener('pointerover',e=>{
   statusTip.hidden=false;const r=cell.getBoundingClientRect(),tip=statusTip.getBoundingClientRect();
   statusTip.style.left=Math.max(8,Math.min(r.left,innerWidth-tip.width-8))+'px';
   statusTip.style.top=(r.bottom+tip.height+8<=innerHeight?r.bottom+6:Math.max(8,r.top-tip.height-6))+'px';
-});
+}
+$('#sT').addEventListener('pointerover',e=>{if(statusScrolling())return;const cell=e.target.closest('[data-status-info]');if(cell)showStatusTip(cell)});
+// Once scrolling stops, the next pointer movement shows the tooltip for the cell under the pointer.
+$('#sT').addEventListener('pointermove',e=>{if(!statusTip.hidden||statusScrolling())return;const cell=e.target.closest('[data-status-info]');if(cell)showStatusTip(cell)});
 $('#sT').addEventListener('pointerout',e=>{if(e.target.closest('[data-status-info]')&&!e.relatedTarget?.closest?.('[data-status-info]'))statusTip.hidden=true});
-addEventListener('scroll',()=>{statusTip.hidden=true},true);
+// Writing hidden=true on an already hidden element still invalidates style, so only hide a visible tooltip.
+addEventListener('scroll',()=>{statusScrolledAt=performance.now();if(!statusTip.hidden)statusTip.hidden=true},{capture:true,passive:true});
 function statusName(n){
   const label=n.code?`<span title="${esc(n.name)}">${esc(n.name)}</span><small>${esc(n.code)}</small>`:esc(n.name);
   return `<span class="pn" style="padding-left:${n.level*22}px">${n.kids.length?`<button class="tg" data-stg="${n.id}" aria-expanded="${n.isOpen}" aria-label="${n.isOpen?'Collapse':'Expand'} ${esc(n.name)}">▸</button>`:''}${label}</span>`;
@@ -3165,11 +3173,11 @@ function drawStatus(){
   const cols=[{k:'name',h:statusHierarchy().replaceAll(' → ',' / '),cls:'name',r:statusName},
     ...STATUS.groups.map((g,i)=>({k:'g'+i,h:esc(g),num:1,cls:'rsl-cell'+(g.replace(/\s/g,'')==='>10M'?' long-rsl':''),r:n=>statusCell(n,i)})),
     {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
-    {k:'spark',h:'Stock trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
+    {k:'spark',h:statusMetricLabel()+' trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
     {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
     {k:'now',h:(statusEnd()?STATUS.labels[0].split(' ')[0]+'→':'')+STATUS.labels[statusEnd()].split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);if(p.length<2)return `<b style="font-weight:600">${p[0]==null?'—':amount(p[0],1)}</b>`;return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
   const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
-  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:statusMetricLabel()+' overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected filters. Clear a filter to see more records.'});
   if(!statusScope&&(statusMetric===1||statusMetric===2)){
@@ -3297,7 +3305,7 @@ function applyReportUnit(unit,keepWaterfall){
   $$('#sMetric option').forEach(o=>o.textContent=statusMetricNames[+o.value]);
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
   if(minStock)minStock=+size.dataset.s;
-  buildData();drawB();drawNote();drawM();drawTransfer();drawRescue();
+  buildData();drawB();drawNote();drawScale();drawM();drawTransfer();drawRescue();
   setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
   if(curRep==='not-actionables')drawNotActionables();
