@@ -99,6 +99,8 @@ def check_plan(path: Path, report: Path, report_date: str) -> tuple[pl.DataFrame
     wrong = sorted({normalize(value) for value in dates} - {report_date})
     if wrong:
         raise RunError(f"Report date differs from this run ({report_date}): " + ", ".join(wrong))
+    # Use the same trimmed status for validation and the accepted snapshot.
+    frame = frame.with_columns(pl.col("mitigation_status").cast(pl.String).str.strip_chars())
     entries = frame.select("batch_index", *[
         pl.when(pl.col(c).cast(pl.String).str.strip_chars() == "").then(None)
         .otherwise(pl.col(c).cast(pl.String)).alias(c) for c in ENTRIES
