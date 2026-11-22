@@ -14,6 +14,18 @@ Every query in `queries/` has a matching Python module in `src/`:
 
 ## Upload and run in the browser
 
+### First installation on Windows
+
+Install [Git for Windows](https://git-scm.com/install/windows) and [uv](https://docs.astral.sh/uv/getting-started/installation/), then open a new Command Prompt in the folder where you want to install the app and run:
+
+```cmd
+git clone https://github.com/1am2syman/fsne-tool.git
+cd fsne-tool
+start-fsne.bat
+```
+
+The first launch needs internet access to install the locked dependencies with uv. For later launches, double-click `start-fsne.bat` in the `fsne-tool` folder.
+
 On **64-bit Windows**, double-click `start-fsne.bat` inside the repository folder. It invokes `runtime\windows-x64\python.exe -B start.py --port 8770 --open-browser %*` directly—no PowerShell extraction or Python downloads are needed at startup. On first launch (or whenever `uv.lock` changes after an update), `start.py` uses your installed `uv` to install the locked packages into the ignored `.fsne-packages/` folder without downloading Python; subsequent launches start offline without invoking `uv`. See [runtime/README.md](runtime/README.md). Extra arguments passed to `start-fsne.bat` (for example `--port 8771`) are forwarded to `start.py`. Keep the command window open while using the app; close it to stop the server. Port 8770 must be available. A fresh checkout opens Monthly upload without calculating sample reports, so startup does not depend on matching sample inputs to saved history.
 
 To update on Windows, close the FSNE launcher window and double-click `update.bat` inside the cloned repository. It checks that no Python process is running from `runtime\`, clears any stale `.git\index.lock` when Git is not running, runs `git fetch --prune`, sets aside local edits in Git stash before resetting to `@{u}` with `git reset --hard`, and cleans only the code directories (`src`, `server`, `ui`). Cleanup preserves Python cache directories (`__pycache__/`) and bytecode (`*.pyc`, `*.pyo`), which Windows can keep open after the app exits; obsolete source files and generated UI output are still removed. Ignored local directories outside those code directories, such as `.cache/` and `.fsne-packages/`, are never deleted. The retired `vendor/` runtime folder is ignored and excluded from stash cleanup, including when updating an older checkout. Run `start-fsne.bat` again afterward. A Git checkout and access to its remote are required.
@@ -99,7 +111,7 @@ Saved months retain their own prices. Stock, Exposure and LND FC in a historical
 
 ## Sample data
 
-The sample files and reference workbook are available separately as [fsne-sample-data-v1.zip](https://github.com/1am2syman/fsne-tool/releases/download/sample-data-v1/fsne-sample-data-v1.zip). Access requires permission to this private GitHub repository. Download and extract the ZIP into the repository root so that `sample_input/` and `sample_output/` sit alongside `README.md`. These directories are ignored by Git. The archive's SHA-256 is `688a8acdf6fb126184cdebef60a68ea67a3f28e272dfdbe2f1db81dfd90977f9`.
+The sample files and reference workbook are available separately as [fsne-sample-data-v1.zip](https://github.com/1am2syman/fsne-tool/releases/download/sample-data-v1/fsne-sample-data-v1.zip). Download and extract the ZIP into the repository root so that `sample_input/` and `sample_output/` sit alongside `README.md`. These directories are ignored by Git. The archive's SHA-256 is `688a8acdf6fb126184cdebef60a68ea67a3f28e272dfdbe2f1db81dfd90977f9`.
 
 The app's upload workflow does not require these samples. The sample report, static dashboard build, full sample comparison and tests that use the real sample do require them.
 
