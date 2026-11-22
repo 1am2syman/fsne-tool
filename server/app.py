@@ -36,6 +36,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from src import evolution
+from src.movement import read_raw_reports
+from ui.not_actionables_data import COLS as NOT_ACTIONABLE_COLS
+from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import extract_legacy, render
 
 from . import runs as runs_mod
@@ -267,7 +270,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
             except PermissionError:
                 logging.getLogger(__name__).exception("File access denied during %s %s", method, url)
                 return self._error(500, "File access was denied. Check the FSNE command window for the file and operation. Close other FSNE instances and retry; if it persists, check folder permissions.")
-            except Exception as exc:  # noqa: BLE001 - last resort, never leak a traceback to the page
+            except Exception as exc:  # Last resort: never leak a traceback to the page.
                 logging.getLogger(__name__).exception("Server error during %s %s", method, url)
                 return self._error(500, f"Server error: {exc.__class__.__name__}")
 
@@ -337,6 +340,12 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     data = json.loads(payload.read_text())
                 except (OSError, ValueError) as exc:
                     raise RunError("Could not read this run's dashboard data") from exc
+                if data.get('NOTACTIONABLES', {}).get('cols') != NOT_ACTIONABLE_COLS:
+                    # Upgrade this derived view from private snapshots; preserve all frozen results.
+                    data['NOTACTIONABLES'] = not_actionables_payload(read_raw_reports(run / 'history'))
+                    tmp = run / 'data.json.tmp'
+                    tmp.write_text(json.dumps(data, separators=(',', ':'), allow_nan=False))
+                    tmp.replace(payload)
             return self._send(200, render(data, meta).encode(), "text/html; charset=utf-8")
 
         def _run_route(self, method: str, run_id: str, rest: str, query: str = "") -> None:

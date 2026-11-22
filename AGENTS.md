@@ -1,6 +1,7 @@
 # Agent instructions
 
 ## UI scope and validation
+- Use light mode for all UI work and screenshots. This app does not need dark mode; do not implement, refine, or validate it.
 - Design and validate UI changes for widescreen laptop layouts only.
 - Validate UI changes with screenshots at widescreen laptop widths only. The e2e suites (`tests/e2e_*`) are out of scope for UI work unless the user explicitly requests them.
 - Mobile and tablet layouts, responsive refinements, and mobile validation are out of scope unless the user explicitly requests them.

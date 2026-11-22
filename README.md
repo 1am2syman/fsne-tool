@@ -65,6 +65,10 @@ Evolution reads frozen snapshots, so its endpoint can differ from a report forec
 
 The server binds to localhost. Large HTML dashboards are gzip-compressed when the browser accepts gzip, so previews and live runs share the same delivery path without a separate preview server. For another device, use the `preview` helper's tailnet-only proxy mode. No authentication is included: keep the writable app on the trusted tailnet. Override `FSNE_RUNS_DIR` and `FSNE_HISTORY_DIR` with absolute paths when needed. A mounted URL such as `/fsne-app/` is supported.
 
+## Not-actionables
+
+**Reports → not-actionables** lists stock explicitly marked `Not actionable`, across all RSL bands, with Stock, Batches, RSL and Action-plan remarks in its expandable table. Expand Brand → Parent SKU → Town → Batch, search, filter by RSL, switch BDT/KL or export matching batches to CSV. Accepted action plans refresh the population; earlier months retain their own values and prices. Existing completed runs load the report from their private snapshots on first visit. See [Not-actionables](docs/not-actionables.md) for the selection rule and lifecycle behavior.
+
 ## National overview
 
 **Reports → Overview** is the national stock view. It shows no brand or town breakdowns. The selected saved month controls the stock total, RSL table, four stock-trend cards and the lower Exposure/LND FC comparisons. Choose a month in the header or on the national stock chart; the header also supports left/right arrow keys. BDT/KL changes the displayed amounts and all ratios are calculated from those amounts.

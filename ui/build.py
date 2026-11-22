@@ -25,6 +25,7 @@ from src.movement import (
     transform_parent_series,
     transform_series,
 )
+from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import render
 from ui.rescue_data import build_pages as action_plan_pages
 from ui.run_rate_data import build_current
@@ -131,6 +132,9 @@ else:
     action_plans = action_plan_pages(current, raw_history, DATA, OUT)
     payload = {'SALESPUSH': sales_push, 'TRANSFER': transfer, 'BATCH': batch, 'SERIES': series,
                'MEASURES': impact['measures_after'], 'STATUS': status, 'ACTIONPLANS': action_plans}
+# Planning statuses belong to the saved snapshot, including accepted uploads in --frozen mode.
+# Read every batch and preserve each month's stored measures and prices.
+payload['NOTACTIONABLES'] = not_actionables_payload(raw_history)
 # Inventory evolution graphs for every lens and unit; the server builds any missing one on first request.
 try:
     evo = evolution.build_all(HIST, DATA, OUT / 'evolution')

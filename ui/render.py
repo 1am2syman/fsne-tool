@@ -8,7 +8,7 @@ from server.action_plans import decorate
 from ui.samples import downloads
 
 UI = Path(__file__).resolve().parent
-NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH", "ACTIONPLANS")
+NAMES = ("BATCH", "SERIES", "STATUS", "MEASURES", "TRANSFER", "SALESPUSH", "ACTIONPLANS", "NOTACTIONABLES")
 
 
 def render(payload: dict | None = None, run: dict | None = None) -> str:
