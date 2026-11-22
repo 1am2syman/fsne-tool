@@ -106,13 +106,16 @@ def test_fractional_values_reconcile_without_rounding_each_town(facts):
     assert round(sum(values), 2) == 170.02
 
 
-def test_materials_use_full_report_and_payload_is_preserved(facts):
+def test_materials_use_full_report_and_upgrade_preserves_frozen_measures(facts):
     raw, current, payload = facts
     before = copy.deepcopy(payload)
     result = enrich_payload(payload, raw, current)
     assert payload == before
     assert {k: v for k, v in result.items() if k != 'SERIES'} == {k: v for k, v in before.items() if k != 'SERIES'}
-    assert {k: v for k, v in result['SERIES'].items() if k not in {'facets', 'materials', 'regions'}} == before['SERIES']
+    assert result['SERIES']['scope'] == 'all-stock'
+    assert result['SERIES']['doh'] == before['SERIES']['doh']
+    assert result['SERIES']['total'][0][1]['n'] == 999.  # Not actionable stock is included
+    assert result['SERIES']['total'][0][1]['kl']['n'] == 9.
     materials = result['SERIES']['materials']
     assert materials['hidden'] == {'parent': 'P', 'pdesc': 'Description P'}
     assert materials['child'] == materials['P']

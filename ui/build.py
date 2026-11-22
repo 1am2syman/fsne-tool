@@ -17,21 +17,15 @@ import polars as pl
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from src import evolution
-from src.movement import (
-    BRAND,
-    RSL,
-    normalise,
-    read_raw_reports,
-    transform_parent_series,
-    transform_series,
-)
+from src.movement import normalise, read_raw_reports
 from ui.filter_data import enrich_payload
+from ui.movement_data import payload as movement_payload
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import render
 from ui.rescue_data import build_pages as action_plan_pages
 from ui.run_rate_data import build_current
 from ui.sales_push_data import build_payload as sales_push_payload
-from ui.status_data import build_payload
+from ui.status_data import build_payload, with_categories
 from ui.transfer_data import build_payload as transfer_payload
 
 d = pathlib.Path(__file__).parent
@@ -44,56 +38,13 @@ _ap.add_argument('--frozen', action='store_true', help='reuse this run’s froze
 _ap.add_argument('--payload', type=pathlib.Path, default=None, help='write run data instead of a full HTML page')
 _args = _ap.parse_args()
 DATA, HIST, OUT, HTML = (p.resolve() for p in (_args.data_dir, _args.history_dir, _args.output_dir, _args.html))
-src = OUT / 'movement_series.parquet'
-if not src.exists():
-    raise SystemExit(f'{src} missing: run the movement_series pipeline first')
-
-s = pl.read_parquet(src).sort('month')
-months = s['month'].unique().sort().to_list()
-def r2(v):
-    return None if v is None else round(v, 2)
 raw_history = read_raw_reports(HIST)
 history = pl.concat([normalise(f) for f in raw_history], how='vertical_relaxed')
-volume_series = transform_series(history, keys=(BRAND, RSL), stock_column='total_closing_stock_kl')
-volume_parents = transform_parent_series(history, rsl=True, stock_column='total_closing_stock_kl')
-volume_by = {(r['brand'], r.get('parent_code'), r['month'], r['rsl_group']): r
-             for frame in [volume_series, volume_parents] for r in frame.iter_rows(named=True)}
-def cell(r):
-    v = volume_by[(r['brand'], r.get('parent_code'), r['month'], r['rsl_group'])]
-    return {'lm': r2(r['lm_stock_bdt']), 'o': r2(r['cm_no_new_bdt']), 'n': r2(r['cm_new_bdt']),
-            'r': r2(r['reduced_bdt']), 'rem': r['remarks'],
-            'kl': {'lm': v['lm_stock_bdt'], 'o': v['cm_no_new_bdt'],
-                   'n': v['cm_new_bdt'], 'r': v['reduced_bdt']}}
-# RSL groups come from the pipeline (src/report.py), shortest shelf life first
-ORDER = ['< 3M', '3M - 6M', '6M - 10M', '> 10M']
-present = set(s['rsl_group'].unique().to_list())
-groups = [g for g in ORDER if g in present] + sorted(present - set(ORDER))
-gi = {g: i for i, g in enumerate(groups)}
-def slot(store, month, r):
-    """store[month] is a list with one cell (or None) per RSL group."""
-    store.setdefault(month, [None] * len(groups))[gi[r['rsl_group']]] = cell(r)
-by = {}
-for r in s.iter_rows(named=True):
-    slot(by.setdefault(r['brand'], {}), r['month'], r)
-par_src = OUT / 'movement_parents.parquet'
-if not par_src.exists():
-    raise SystemExit(f'{par_src} missing: run the movement_parents pipeline first')
-par = {}
-for r in pl.read_parquet(par_src).iter_rows(named=True):
-    p = par.setdefault(r['brand'], {}).setdefault(r['parent_code'], {'c': r['parent_code'], 'd': r['parent_desc'], 'by': {}})
-    slot(p['by'], r['month'], r)
-total = by.pop('Grand Total')
-first = months[0]
-start = (first.replace(day=1) - dt.timedelta(days=1)).strftime('%b')
-series = {'labels': [m.strftime('%b') for m in months], 'start': start, 'year': months[-1].year,
-          'groups': groups,
-          'total': [total[m] for m in months],
-          'brands': [{'b': b, 'm': [v.get(m) for m in months],
-                      'p': [{'c': p['c'], 'd': p['d'], 'm': [p['by'].get(m) for m in months]} for p in par.get(b, {}).values()]}
-                     for b, v in by.items()]}
-# Match the movement report's month window, including its opening snapshot.
-opening = (months[0].replace(day=1) - dt.timedelta(days=1)).replace(day=1)
-status_months = [opening, *[m.replace(day=1) for m in months]]
+series = movement_payload(history)
+months = [dt.date.fromisoformat(m) for m in series['dates']]
+# Match the actual saved opening date, including gaps in the monthly calendar.
+opening = dt.date.fromisoformat(series['opening_date']).replace(day=1)
+status_months = list(dict.fromkeys([opening, *[m.replace(day=1) for m in months]]))
 if _args.frozen:
     if _args.payload is None:
         raise ValueError('--frozen requires an existing --payload')
@@ -103,10 +54,11 @@ if _args.frozen:
         status = existing['STATUS']
     except (OSError, ValueError, KeyError) as exc:
         raise SystemExit('Frozen dashboard data could not be read; accepted results are unchanged') from exc
-    # These views depend on frozen stock/rates, never on manual plan entries.
-    # Only a changed movement window needs the all-stock status data re-windowed.
-    if status['labels'] != [m.strftime('%b %Y') for m in status_months]:
+    # All-stock totals stay frozen; category facts follow accepted plan statuses.
+    if (status['labels'] != [m.strftime('%b %Y') for m in status_months]
+            or not {'groups', 'total', 'total_kl'} <= status.keys()):
         status = build_payload(HIST, status_months)
+    status = with_categories(status, raw_history, current=pl.read_parquet(OUT / 'inferred_report.parquet'))
     payload = {**existing, 'SERIES': series, 'STATUS': status}
     # The action plan pages depend only on this run's frozen report, last month's saved plans and
     # its shelf-life file, so rebuilding them here is idempotent and upgrades older runs.

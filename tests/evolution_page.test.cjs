@@ -229,8 +229,31 @@ test('shared dropdowns keep report bounds, dependent catalogs, labels and cache'
   p.dropdowns.get('town').apply(new Set(['Chattogram']));
   p.$('#evFilters').children.find(child => child.id === 'evFilterClear').click();
   const scope = p.evolution.captureScope();
-  assert.deepEqual(json(scope.filters), json(scope.bounds));
+  assert.deepEqual(json(scope.filters), {...json(scope.bounds),category:[]});
   assert.ok([...p.dropdowns.values()].every(d => d.popup === null));
+});
+
+test('category report bounds survive filtering, Clear, drilling, Back and CSV export', async () => {
+  const p = page();
+  await p.open();
+  const scope = p.evolution.captureScope();
+  scope.filters.category = ['Actionable','Incorrect stock'];
+  scope.bounds.category = ['Actionable','Incorrect stock'];
+  p.evolution.restoreScope(scope);
+  p.dropdowns.get('town').apply(new Set(['Chattogram']));
+  await flush();
+  assert.deepEqual(p.requests.findLast(url => url.pathname.endsWith('/exposure')).searchParams.getAll('category'), ['Actionable','Incorrect stock']);
+  p.$('#evFilters').children.find(child => child.id === 'evFilterClear').click();
+  await flush();
+  assert.deepEqual(json(p.evolution.captureScope().filters.category), ['Actionable','Incorrect stock']);
+  await p.host.openSelection(node('category:M2:sales_push'));
+  assert.deepEqual(p.requests.findLast(url => url.pathname.endsWith('/selection')).searchParams.getAll('category'), ['Actionable','Incorrect stock']);
+  await p.$('#evBack').onclick();
+  assert.deepEqual(json(p.evolution.captureScope().filters.category), ['Actionable','Incorrect stock']);
+  assert.ok(p.evolution.exportCsv() > 0);
+  const csv = await p.blob.text();
+  assert.match(csv, /category_filter/);
+  assert.match(csv, /Actionable; Incorrect stock/);
 });
 
 test('search, Cancel and unavailable current values retain explicit selections and export scope', async () => {

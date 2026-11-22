@@ -148,7 +148,7 @@ function openDohExplanation(view,opener){
 function openStatusDoh(row,opener){
   const selected=new Set(STATUS.groups),pairs=statusDohPairs(row,statusView,statusPairs());
   const title=(row.path||[row.town,row.brand,row.name].filter(Boolean)).join(' · ');
-  openDohExplanation({title,scope:'Latest all-stock cohort',rslLabel:[...selected].join(', '),pairs,cover:dohSummary(pairs,selected)},opener);
+  openDohExplanation({title,scope:'Latest stock · '+statusCategoryLabel(),rslLabel:[...selected].join(', '),pairs,cover:dohSummary(pairs,selected)},opener);
 }
 function openBatchDoh(row,opener){
   const pair={t:row.Town,p:String(row.parent_material_code),rate:row.avg_sec_m,stock:{[row.rsl_group]:row.total_closing_stock_kl}};

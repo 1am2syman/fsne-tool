@@ -1,4 +1,5 @@
 """Add filter projections from saved facts without rebuilding or pricing a report."""
+
 from __future__ import annotations
 
 import calendar
@@ -18,6 +19,8 @@ from src.movement import (
     transform_series,
 )
 from src.rescue import PAGES, _cohorts, category, monthly, saved_report
+from ui.movement_data import METHOD, SCOPE
+from ui.movement_data import payload as movement_payload
 from ui.rescue_data import shelf_life_facts
 
 _FIELDS = {'lm': 'lm_stock_bdt', 'o': 'cm_no_new_bdt', 'n': 'cm_new_bdt', 'r': 'reduced_bdt'}
@@ -99,9 +102,10 @@ def _action_plan_filters(pages: dict, raw_history: Sequence[pl.DataFrame]) -> di
 
 def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: pl.DataFrame,
                    data_dir: Path | None = None) -> dict:
-    """Return filter projections from frozen facts, preserving all prior fields.
+    """Derive all-stock movement/filters without changing frozen report measures.
 
-    Facet months and RSL slots follow the existing SERIES labels/groups. Both
+    Older Actionable-only SERIES data is replaced once from private snapshots;
+    saved DOH and other reports are retained. Facets follow SERIES labels/groups. Both
     units retain saved precision so rounding many town cells cannot change the
     all-filter totals. Action-plan filters use LM cohort dimensions and retain
     the original trend/outcome matching and measures. Regions come from the
@@ -112,6 +116,8 @@ def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: 
     history = history.with_columns(
         pl.coalesce(pl.col(PARENT).replace('', None), 'material_code').fill_null('').alias(PARENT),
     )
+    if series.get('scope') != SCOPE or series.get('method') != METHOD:
+        series = {**series, **movement_payload(history, months=len(series.get('labels', [])) or 6)}
     materials = _materials(current)
     descriptions = {r['parent_code']: r['parent_desc'] for r in
                     transform_parent_series(history).iter_rows(named=True)}

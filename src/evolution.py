@@ -33,6 +33,8 @@ import polars as pl
 
 from .io import EXCEL_SUFFIXES, resolve_path
 from .saved_reports import read_saved_report
+from .stock_categories import CATEGORIES as STOCK_CATEGORIES
+from .stock_categories import category
 
 EPS = 1e-9
 CR = 1e7
@@ -70,9 +72,9 @@ LENSES = [
 LENS_BY_ID = {lens["id"]: lens for lens in LENSES}
 UNITS = {"bdt": {"div": CR, "label": "Cr", "title": "Cr BDT", "scale": 1.0}, "kl": {"div": 1000.0, "label": "KL", "title": "KL", "scale": 1000.0}}
 
-SCHEMA = 16
+SCHEMA = 17
 MAX_SELECTION_DEPTH = 32
-FILTER_KEYS = ("town", "parent", "material", "brand", "rsl")
+FILTER_KEYS = ("town", "parent", "material", "brand", "rsl", "category")
 MIN_LINK = 0.5  # a link below half a BDT (or half a litre) is rounding noise; the cut is made after summing the link
 LINEAGE_FLOOR = {"bdt": 100.0, "kl": 0.12}  # smaller lineage slivers stay in totals but not in the hover-trace lists
 _NUMBERS = ["total_closing_stock_bdt", "total_closing_stock_kl", "exposure_bdt", "exposure_kl", "lnd_fc_bdt", "lnd_fc_kl"]
@@ -244,6 +246,7 @@ class Prepared:
                 pl.col("date").replace_strict(index, return_dtype=pl.Int64).alias("j"),
                 _rsl_bucket().alias("rsl"),
                 _mitigation().alias("mit"),
+                category(pl.col("status")),
             )
         )
         self.sales = sales
@@ -921,6 +924,7 @@ def _filter_catalog(prep: Prepared, *, scoped: bool = False) -> dict:
         name: (RSL_ORDER if name == "rsl" else prep.frame["material_code" if name == "material" else name].unique().sort().to_list())
         for name in FILTER_KEYS
     }
+    catalog['category'] = [value for value in STOCK_CATEGORIES if not scoped or value in catalog['category']]
     if scoped:
         present = set(prep.frame["rsl"].unique().to_list())
         catalog["rsl"] = [value for value in RSL_ORDER if value in present]

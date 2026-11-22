@@ -647,6 +647,7 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 /* Value filters share the compact report toolbar and Excel's checkbox interaction. */
 .value-filters{display:flex;align-items:center;gap:6px;min-width:342px;flex:1 1 420px;max-width:650px}
 .tools .value-filter{display:grid;grid-template-columns:minmax(0,1fr) 8px;grid-template-rows:10px 13px;justify-content:start;align-content:center;min-width:100px;flex:1 1 0;padding:2px 9px;column-gap:5px;row-gap:0;text-align:left}
+#sFilters .value-filter[aria-label^="Stock category:"]{min-width:142px}
 .value-filter-name{grid-column:1;grid-row:1;color:var(--ink3);font-size:10px;line-height:10px;white-space:nowrap}
 .value-filter-summary{grid-column:1;grid-row:2;line-height:13px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:550}
 .value-filter-arrow{grid-column:2;grid-row:1/3;align-self:center;flex:none;width:6px;height:6px;border-right:1.5px solid var(--ink3);border-bottom:1.5px solid var(--ink3);transform:translateY(-2px) rotate(45deg)}
@@ -819,14 +820,17 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #naT td.na-plans{min-width:140px;max-width:210px;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
 #r-not-actionables .tw{min-height:200px}
 /* brand-status uses the movement sheet's existing tokens and expansion treatment */
-#sT{min-width:100%}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+#sT{min-width:100%;--exposure-fill:#ee8b96;--lnd-fill:#b01f2c}[data-theme=dark] #sT{--lnd-fill:#e2505e}#sT td.name{min-width:220px;max-width:300px;overflow:hidden;text-overflow:ellipsis}
 #sT th .ar{width:0;margin-left:2px;overflow:visible}
+#sT td.num{text-align:left}
 #sT td.rsl-cell{padding:0}
-#sT .status-value{min-width:104px;display:flex;align-items:center;justify-content:flex-end;height:25px;padding:0 8px}
+#sT .status-value{min-width:104px;display:flex;align-items:center;justify-content:flex-start;height:25px;padding:0 8px}
 #sT .long-value{min-width:140px;height:25px;display:flex;align-items:center;padding:0 8px}
 #sT .rsl-red{--fill-light:#fce1e4;--fill-deep:#c62d3a}
 #sT .rsl-amber{--fill-light:#fff0cf;--fill-deep:#d99519}
 #sT .rsl-green{--fill-light:#dcf3e4;--fill-deep:#17803d}
+#sT .exposure-value.has-exposure{background:linear-gradient(270deg,var(--lnd-fill) 0 calc(100% * var(--lnd,0)),transparent 0),var(--exposure-fill)}
+#sT .exposure-value.loss-heavy .status-main{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 [data-theme=dark] #sT .rsl-red{--fill-light:#382027;--fill-deep:#a74350}
 [data-theme=dark] #sT .rsl-amber{--fill-light:#34291a;--fill-deep:#986a21}
 [data-theme=dark] #sT .rsl-green{--fill-light:#1a3024;--fill-deep:#296f45}
@@ -839,10 +843,10 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .status-tip[hidden]{display:none}.status-tip strong{display:block;margin-bottom:6px}.status-tip table{width:auto;min-width:0;border-collapse:collapse;font-size:12px}.status-tip th,.status-tip td{position:static;height:auto;padding:3px 8px;border:0;background:none;text-align:right;white-space:nowrap;font:inherit}.status-tip th:first-child,.status-tip td:first-child{text-align:left;padding-left:0}.status-tip th{color:var(--ink3);font-weight:500}.status-tip small{display:block;margin-top:6px;color:var(--ink3)}
 /* >10M: the full-width bar sits behind the number; its right-hand tail is Exposure and its tip LND, both as a share of the bar.
    Layers paint top first: LND tip, Exposure tail, bar. */
-#sT .long-value{--exp-c:#ee8b96;--lnd-c:#b01f2c;--exp-w:0px;--lnd-w:0px;background:linear-gradient(270deg,var(--lnd-c) 0 var(--lnd-w),transparent 0),linear-gradient(270deg,var(--exp-c) 0 var(--exp-w),transparent 0),linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
+#sT .long-value{--exp-c:var(--exposure-fill);--exp-w:0px;--lnd-w:0px;background:linear-gradient(270deg,var(--lnd-fill) 0 var(--lnd-w),transparent 0),linear-gradient(270deg,var(--exp-c) 0 var(--exp-w),transparent 0),linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
 #sT .long-value.has-exp{--exp-w:min(var(--fill,0%),max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px)))}
 #sT .long-value.has-lnd{--lnd-w:min(var(--fill,0%),max(2px,calc(var(--fill,0%) * var(--lnd,0))))}
-[data-theme=dark] #sT .long-value{--exp-c:#8a3a46;--lnd-c:#e2505e}
+[data-theme=dark] #sT .long-value{--exp-c:#8a3a46}
 :is(#sT,#rT) td.bk,:is(#sT,#rT) th.bk{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
 :is(#sT,#rT) .bk-l{border-left:2px solid var(--accent)}:is(#sT,#rT) .bk-r{border-right:2px solid var(--accent)}
 :is(#sT,#rT) th.group-h.bk{background:var(--accent-soft);color:var(--accent);font-weight:600;border-top:2px solid var(--accent);border-bottom:1px solid var(--accent)}
@@ -1003,7 +1007,63 @@ th.hd .help{position:absolute;top:2px;right:3px;width:15px;height:15px;min-width
 .seg .mb:has(button[aria-pressed=true]) .help{color:var(--ink2)}
 .modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px}
 .modal[hidden]{display:none}
-.sheetm.mvsheet{width:85vw;height:85vh;max-height:none;display:flex;flex-direction:column}.sheetm.mvsheet .lead{max-width:none}#mvBody{flex:1;min-height:0}#mvFoot{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:10px}
+.sheetm.mvsheet{width:85vw;height:85vh;max-height:none;display:flex;flex-direction:column}.sheetm.mvsheet .lead{max-width:none}#mvBody{flex:1;min-height:0;position:relative}#mvFoot{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:10px}
+/* Consulting-grade stock movement waterfall overlay */
+#mv[data-mode="waterfall"] .sheetm.mvsheet{width:min(1340px,92vw);height:min(860px,89vh);padding:22px 28px 20px;border-color:#d6dce8;box-shadow:0 32px 84px -20px rgba(15,23,42,.34),0 2px 8px rgba(15,23,42,.06);background:#fff;overflow:hidden}
+#mv[data-mode="waterfall"] .sheetm header{margin-bottom:14px;align-items:center;gap:20px}
+.mv-head-left{min-width:0;flex:1}
+.mv-eyebrow{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;font:500 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:#64748b}
+#mv[data-mode="waterfall"] .mv-eyebrow{display:flex}
+.mv-chip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;background:#f1f4fa;border:1px solid #dfe5f0;color:#334155;font:500 10px/1.2 var(--mono);letter-spacing:.04em}
+.mv-chip.accent{background:#eef2ff;border-color:#c7d2fe;color:#1e40af}
+#mv[data-mode="waterfall"] h2#mvTitle{font:400 28px/1.12 var(--serif);letter-spacing:-.018em;color:#0f172a;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+#mv[data-mode="waterfall"] h2#mvTitle .mv-parent-sub{font:450 15px/1.2 var(--font);color:#475569;letter-spacing:-.01em}
+#mv[data-mode="waterfall"] h2#mvTitle .mv-code{font:500 11.5px/1 var(--mono);color:#64748b;background:#f4f6fa;border:1px solid #e2e8f0;border-radius:5px;padding:3px 7px;vertical-align:middle}
+#mv[data-mode="waterfall"] .lead#mvSub{display:none}
+.mv-head-right{display:flex;align-items:center;gap:10px;flex:none}
+.mv-unit-seg{display:none;gap:2px;padding:2px;border:1px solid var(--seg-track-border);border-radius:8px;background:var(--seg-track);box-shadow:var(--seg-track-shadow)}
+#mv[data-mode="waterfall"] .mv-unit-seg{display:inline-flex}
+.mv-unit-seg button{height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;background:none;color:var(--ink2);font:500 11.5px/1 var(--font);transition:color .12s,background .12s}
+.mv-unit-seg button:hover{color:var(--ink)}
+.mv-unit-seg button[aria-pressed=true]{background:var(--seg-pill-bg);border-color:rgba(18,21,40,.1);color:var(--ink);font-weight:600;box-shadow:var(--seg-pill-shadow)}
+.mv-pill{display:inline-flex;align-items:center;padding:1.5px 6px;border-radius:99px;font:600 10.5px/1.2 var(--mono);letter-spacing:-.01em}
+.mv-pill.ok{background:#e7f6f0;color:#0b6046;border:1px solid #bee7d7}
+.mv-pill.bad{background:#fcebed;color:#a61f2c;border:1px solid #f5c6cb}
+.mv-pill.flat{background:#edf0f5;color:#475569;border:1px solid #d8dee9}
+#mv[data-mode="waterfall"] #mvBody{background:linear-gradient(180deg,#fcfdff 0%,#ffffff 100%);border:1px solid #e6eaf2;border-radius:11px;padding:6px 10px 4px;overflow:hidden}
+#mv[data-mode="waterfall"] #mvBody svg{display:block;width:100%;height:100%}
+.wf-col{cursor:pointer;outline:none}
+.wf-col .wf-bg{transition:fill .15s ease,stroke .15s ease}
+.wf-col:not(.is-active):hover .wf-bg{fill:rgba(241,245,253,.8);stroke:rgba(148,163,184,.38)}
+.wf-col:focus-visible .wf-bg{stroke:#2243d8;stroke-width:1.6}
+.mv-tip{position:absolute;top:14px;z-index:10;pointer-events:none;width:236px;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border:1px solid #d5dce9;border-radius:10px;box-shadow:0 14px 34px -10px rgba(15,23,42,.22),0 2px 6px rgba(15,23,42,.06);padding:11px 13px;font-size:12px;color:#0f172a;opacity:0;transform:translateY(3px);transition:opacity .12s ease,transform .12s ease}
+.mv-tip.on{opacity:1;transform:translateY(0)}
+.mv-tip-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;margin-bottom:7px;border-bottom:1px solid #e6eaf2}
+.mv-tip-head b{font:600 13px/1.1 var(--font);color:#0f172a}
+.mv-tip-rows{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
+.mv-tip-rows .k{color:#64748b;font-size:11.5px;display:flex;align-items:center;gap:6px}
+.mv-tip-rows .k i{width:7px;height:7px;border-radius:2px;flex:none;display:inline-block}
+.mv-tip-rows .v{font:500 11.5px/1.2 var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:#0f172a}
+.mv-tip-rows .v.ok{color:#0d684c;font-weight:600}
+.mv-tip-rows .v.bad{color:#b82937;font-weight:600}
+.mv-tip-rows .v.muted{color:#64748b}
+.mv-tip-sep{grid-column:1 / -1;height:1px;background:#edf0f6;margin:2px 0}
+.mv-tip-rows .k.tot,.mv-tip-rows .v.tot{font-weight:650;color:#0f172a}
+.mv-tip-foot{margin-top:8px;padding-top:6px;border-top:1px dashed #e2e8f0;font:450 10.5px/1.25 var(--font);color:#64748b;display:flex;justify-content:space-between;gap:8px}
+#mv[data-mode="waterfall"] #mvFoot{flex-direction:column;align-items:stretch;gap:8px;padding-top:10px;flex:none}
+.mv-foot-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.mv-legend{display:flex;align-items:center;gap:18px;flex-wrap:wrap;font:500 11.5px/1 var(--font);color:#475569}
+.mv-legend span{display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.mv-legend i{width:12px;height:10px;border-radius:2.5px;display:inline-block;flex:none}
+.mv-legend .sw-open{background:linear-gradient(180deg,#c8d1e0,#aeb9cc);border-top:1.5px solid #7c8ba4}
+.mv-legend .sw-clear{background:linear-gradient(180deg,#148562,#0d684c)}
+.mv-legend .sw-new{background:linear-gradient(180deg,#cf3442,#ab1f2d)}
+.mv-legend .sw-close{background:linear-gradient(180deg,#1f2f52,#111b33)}
+.mv-hint{font:450 11px/1 var(--mono);color:#94a3b8;white-space:nowrap}
+.mv-remarks{display:flex;align-items:flex-start;gap:12px;padding:9px 13px;background:#f7f9fc;border:1px solid #e2e7f1;border-left:3px solid #2243d8;border-radius:8px;max-height:74px;overflow:auto}
+.mv-remarks-tag{flex:none;font:600 10px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.07em;color:#1e40af;background:#e8edfe;border-radius:4px;padding:3px 7px;margin-top:1px;white-space:nowrap}
+.mv-remarks-list{display:flex;flex-wrap:wrap;gap:5px 8px;min-width:0;align-items:center}
+.mv-remark-item{font:450 12px/1.35 var(--font);color:#1e293b;background:#fff;border:1px solid #e3e8f2;border-radius:5px;padding:2px 8px}
 .scrim{position:absolute;inset:0;background:rgba(15,17,22,.48);backdrop-filter:blur(4px);animation:fade .15s ease}
 .sheetm{position:relative;width:min(760px,100%);max-height:calc(100vh - 48px);overflow:auto;background:var(--surface);border:1px solid var(--line2);border-radius:16px;box-shadow:0 28px 72px -18px rgba(0,0,0,.38);padding:24px 28px 26px;animation:rise .18s ease}
 @keyframes fade{from{opacity:0}}@keyframes rise{from{opacity:0;transform:translateY(8px)}}
@@ -1676,8 +1736,9 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div id="mFilters" aria-label="Report filters"></div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="mMetric" aria-label="Metric">
-        <div class="mb"><button aria-pressed="true" data-m="red">Reduction %</button><button class="help" data-help="red" aria-label="How Reduction % is calculated" title="How Reduction % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="true" data-m="red">Net reduction %</button><button class="help" data-help="red" aria-label="How Net reduction % is calculated" title="How Net reduction % is calculated">?</button></div>
         <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="false" data-m="stock">Total stock</button></div>
       </div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
@@ -1734,14 +1795,14 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div id="sFilters" aria-label="Report filters"></div>
 
       <i class="vr" aria-hidden="true"></i>
-      <select id="sMetric" class="btn" aria-label="Status metric"><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option><option value="0">stock-bdt</option></select>
+      <select id="sMetric" class="btn" aria-label="Status metric"><option value="0">stock-bdt</option><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option></select>
       <i class="vr" aria-hidden="true"></i>
       <select id="sOrder" class="btn" aria-label="Brand drill-down order" hidden><option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option></select>
       <select id="sSort" class="btn" aria-label="Sort towns"><option value="total:-1">Selected metric · high to low</option><option value="total:1">Selected metric · low to high</option><option value="name:1">Town A–Z</option></select>
       <button class="btn" id="sExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta" id="sCount"></span>
-      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span>All stock · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>3–6M and 6–10M bars show the selected metric as a share of the row total. Each &gt;10M bar represents 100% of that cell’s stock.</span><span>Stock trend always uses total stock across all RSL groups</span><span>&gt;10M bar tail: light red = Exposure, dark red tip = LND, each as a share of that cell's &gt;10M stock (hover for %)</span><span>Click a value or trend for monthly RSL history</span></div></details>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span id="sCategoryNote">All stock categories · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>Exposure: each cell is 100% of its exposure, shown in light red; its red portion is LND ÷ that cell’s exposure. &lt;3M stays unshaded. LND mode shows plain values. Stock mode keeps its RSL colours.</span><span>Stock trend always uses total stock across all RSL groups</span><span>In Stock mode only, each &gt;10M bar represents 100% of its stock: light red tail = Exposure, dark red tip = LND, both divided by that cell’s stock. Hover for values and denominators.</span><span>Click a value or trend for monthly RSL history</span></div></details>
     </div>
     <div data-sheet="sT"></div>
   </div>
@@ -1752,7 +1813,10 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 <div class="modal" id="mv" hidden>
   <div class="scrim" data-mvclose></div>
   <div class="sheetm mvsheet" role="dialog" aria-modal="true" aria-labelledby="mvTitle">
-    <header><div><h2 id="mvTitle"></h2><p class="lead" id="mvSub"></p></div><button class="btn sm ghost" data-mvclose aria-label="Close" id="mvClose">✕</button></header>
+    <header>
+      <div class="mv-head-left"><div class="mv-eyebrow" id="mvEyebrow"></div><h2 id="mvTitle"></h2><p class="lead" id="mvSub"></p></div>
+      <div class="mv-head-right"><div class="mv-unit-seg" id="mvUnit" role="group" aria-label="Chart unit"><button type="button" data-unit="bdt" aria-pressed="true">M BDT</button><button type="button" data-unit="kl" aria-pressed="false">KL</button></div><button class="btn sm ghost" data-mvclose aria-label="Close" id="mvClose">✕</button></div>
+    </header>
     <div id="mvBody"></div><div id="mvFoot"></div>
   </div>
 </div>
@@ -1769,7 +1833,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div class="sheetm" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <header><div><h2 id="helpTitle"></h2><p class="lead" id="helpLead"></p></div><button class="btn sm ghost" data-close aria-label="Close" id="helpClose">✕</button></header>
     <div class="tabs sub" role="tablist" id="helpTabs">
-      <button class="tab" role="tab" data-h="red" aria-selected="true">Reduction %</button>
+      <button class="tab" role="tab" data-h="red" aria-selected="true">Net reduction %</button>
       <button class="tab" role="tab" data-h="net" aria-selected="false">Net change %</button>
       <button class="tab" role="tab" data-h="trend" aria-selected="false">Stock trend</button>
       <button class="tab" role="tab" data-h="doh" aria-selected="false">DOH</button>
@@ -1964,7 +2028,7 @@ function showCellEvolution(){
   const chart=$('#r-evolution'),dialog=$('#evoDialog');
   evoHome=document.createComment('evolution home');chart.before(evoHome);$('#evoDialogBody').append(chart);chart.hidden=false;
   const measure=scope.lens==='lnd'?'LND FC':'Exposure';
-  $('#evoDialogScope').textContent=[measure,scope.label,scope.asOf,unitLabel()].filter(Boolean).join(' · ');
+  $('#evoDialogScope').textContent=[measure,scope.label,scope.filters?.category?.join(' + '),scope.asOf,unitLabel()].filter(Boolean).join(' · ');
   dialog.showModal();$('#evoDialogClose').focus({preventScroll:true});
   openEvolution({...scope,reportUnits:true});
 }
@@ -2194,6 +2258,8 @@ let metric='red',minStock=0,ms={k:'now',d:-1},sel=null;
 buildData();
 const mix=(c,t)=>`color-mix(in srgb, var(--${c}) ${Math.round(8+80*t)}%, var(--surface))`;
 const mval=x=>!x?null:!(x.lm>0)?null:metric==='red'?x.p:(num(x.o)+num(x.n)-x.lm)/x.lm;
+const pastStock=x=>num(x?.o)+num(x?.n);
+const pastCell=x=>metric==='stock'?hm({t:amount(pastStock(x))}):hm(cell(x));
 function cell(x){
   if(!x)return {t:'·',s:'color:var(--line2)'};
   if(!(x.lm>0))return {t:'new',s:'color:var(--bad);font-style:italic'};
@@ -2211,7 +2277,7 @@ function spark(p){
   return `<svg style="width:${w}px;height:${h}px;stroke:none;display:block;margin:2px auto;overflow:visible"><polyline points="${xy.map(q=>q.join(',')).join(' ')}" style="fill:none;stroke:var(--ink3)" stroke-width="1.3"/><circle cx="${xy.at(-1)[0]}" cy="${xy.at(-1)[1]}" r="2.6" style="fill:${c};stroke:none"/></svg>`;
 }
 function statusDohCell(r){
-  const c=r.cover,base=`${SERIES.doh.date} · Selected all-stock cohort: ${f(c.stock,3)} KL · Relevant run rate: ${f(c.rate,3)} KL/month · ${SERIES.doh.source_months} source months · seasonality-aware winsorization`;
+  const c=r.cover,base=`${SERIES.doh.date} · Selected stock cohort: ${f(c.stock,3)} KL · Relevant run rate: ${f(c.rate,3)} KL/month · ${SERIES.doh.source_months} source months · seasonality-aware winsorization`;
   const note=c.missing?`${c.missing} town-parent rate(s) missing; ${f(c.missingStock,3)} KL excluded. DOH uses ${f(c.coveredStock,3)} KL with known demand${c.value==null?'; no covered stock, DOH unavailable':''}`:!c.stock?'No latest stock in selected RSL groups':!c.rate?'No observed demand; unbounded cover':'Stock KL ÷ distinct monthly rates × 30';
   return `<button class="doh-value" type="button" data-doh-status="${esc(r.id)}" title="${esc(base+' · '+note)}" aria-label="Explain DOH for ${esc(r.name)}">${c.value==null?'—':Number.isFinite(c.value)?f(c.value,1):'∞'}${c.missing?' ⚠':''}</button>`;
 }
@@ -2220,64 +2286,330 @@ const avgOf=ts=>{let l=0,r=0;ts.forEach(x=>{if(x&&x.lm>0){l+=x.lm;r+=num(x.r)}})
 const latestMonth=SERIES.labels.at(-1), previousMonth=NM>1?SERIES.labels[NM-2]:SERIES.start;
 const components=[
  {k:'opening',h:previousMonth+' stock',value:x=>x.lm},
- {k:'cleared',h:'Cleared',value:x=>x.lm==null?null:x.lm-num(x.o),cls:'good'},
+ {k:'cleared',h:'Net reduction',value:x=>x.lm==null?null:x.lm-num(x.o),help:'red'},
  {k:'carried',h:'Carried over',value:x=>x.o},
  {k:'added',h:'New inclusions',value:x=>x.n,cls:'badc'},
  {k:'closing',h:latestMonth+' stock',value:x=>num(x.o)+num(x.n)}];
 const componentCell=(x,c)=>!x||c.value(x)==null?'–':amount(c.value(x));
 const mcols=[
  {k:'brand',h:'Brand',r:r=>r.parent?`<span class="pn" title="${esc(r.desc)} · parent ${esc(r.code)}">${esc(r.desc)}<small>${esc(r.code)}</small></span>`:`<button class="tg" data-tg="${esc(r.brand)}" aria-expanded="${!!r.isOpen}" aria-label="${r.isOpen?'Collapse':'Expand'} ${esc(r.brand)} parents" title="${r.kids.length} parent${r.kids.length===1?'':'s'}" ${r.kids.length?'':'disabled'}>▸</button>${esc(r.brand)}`,cls:'name'},
- ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>hm(cell(r.m[i]))})),
+ ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>pastCell(r.m[i])})),
  ...components.map(c=>({k:c.k,h:c.h,num:1,cls:c.cls||'',r:r=>componentCell(r.m[NM-1],c)})),
- {k:'m'+(NM-1),h:'Cleared % / Net %',ctr:1,cls:'hmc',r:r=>hm(cell(r.m[NM-1]))},
+ {k:'m'+(NM-1),h:'Net reduction % / Net %',ctr:1,cls:'hmc',r:r=>hm(cell(r.m[NM-1]))},
  {k:'spark',h:'Stock trend',help:'trend',ctr:1,nosort:1,cls:'hmc sp',r:r=>spark(r.pts)},
  {k:'now',h:SERIES.start+'→'+latestMonth+' ('+unitLabel()+')',num:1,r:r=>`${amount(r.pts[0],1)} → <b style="font-weight:600">${amount(r.now,1)}</b>`},
  {k:'avg',h:'Avg',num:1,r:r=>avgCell(r.avg)}];
-const full=i=>SERIES.labels[i]+' '+SERIES.year;
+const full=i=>new Date(SERIES.dates[i]+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function drawNote(){
-  $('#mNote').html=`<span>Actionable stock only · Breakdown amounts in ${unitLabel()}</span><span>Each month compares with the previous saved report</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Cleared = last month's stock no longer in this month · New = batches not in last month</span><span>Latest rate-dependent measures refreshed; earlier saved snapshots remain unchanged</span>`;
+  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Total stock shows closing amounts in ${unitLabel()} in the earlier-month columns. Reduction and Net change compare each month with the previous saved report.</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
 }
 function drawScale(){
+  if(metric==='stock'){$('#mScale').textContent='Earlier months · total stock in '+unitLabel();return}
   $('#mScale').html=metric==='red'
-   ? `<span>Share of last month's stock cleared</span>0%<i style="background:linear-gradient(90deg,var(--surface),var(--accent))"></i>60%+`
+   ? `<span>Reduction on existing batches as a share of opening stock</span>0%<i style="background:linear-gradient(90deg,var(--surface),var(--accent))"></i>60%+`
    : `<span>Stock change vs last month</span>−50%<i style="background:linear-gradient(90deg,var(--ok),var(--surface),var(--bad))"></i>+50%`;
 }
+function wfTopRoundedRect(x,y,w,h,r){
+  if(!(h>0))return '';
+  const rad=Math.min(r,w/2,h);
+  return `M${x},${y+h}V${y+rad}Q${x},${y} ${x+rad},${y}H${x+w-rad}Q${x+w},${y} ${x+w},${y+rad}V${y+h}Z`;
+}
+function wfMonthMetrics(y){
+  if(!y)return null;
+  const lm=num(y.lm),o=num(y.o),n=num(y.n),cm=o+n,cleared=lm-o,delta=cm-lm;
+  const netPct=lm>0?Math.round(delta/lm*100):null;
+  const clrPct=y.p!=null?Math.round(y.p*100):(lm>0?Math.round(cleared/lm*100):null);
+  return {lm,o,n,cm,cleared,delta,netPct,clrPct,rem:y.rem?y.rem.split(', ').filter(Boolean):[]};
+}
+function wfFormatNum(v,dec){
+  return Number((v/unitDivisor()).toFixed(dec)).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+}
+function wfSignedNum(v,dec){
+  const abs=wfFormatNum(Math.abs(v),dec);
+  if(Math.abs(v/unitDivisor())<10**-dec/2)return '0.'+'0'.repeat(dec);
+  return (v>0?'+':'−')+abs;
+}
+function wfPctText(p){
+  if(p==null)return 'new';
+  if(p===0)return '0%';
+  return (p>0?'+':'−')+Math.abs(p)+'%';
+}
 function drawDetail(){
-  const b0=B.find(x=>x.brand===sel.brand);if(!b0)return;const b=sel.code?b0.kids.find(k=>k.code===sel.code):b0;if(!b)return;
-  const CW=176,BW=26,BG=9,L=64,T=40,PB=72,H=470,W=L+NM*CW+10,ph=H-T-PB;
-  const tops=b.m.map(y=>y?Math.max(num(y.lm),num(y.o)+num(y.n)):0),mxv=Math.max(1,...tops);
-  const step=(()=>{const r=mxv/5,p=10**Math.floor(Math.log10(r)),m=r/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p})(),top=Math.ceil(mxv/step)*step;
-  const Y=v=>T+(1-v/top)*ph, fm=v=>(v/unitDivisor()).toFixed(2);
-  let g='';
-  for(let v=0;v<=top+1;v+=step)g+=`<line x1="${L}" x2="${W}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:${v?'var(--line)':'var(--line2)'}" stroke-width="1" ${v?'stroke-dasharray="3 4"':''}/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);stroke:none;font:11px var(--mono)">${+(v/unitDivisor()).toFixed(1)}</text>`;
-  g+=`<text x="0" y="14" style="fill:var(--ink3);stroke:none;font:500 11px var(--font)">Stock (${unitLabel()})</text>`;
-  b.m.forEach((y,i)=>{
-    const X0=L+i*CW,cx=X0+CW/2,bx=k=>cx-(4*BW+3*BG)/2+k*(BW+BG),on=i===sel.mi;
-    g+=`<g data-mi="${i}" style="cursor:pointer">${on?`<rect x="${X0+4}" y="${T-26}" width="${CW-8}" height="${ph+PB-4}" rx="10" style="fill:var(--accent-soft);stroke:none"/>`:`<rect x="${X0+4}" y="${T-26}" width="${CW-8}" height="${ph+PB-4}" rx="6" style="fill:transparent;stroke:none"/>`}`;
-    if(!y){g+=`<text x="${cx}" y="${Y(0)-8}" text-anchor="middle" style="fill:var(--ink3);stroke:none;font:11px var(--font)">no stock</text>`}
-    else{
-      const lm=num(y.lm),o=num(y.o),n=num(y.n),cl=Math.max(0,lm-o),cm=o+n;
-      const bars=[[0,lm,'var(--ink)',fm(lm),'Opening'],[o,lm,'var(--ok)','−'+fm(cl),'Cleared'],[o,cm,'var(--bad)','+'+fm(n),'New'],[0,cm,'var(--ink)',fm(cm),'Closing']];
-      bars.forEach(([a,c,col,t,nm],k)=>{const h=Math.max(Y(a)-Y(c),c>a?1:0);
-        g+=`<rect x="${bx(k)}" y="${Y(c)}" width="${BW}" height="${h}" rx="3" style="fill:${col};stroke:none"><title>${SERIES.labels[i]} · ${nm}: ${amount(Math.abs(k==1?cl:k==2?n:k==0?lm:cm))} ${unitLabel()}</title></rect><text x="${bx(k)+BW/2}" y="${Y(c)-5}" text-anchor="middle" style="fill:var(--ink2);stroke:var(--surface);stroke-width:3px;paint-order:stroke;font:500 10.5px var(--mono)">${t}</text>`});
-      [[0,lm],[1,o],[2,cm]].forEach(([k,v])=>g+=`<line x1="${bx(k)+BW}" x2="${bx(k+1)}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line2)" stroke-width="1" stroke-dasharray="2 2"/>`);
-      const pc=lm>0?Math.round((cm-lm)/lm*100):null;
-      g+=`<text x="${cx}" y="${T+ph+38}" text-anchor="middle" style="fill:${pc==null?'var(--bad)':pc>0?'var(--bad)':'var(--ok)'};stroke:none;font:600 11px var(--mono)">${pc==null?'new':(pc>0?'+':pc<0?'−':'')+Math.abs(pc)+'% net'}</text>`;
-      if(y.p!=null)g+=`<text x="${cx}" y="${T+ph+54}" text-anchor="middle" style="fill:var(--ink3);stroke:none;font:11px var(--mono)">${Math.round(y.p*100)}% cleared</text>`;
+  const b0=B.find(x=>x.brand===sel.brand);if(!b0)return;
+  const b=sel.code?b0.kids.find(k=>k.code===sel.code):b0;if(!b)return;
+  const mv=$('#mv');mv.dataset.mode='waterfall';
+  $$('#mvUnit button').forEach(btn=>btn.setAttribute('aria-pressed',btn.dataset.unit===reportUnit));
+  const unit=unitLabel(),div=unitDivisor(),ms=b.m.map(wfMonthMetrics);
+  const activeIdx=Math.max(0,Math.min(NM-1,sel.mi));
+  const am=ms[activeIdx],mLbl=SERIES.labels[activeIdx];
+  const tops=ms.map(m=>m?Math.max(m.lm,m.o,m.cm):0),mxv=Math.max(1e-6,...tops);
+  const step=(()=>{const r=mxv/4.5,p=10**Math.floor(Math.log10(r)),f0=r/p;return (f0<=1?1:f0<=2?2:f0<=2.5?2.5:f0<=5?5:10)*p})();
+  const top=Math.max(step,Math.ceil(mxv/step)*step);
+  const dec=top/div>=100?1:2;
+  const fm=v=>wfFormatNum(v,dec),fs=v=>wfSignedNum(v,dec);
+
+  // Header eyebrow & display title
+  const allRsl=gsel.size===GROUPS.length;
+  const rslTag=allRsl?'All RSL':GROUPS.filter((_,i)=>gsel.has(i)).join(', ')||'No RSL';
+  $('#mvEyebrow').html=`<span>Stock movement bridge · ${esc(SERIES.start)} → ${esc(SERIES.labels.at(-1))} ${esc(SERIES.year)}</span><span class="mv-chip">${esc(rslTag)}</span><span class="mv-chip accent">${esc(unit)}</span>`;
+  $('#mvTitle').html=b.parent?`${esc(b.brand)}<span class="mv-parent-sub">· ${esc(b.desc)}</span><span class="mv-code">${esc(b.code)}</span>`:esc(b.brand);
+  $('#mvSub').textContent='';
+
+  // Waterfall SVG geometry (adaptive to NM, proportioned for widescreen laptops)
+  const CW=NM<=6?206:Math.max(154,Math.floor(1200/NM));
+  const BW=NM<=6?32:Math.max(22,Math.floor(CW*0.155));
+  const BG=NM<=6?11:8;
+  const L=60,R=20,T=68,PB=98,H=540,W=L+NM*CW+R,ph=H-T-PB;
+  const Y=v=>T+(1-v/top)*ph, y0=Y(0);
+  const bx=(X0,k)=>X0+CW/2-(4*BW+3*BG)/2+k*(BW+BG);
+  const bCx=(X0,k)=>bx(X0,k)+BW/2;
+  const estW=txt=>txt.length*6.4;
+
+  let g=`<defs>
+    <linearGradient id="wfOpen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9d3e2"/><stop offset="100%" stop-color="#adb9cc"/></linearGradient>
+    <linearGradient id="wfOpenDim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4dce8"/><stop offset="100%" stop-color="#bcc7d8"/></linearGradient>
+    <linearGradient id="wfClose" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#213254"/><stop offset="100%" stop-color="#111b33"/></linearGradient>
+    <linearGradient id="wfCloseDim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#334366"/><stop offset="100%" stop-color="#1d2842"/></linearGradient>
+    <linearGradient id="wfClear" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#158c67"/><stop offset="100%" stop-color="#0d694d"/></linearGradient>
+    <linearGradient id="wfNew" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d23644"/><stop offset="100%" stop-color="#a81d2b"/></linearGradient>
+    <linearGradient id="wfWarn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#d4841c"/><stop offset="100%" stop-color="#a8620b"/></linearGradient>
+    <filter id="wfShadow" x="-15%" y="-10%" width="130%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.11"/></filter>
+  </defs>`;
+
+  // Layer 1: Active month spotlight stage (behind gridlines so reference lines glide across cleanly)
+  {
+    const actX0=L+activeIdx*CW,cardX=actX0+6,cardY=8,cardW=CW-12,cardH=H-14;
+    g+=`<rect x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="10" style="fill:#f4f7fe;stroke:rgba(34,67,216,.22);stroke-width:1"/><rect x="${cardX+16}" y="${cardY}" width="${cardW-32}" height="3" rx="1.5" style="fill:#2243d8;stroke:none"/>`;
+  }
+
+  // Layer 2: Horizontal precision gridlines & Y axis ticks
+  const nTicks=Math.round(top/step);
+  for(let j=0;j<=nTicks;j++){
+    const v=j*step,yy=+Y(v).toFixed(2);
+    const tickTxt=Number((v/div).toFixed(step/div<1?1:0)).toLocaleString('en-US');
+    g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" style="stroke:${j?'#e7ebf3':'#c5cfdf'}" stroke-width="${j?1:1.25}" ${j?'stroke-dasharray="3 4"':''}/>`;
+    g+=`<text x="${L-10}" y="${yy+3.5}" text-anchor="end" style="fill:${j?'#838d9f':'#475569'};stroke:none;font:500 10.5px var(--mono)">${tickTxt}</text>`;
+  }
+  g+=`<text x="${L-10}" y="${T-18}" text-anchor="end" style="fill:#64748b;stroke:none;font:600 10px var(--mono);letter-spacing:.05em">${esc(unit.toUpperCase())}</text>`;
+
+  // Layer 3: Inter-month continuity whisper connectors where Closing[i] matches Opening[i+1]
+  for(let i=0;i<NM-1;i++){
+    const m1=ms[i],m2=ms[i+1];
+    if(!m1||!m2)continue;
+    if(Math.abs(m1.cm-m2.lm)<=top*0.012&&m1.cm>0){
+      const x1=bx(L+i*CW,3)+BW,x2=bx(L+(i+1)*CW,0),yy=+Y(m1.cm).toFixed(2);
+      g+=`<line x1="${x1+1}" x2="${x2-1}" y1="${yy}" y2="${yy}" style="stroke:#c2cde0" stroke-width="1" stroke-dasharray="2 3"/>`;
     }
-    g+=`<text x="${cx}" y="${T+ph+20}" text-anchor="middle" style="fill:var(--ink);stroke:none;font:${on?600:500} 13.5px var(--font)">${SERIES.labels[i]}</text></g>`;
+  }
+
+  // Layer 4: Month columns
+  ms.forEach((m,i)=>{
+    const X0=L+i*CW,cx=X0+CW/2,on=i===activeIdx;
+    const cardX=X0+6,cardY=8,cardW=CW-12,cardH=H-14;
+    const colLabel=m?`${SERIES.labels[i]}: opening ${fm(m.lm)}, closing ${fm(m.cm)} ${unit}, net ${wfPctText(m.netPct)}`:`${SERIES.labels[i]}: no stock`;
+    g+=`<g class="wf-col${on?' is-active':''}" data-mi="${i}" tabindex="0" role="button" aria-pressed="${on}" aria-label="${esc(colLabel)}">`;
+    g+=`<rect class="wf-bg" x="${cardX}" y="${cardY}" width="${cardW}" height="${cardH}" rx="10" style="fill:transparent;stroke:transparent;stroke-width:1"/>`;
+
+    if(!m){
+      g+=`<line x1="${cx-24}" x2="${cx+24}" y1="${y0}" y2="${y0}" style="stroke:#cbd5e1" stroke-width="2" stroke-linecap="round"/>`;
+      g+=`<text x="${cx}" y="${y0-12}" text-anchor="middle" style="fill:#94a3b8;stroke:none;font:500 11px var(--font)">No stock</text>`;
+    }else{
+      const x0=bx(X0,0),x1=bx(X0,1),x2=bx(X0,2),x3=bx(X0,3);
+      const c0=bCx(X0,0),c1=bCx(X0,1),c2=bCx(X0,2),c3=bCx(X0,3);
+      const yLm=Y(m.lm),yO=Y(m.o),yCm=Y(m.cm);
+      const clrTop=Math.min(yLm,yO),clrBot=Math.max(yLm,yO),clrH=clrBot-clrTop;
+      const newTop=Math.min(yO,yCm),newBot=Math.max(yO,yCm),newH=newBot-newTop;
+      const openH=y0-yLm,closeH=y0-yCm;
+      const halo=on?'#f4f7fe':'#ffffff';
+      const barFilter=on?' filter="url(#wfShadow)"':'';
+
+      // Precision step connector hairlines (behind bars)
+      const connCol=on?'#8fa0ba':'#cbd5e1';
+      g+=`<line x1="${x0+BW}" x2="${x1}" y1="${yLm}" y2="${yLm}" style="stroke:${connCol}" stroke-width="1" stroke-dasharray="2.5 2"/>`;
+      g+=`<line x1="${x1+BW}" x2="${x2}" y1="${yO}" y2="${yO}" style="stroke:${on?'#475569':connCol}" stroke-width="${on?1.25:1}" ${on?'':'stroke-dasharray="2.5 2"'}/>`;
+      g+=`<line x1="${x2+BW}" x2="${x3}" y1="${yCm}" y2="${yCm}" style="stroke:${connCol}" stroke-width="1" stroke-dasharray="2.5 2"/>`;
+      if(on){
+        g+=`<circle cx="${x1+BW}" cy="${yO}" r="2" style="fill:#475569;stroke:none"/><circle cx="${x2}" cy="${yO}" r="2" style="fill:#475569;stroke:none"/>`;
+      }
+
+      // 1) Opening stock (grounded, architectural cool slate + crisp top cap)
+      g+=`<g${barFilter}>`;
+      if(m.lm>0){
+        const oh=Math.max(openH,2);
+        g+=`<path d="${wfTopRoundedRect(x0,y0-oh,BW,oh,2.5)}" style="fill:url(#${on?'wfOpen':'wfOpenDim'});stroke:none"/>`;
+        g+=`<line x1="${x0+1.5}" x2="${x0+BW-1.5}" y1="${y0-oh+.75}" y2="${y0-oh+.75}" style="stroke:#7e8da6" stroke-width="1.5" stroke-linecap="round"/>`;
+      }else{
+        g+=`<line x1="${x0+3}" x2="${x0+BW-3}" y1="${y0-1}" y2="${y0-1}" style="stroke:#94a3b8" stroke-width="2" stroke-linecap="round"/>`;
+      }
+
+      // 2) Cleared (floating emerald downward step; warm amber fallback if legacy cached run had negative reduction)
+      if(Math.abs(m.cleared)>1e-9){
+        const ch=Math.max(clrH,2.5),cy=clrH<2.5?clrTop-(2.5-clrH)/2:clrTop;
+        const fillId=m.cleared>=0?'wfClear':'wfWarn';
+        const strokeCol=m.cleared>=0?'#0a523c':'#8a4f08';
+        g+=`<rect x="${x1}" y="${cy}" width="${BW}" height="${ch}" rx="2" style="fill:url(#${fillId});stroke:${strokeCol};stroke-width:.5;stroke-opacity:.55"/>`;
+      }else{
+        g+=`<line x1="${x1+4}" x2="${x1+BW-4}" y1="${yLm}" y2="${yLm}" style="stroke:#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>`;
+      }
+
+      // 3) New inclusions (floating Venetian crimson upward step)
+      if(m.n>0){
+        const nh=Math.max(newH,2.5),ny=newH<2.5?newTop-(2.5-newH)/2:newTop;
+        g+=`<rect x="${x2}" y="${ny}" width="${BW}" height="${nh}" rx="2" style="fill:url(#wfNew);stroke:#871722;stroke-width:.5;stroke-opacity:.55"/>`;
+      }else{
+        g+=`<line x1="${x2+4}" x2="${x2+BW-4}" y1="${yCm}" y2="${yCm}" style="stroke:#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>`;
+      }
+
+      // 4) Closing stock (grounded, authoritative deep executive navy)
+      if(m.cm>0){
+        const ch=Math.max(closeH,2);
+        g+=`<path d="${wfTopRoundedRect(x3,y0-ch,BW,ch,2.5)}" style="fill:url(#${on?'wfClose':'wfCloseDim'});stroke:none"/>`;
+      }else{
+        g+=`<line x1="${x3+3}" x2="${x3+BW-3}" y1="${y0-1}" y2="${y0-1}" style="stroke:#16223a" stroke-width="2" stroke-linecap="round"/>`;
+      }
+      g+=`</g>`;
+
+      // Zero-collision smart value labels
+      const lblOpen=m.lm>0?fm(m.lm):'0';
+      const lblClose=m.cm>0?fm(m.cm):'0';
+      const lblClr=Math.abs(m.cleared)>1e-9?(m.cleared>=0?'−'+fm(m.cleared):'+'+fm(-m.cleared)):'';
+      const lblNew=m.n>0?'+'+fm(m.n):'';
+      const txtHalo=`stroke:${halo};stroke-width:3.5px;paint-order:stroke;stroke-linejoin:round`;
+
+      const openLY=Math.min(y0-10,yLm-7);
+      const closeLY=Math.min(y0-10,yCm-7);
+      g+=`<text x="${c0}" y="${openLY}" text-anchor="middle" style="fill:${on?'#475569':'#64748b'};${txtHalo};font:500 10px var(--mono)">${lblOpen}</text>`;
+      g+=`<text x="${c3}" y="${closeLY}" text-anchor="middle" style="fill:#0f172a;${txtHalo};font:${on?700:600} 10.5px var(--mono)">${lblClose}</text>`;
+
+      let clrAboveY=null;
+      if(lblClr){
+        const clrCol=m.cleared>=0?'#0d684c':'#a8620b';
+        const roomBelow=y0-clrBot;
+        if(roomBelow>=18){
+          g+=`<text x="${c1}" y="${clrBot+13}" text-anchor="middle" style="fill:${clrCol};${txtHalo};font:600 10px var(--mono)">${lblClr}</text>`;
+        }else if(clrH>=22&&estW(lblClr)<=BW-3){
+          g+=`<text x="${c1}" y="${(clrTop+clrBot)/2+3.5}" text-anchor="middle" style="fill:#fff;stroke:none;font:600 9.5px var(--mono)">${lblClr}</text>`;
+        }else{
+          const overlapOpen=Math.abs(openLY-(clrTop-7))<13&&((c1-estW(lblClr)/2)<(c0+estW(lblOpen)/2+4));
+          const ly=overlapOpen?Math.max(T-10,clrTop-21):clrTop-7;
+          clrAboveY=ly;
+          if(overlapOpen)g+=`<line x1="${c1}" x2="${c1}" y1="${ly+3}" y2="${clrTop-2}" style="stroke:${clrCol};stroke-opacity:.5" stroke-width="1"/>`;
+          g+=`<text x="${c1}" y="${ly}" text-anchor="middle" style="fill:${clrCol};${txtHalo};font:600 10px var(--mono)">${lblClr}</text>`;
+        }
+      }
+
+      if(lblNew){
+        const newCol='#b82937';
+        const closeGap=(c3-estW(lblClose)/2)-(c2+estW(lblNew)/2);
+        const hitsClose=Math.abs(closeLY-(newTop-7))<13&&closeGap<6;
+        const hitsClr=clrAboveY!=null&&Math.abs(clrAboveY-(newTop-7))<13&&((c2-estW(lblNew)/2)-(c1+estW(lblClr)/2)<6);
+        if(!hitsClose&&!hitsClr){
+          g+=`<text x="${c2}" y="${newTop-7}" text-anchor="middle" style="fill:${newCol};${txtHalo};font:600 10px var(--mono)">${lblNew}</text>`;
+        }else if(newH>=22&&estW(lblNew)<=BW-3){
+          g+=`<text x="${c2}" y="${(newTop+newBot)/2+3.5}" text-anchor="middle" style="fill:#fff;stroke:none;font:600 9.5px var(--mono)">${lblNew}</text>`;
+        }else if(y0-newBot>=18&&(y0-clrBot<18||(c2-estW(lblNew)/2)-(c1+estW(lblClr)/2)>=6)){
+          g+=`<text x="${c2}" y="${newBot+13}" text-anchor="middle" style="fill:${newCol};${txtHalo};font:600 10px var(--mono)">${lblNew}</text>`;
+        }else{
+          const ly=Math.max(T-10,newTop-22);
+          g+=`<line x1="${c2}" x2="${c2}" y1="${ly+3}" y2="${newTop-2}" style="stroke:${newCol};stroke-opacity:.5" stroke-width="1"/>`;
+          g+=`<text x="${c2}" y="${ly}" text-anchor="middle" style="fill:${newCol};${txtHalo};font:600 10px var(--mono)">${lblNew}</text>`;
+        }
+      }
+
+      // Signature Think-Cell Net Change Callout Bracket on the active spotlight month
+      if(on){
+        const hiBarY=Math.min(openLY,closeLY,newTop-7,clrAboveY??Infinity);
+        const brY=Math.max(28,Math.min(y0-58,hiBarY-24));
+        const isUp=m.netPct==null||m.delta>0,isDn=m.netPct!=null&&m.delta<0;
+        const bStroke=isUp?'#d88c94':isDn?'#7ecab1':'#b8c2d4';
+        const bFill=isUp?'#fef2f3':isDn?'#ecfaf4':'#f1f5f9';
+        const bText=isUp?'#a61f2c':isDn?'#0b6046':'#475569';
+        const arrow=isUp?'↗':isDn?'↘':'→';
+        const pillStr=m.netPct==null?`NEW +${fm(m.cm)}`:`${arrow} ${fs(m.delta)} (${wfPctText(m.netPct)})`;
+        const pillW=Math.min(cardW-14,Math.max(76,pillStr.length*6.3+18));
+        const dropL=Math.max(brY+8,openLY-15),dropR=Math.max(brY+10,closeLY-15);
+        g+=`<path d="M${c0},${dropL}V${brY}H${c3}V${dropR-3}" style="fill:none;stroke:${bStroke}" stroke-width="1.25"/>`;
+        g+=`<circle cx="${c0}" cy="${dropL}" r="2" style="fill:${bStroke};stroke:none"/>`;
+        g+=`<polygon points="${c3-3.2},${dropR-5} ${c3+3.2},${dropR-5} ${c3},${dropR+0.5}" style="fill:${bText};stroke:none"/>`;
+        g+=`<rect x="${cx-pillW/2}" y="${brY-10.5}" width="${pillW}" height="20" rx="10" style="fill:${bFill};stroke:${bStroke};stroke-width:1"/>`;
+        g+=`<text x="${cx}" y="${brY+3}" text-anchor="middle" style="fill:${bText};stroke:none;font:600 10px var(--mono)">${pillStr}</text>`;
+      }
+
+      // Bottom score-strip: Net % pill + Clearance velocity micro-gauge
+      const netIsUp=m.netPct==null||m.netPct>0,netIsDn=m.netPct!=null&&m.netPct<0;
+      const npFill=netIsUp?'#fcebed':netIsDn?'#e7f6f0':'#eef1f6';
+      const npStroke=netIsUp?'#f3c1c7':netIsDn?'#b8e5d3':'#d8dee9';
+      const npInk=netIsUp?'#a61f2c':netIsDn?'#0b6046':'#475569';
+      const npTxt=m.netPct==null?'new':`${wfPctText(m.netPct)} net`;
+      const npW=Math.max(58,npTxt.length*6.2+16);
+      g+=`<rect x="${cx-npW/2}" y="${y0+34}" width="${npW}" height="19" rx="9.5" style="fill:${npFill};stroke:${npStroke};stroke-width:.85"/>`;
+      g+=`<text x="${cx}" y="${y0+47}" text-anchor="middle" style="fill:${npInk};stroke:none;font:600 10.5px var(--mono)">${npTxt}</text>`;
+
+      if(m.clrPct!=null){
+        const trW=78,trX=cx-trW/2,trY=y0+62;
+        const frac=Math.max(0,Math.min(1,Math.abs(m.clrPct)/100));
+        const fillCol=m.clrPct>=0?'#0f766e':'#b82937';
+        g+=`<rect x="${trX}" y="${trY}" width="${trW}" height="3.5" rx="1.75" style="fill:#e5e9f2;stroke:none"/>`;
+        if(frac>0)g+=`<rect x="${trX}" y="${trY}" width="${Math.max(3,+(trW*frac).toFixed(1))}" height="3.5" rx="1.75" style="fill:${fillCol};stroke:none"/>`;
+        g+=`<text x="${cx}" y="${y0+79}" text-anchor="middle" style="fill:${on?'#334155':'#64748b'};stroke:none;font:500 10px var(--mono)">${m.clrPct}% cleared</text>`;
+      }else{
+        g+=`<text x="${cx}" y="${y0+74}" text-anchor="middle" style="fill:#94a3b8;stroke:none;font:500 10px var(--mono)">—</text>`;
+      }
+    }
+
+    g+=`<text x="${cx}" y="${y0+22}" text-anchor="middle" style="fill:${on?'#0f172a':'#334155'};stroke:none;font:${on?700:500} 13px var(--font)">${esc(SERIES.labels[i])}</text>`;
+    if(on)g+=`<rect x="${cx-14}" y="${y0+26}" width="28" height="2" rx="1" style="fill:#2243d8;stroke:none"/>`;
+    g+=`</g>`;
   });
-  const x=b.m[sel.mi],rem=x&&x.rem?x.rem.split(', ').filter(Boolean):[];
-  $('#mvTitle').textContent=b.parent?`${b.brand} · ${b.desc}`:b.brand;
-  $('#mvSub').textContent=`${SERIES.start} → ${SERIES.labels.at(-1)} ${SERIES.year} · each month: opening stock, cleared, new inclusions, closing stock`;
-  $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly stock waterfalls for ${esc(b.brand)}">${g}</svg>`;
-  $('#mvFoot').html=`<div class="legend"><span><i style="background:var(--ink)"></i>Opening / closing</span><span><i style="background:var(--ok)"></i>Cleared</span><span><i style="background:var(--bad)"></i>New inclusions</span></div>`+(rem.length?`<p class="sub" style="margin:0"><b>${SERIES.labels[sel.mi]} remarks:</b> ${rem.map(esc).join(' · ')}</p>`:'');
-  $$('#mvBody [data-mi]').forEach(e=>e.onclick=()=>{sel.mi=+e.dataset.mi;drawDetail()});
-  $('#mv').hidden=false;
+
+  $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Monthly stock waterfalls for ${esc(b.brand)}">${g}</svg><div class="mv-tip" id="mvTip" aria-hidden="true"></div>`;
+
+  const rem=am?am.rem:[];
+  const legHtml=`<div class="mv-foot-bar"><div class="mv-legend"><span><i class="sw-open"></i>Opening</span><span><i class="sw-clear"></i>Cleared</span><span><i class="sw-new"></i>New inclusions</span><span><i class="sw-close"></i>Closing</span></div><span class="mv-hint">Click month or press ← → to step</span></div>`;
+  const remHtml=rem.length?`<div class="mv-remarks"><span class="mv-remarks-tag">${esc(mLbl)} remarks</span><div class="mv-remarks-list">${rem.map(r=>`<span class="mv-remark-item">${esc(r)}</span>`).join('')}</div></div>`:'';
+  $('#mvFoot').html=legHtml+remHtml;
+
+  const bodyEl=$('#mvBody'),tipEl=$('#mvTip');
+  const showTip=(i,colEl)=>{
+    const m=ms[i];
+    if(!m){tipEl.classList.remove('on');return}
+    const pillCls=m.netPct==null||m.delta>0?'bad':m.delta<0?'ok':'flat';
+    const monthTitle=SERIES.dates&&SERIES.dates[i]?full(i):`${SERIES.labels[i]} ${SERIES.year}`;
+    tipEl.html=`
+      <div class="mv-tip-head"><b>${esc(monthTitle)}</b><span class="mv-pill ${pillCls}">${wfPctText(m.netPct)}</span></div>
+      <div class="mv-tip-rows">
+        <span class="k"><i style="background:#b5c0d4"></i>Opening stock</span><span class="v muted">${fm(m.lm)} ${esc(unit)}</span>
+        <span class="k"><i style="background:${m.cleared>=0?'#127d5b':'#c27614'}"></i>${m.cleared>=0?'Cleared':'Existing grew'}${m.clrPct!=null?` (${m.clrPct}%)`:''}</span><span class="v ${m.cleared>=0?'ok':'bad'}">${m.cleared>=0?'−'+fm(m.cleared):'+'+fm(-m.cleared)}</span>
+        <span class="mv-tip-sep"></span>
+        <span class="k"><i style="background:#94a3b8"></i>Carried over</span><span class="v muted">${fm(m.o)} ${esc(unit)}</span>
+        <span class="k"><i style="background:#c12a38"></i>New inclusions</span><span class="v ${m.n>0?'bad':'muted'}">+${fm(m.n)}</span>
+        <span class="mv-tip-sep"></span>
+        <span class="k tot"><i style="background:#16223a"></i>Closing stock</span><span class="v tot">${fm(m.cm)} ${esc(unit)}</span>
+        <span class="k">Net change</span><span class="v ${m.delta>0?'bad':m.delta<0?'ok':'muted'}">${fs(m.delta)} ${esc(unit)}</span>
+      </div>
+      <div class="mv-tip-foot"><span>${i===activeIdx?'Spotlighted month':'Click to spotlight'}</span><span>${m.rem.length?`${m.rem.length} remark${m.rem.length===1?'':'s'}`:'No remarks'}</span></div>`;
+    const bRect=bodyEl.getBoundingClientRect(),cRect=colEl.getBoundingClientRect();
+    const tipW=236,gap=10;
+    const placeLeft=i>=Math.ceil(NM/2);
+    const x=placeLeft
+      ? Math.max(12,cRect.left-bRect.left-tipW-gap)
+      : Math.min(bRect.width-tipW-12,cRect.right-bRect.left+gap);
+    tipEl.style.left=x+'px';
+    tipEl.classList.add('on');
+  };
+  const hideTip=()=>tipEl.classList.remove('on');
+  $$('#mvBody [data-mi]').forEach(el=>{
+    const idx=+el.dataset.mi;
+    el.onclick=()=>{sel.mi=idx;drawDetail()};
+    el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sel.mi=idx;drawDetail()}};
+    el.onmouseenter=()=>showTip(idx,el);
+    el.onmouseleave=hideTip;
+  });
+  mv.hidden=false;
 }
 function drawM(){
   mcols.find(c=>c.k==='now').h=SERIES.start+'→'+latestMonth+' ('+unitLabel()+')';
-  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
+  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,metric==='stock'&&i<NM-1?pastStock(x):mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
   const cmpK=ms.k==='brand'?(a,b)=>a.desc.localeCompare(b.desc):cmp(ms.k,ms.d);
   const rows=[];
   B.filter(r=>r.now>=minStock).forEach(r=>rows.push({...dec(r),isOpen:open.has(r.brand)}));
@@ -2288,8 +2620,8 @@ function drawM(){
   rows.length=0;rows.push(...flat);
   const nb=B.filter(r=>r.now>=minStock&&r.kids.length),allOpen=nb.length>0&&nb.every(r=>open.has(r.brand));
   $('#mExp').textContent=allOpen?'Collapse all':'Expand all';$('#mExp').dataset.all=allOpen?1:'';
-  const foot=['All actionable',...TOT.slice(0,-1).map(x=>hm(cell(x))),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
-  mcols[NM+5].h=metric==='red'?'Cleared %':'Net change %';
+  const foot=['All stock',...TOT.slice(0,-1).map(pastCell),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
+  mcols[NM+5].h=metric==='red'?'Net reduction %':'Net change %';
   table({t:'#mT',cols:mcols,rows,groups:[{span:NM,label:'Earlier months'},{span:6,label:latestMonth+' breakdown · '+unitLabel()},{span:3,label:'Stock overview'}],sort:ms,onSort:k=>{if(k==='spark')return;ms=ms.k===k?{k,d:-ms.d}:{k,d:k==='brand'?1:-1};$('#mSort').value='';drawM()},foot,
     onSelect:(r,c)=>{sel={brand:r.brand,code:r.parent?r.code:null,mi:c>=1&&c<NM?c-1:NM-1};drawDetail()},emptyMsg:'No brands match these filters.'});
   $$('#mT tr').forEach(tr=>{if(tr.cells.length<NM+7)return;for(let k=1;k<=6;k++){const c=tr.cells[NM+k];c.classList.add('bk');if(k===1)c.classList.add('bk-l');if(k===6)c.classList.add('bk-r')}});
@@ -2598,23 +2930,27 @@ let statusMetricNames=['stock-bdt','exposure-bdt','lnd-bdt'];
 let statusOpen=new Set(),statusNodes=new Map(),statusRoot=STATUS.total,statusView='town';
 function indexStatus(n){statusNodes.set(n.id,n);n.kids.forEach(indexStatus)}
 indexStatus(statusRoot);
-let statusMetric=1,statusSort={k:'total',d:-1},statusFocus=null;
-const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),rows:()=>statusLeaves(STATUS.total),onChange:()=>{drawStatus();$('#mv').hidden=true}});
+let statusMetric=0,statusSort={k:'total',d:-1},statusFocus=null;
+const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),dimensions:[...FSNEFilters.dimensions,{key:'category',label:'Stock category'}],rows:()=>statusLeaves(STATUS.total),onChange:()=>{if(!$('#doh').hidden)closeDohExplanation();drawStatus();$('#mv').hidden=true}});
+if(STATUS.categories)for(const scope of ['town','brand'])statusFilters.states.set(scope,{category:new Set(STATUS.categories.filter(c=>c!=='Incorrect stock'))});
 statusFilters.use('town');
 const statusStates=new Map();
 /* While the scoped overlay is open, statusScope maps each JSON [town,brand,parent] key it may show to the amount the
  * chart traced for that row, and statusSnap is the saved snapshot (index into STATUS.labels) the chart node refers to. */
-let statusScope=null,statusSnap=null,statusGroup=null;
+let statusScope=null,statusSnap=null,statusGroup=null,statusCategoryScope=null;
+const statusCategoryLabel=()=>{const selected=statusFilters.selection().category||statusCategoryScope;return selected?.length?selected.join(' + '):'All stock categories'};
 const statusLeafKey=(town,brand,parent)=>JSON.stringify([town,brand,String(parent)]);
 function statusLeaves(root){
-  const leaves=root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
+  const leaves=STATUS.facets?STATUS.facets.filter(r=>!statusCategoryScope||statusCategoryScope.includes(r.category)).map(r=>({...r,m:root===STATUS.total_kl?r.m_kl:r.m})):root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
   if(!statusScope)return leaves;
-  // Keep the snapshot the node belongs to and scale every cell of a row so its metric equals the traced amount.
+  // Category parts of a leaf share one scale, so their sum equals the traced amount.
+  const totals=new Map();
+  for(const r of leaves){const key=statusLeafKey(r.town,r.brand,r.parent),at=r.m[statusSnap];const have=at?statusGroup==null?sum(at.map(c=>c[statusMetric])):at[statusGroup][statusMetric]:0;totals.set(key,(totals.get(key)||0)+have)}
   const scaled=[];
   for(const r of leaves){
     const amount=statusScope.get(statusLeafKey(r.town,r.brand,r.parent));
     if(amount==null)continue;
-    const at=r.m[statusSnap],have=at?statusGroup==null?sum(at.map(c=>c[statusMetric])):at[statusGroup][statusMetric]:0,k=have>0?amount/have:0;
+    const have=totals.get(statusLeafKey(r.town,r.brand,r.parent)),k=have>0?amount/have:0;
     if(!(k>0))continue;
     // A node that sits in one RSL group traces only that group; every other group's cell is zero.
     scaled.push({...r,m:r.m.map(cs=>cs&&cs.map((c,g)=>statusGroup==null||g===statusGroup?c.map(v=>v*k):c.map(()=>0)))});
@@ -2622,10 +2958,23 @@ function statusLeaves(root){
   return scaled;
 }
 // DOH always describes the latest saved cohort of the rows, whichever snapshot the node refers to.
-const statusPairs=()=>statusScope?SERIES.doh.pairs.filter(p=>statusScope.has(statusLeafKey(p.t,p.b,p.p))):SERIES.doh.pairs;
+function statusPairs(){
+  const pairs=SERIES.doh.pairs;
+  if(!STATUS.facets)return statusScope?pairs.filter(p=>statusScope.has(statusLeafKey(p.t,p.b,p.p))):pairs;
+  const rates=new Map(pairs.map(p=>[statusLeafKey(p.t,p.b,p.p),p.rate])),selected=new Map();
+  for(const r of STATUS.facets){
+    const key=statusLeafKey(r.town,r.brand,r.parent);
+    if(!statusFilters.matches(r)||(statusScope&&!statusScope.has(key))||(statusCategoryScope&&!statusCategoryScope.includes(r.category)))continue;
+    const latest=r.m_kl.at(-1);if(!latest)continue;
+    if(!selected.has(key))selected.set(key,{t:r.town,b:r.brand,p:r.parent,rate:rates.get(key)??null,stock:{}});
+    const pair=selected.get(key);
+    latest.forEach((cell,g)=>{pair.stock[STATUS.groups[g]]=(pair.stock[STATUS.groups[g]]||0)+cell[0]});
+  }
+  return [...selected.values()];
+}
 function filteredStatusTree(){
   const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
-  const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:STATUS.labels.map(()=>null),kids:[]};
+  const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:source.m.map(cs=>cs?STATUS.groups.map(()=>[0,0,0]):null),kids:[]};
   const nodes=new Map();
   function add(n,m){m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>c.forEach((v,j)=>n.m[i][g][j]+=v))})}
   for(const row of statusLeaves(source)){
@@ -2645,7 +2994,7 @@ function filteredStatusTree(){
 function setStatusView(view){
   statusStates.set(statusView,{metric:statusMetric,sort:statusSort,open:statusOpen});
   const order=$('#sOrder').value,key=view==='town'||order==='town-first'?'town':'brand-'+order;
-  const state=statusStates.get(key)||{metric:statusMetric,sort:{k:'total',d:-1},open:new Set()};
+  const state=statusStates.get(key)||{metric:statusScope||key.startsWith('brand-')&&statusView.startsWith('brand-')?statusMetric:0,sort:{k:'total',d:-1},open:new Set()};
   statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
   statusFilters.use(statusScope?'scoped':key==='town'?'town':'brand');
   $('#sOrder').hidden=view==='town';$('#sMetric').value=String(statusMetric);
@@ -2664,11 +3013,12 @@ function statusEvolutionFilters(n,view){
 }
 function statusDohPairs(n,view,pairs){
   const filters=statusEvolutionFilters(n,view);
-  return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p})&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
+  return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p},'category')&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
 const statusEnd=()=>statusScope?statusSnap:STATUS.labels.length-1;
-const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[0])));
+const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[statusMetric])));
+const statusMetricLabel=()=>['Stock','Exposure','LND FC'][statusMetric];
 const statusLatest=n=>n.m[statusEnd()];
 const statusAmount=n=>statusLatest(n)==null?null:sum(statusLatest(n).map(c=>c[statusMetric]));
 function statusSpark(n){
@@ -2682,15 +3032,21 @@ function statusCell(n,i){
   const c=statusLatest(n)?.[i],v=c?.[statusMetric];
   const group=STATUS.groups[i].replace(/\s/g,''),total=statusAmount(n);
   const share=v>0&&total>0?Math.min(100,Math.max(0,v/total*100)):0;
-  const color={'3M-6M':'rsl-red','6M-10M':'rsl-amber','>10M':'rsl-green'}[group]||'';
+  const stockComposition=statusMetric===0&&group==='>10M',exposureComposition=statusMetric===1;
+  const color=statusMetric===0?({'3M-6M':'rsl-red','6M-10M':'rsl-amber','>10M':'rsl-green'}[group]||''):'';
   const totals=statusLatest(n)?.[0]?.map((_,j)=>sum(statusLatest(n).map(values=>values[j])));
-  const info=esc(JSON.stringify({group:STATUS.groups[i],values:c??null,totals:totals??null}));
+  const info=esc(JSON.stringify({group:STATUS.groups[i],values:c??null,totals:totals??null,stockComposition,exposureComposition}));
   const main=`<span class="status-main">${v==null?'—':amount(v)}</span>`;
-  if(group!=='>10M')return `<div class="status-value ${color}" style="--fill:${share}%" data-status-info="${info}">${main}</div>`;
+  if(exposureComposition){
+    // Each cell is its own exposure denominator; light red exposure contains red LND, both painted as the cell background.
+    const lnd=group!=='<3M'&&c?.[1]>0&&c?.[2]>0?Math.min(1,c[2]/c[1]):0;
+    return `<div class="status-value exposure-value${group!=='<3M'&&v>0?' has-exposure':''}${lnd===1?' loss-heavy':''}" style="--fill:${v>0?100:0}%;--lnd:${lnd}" data-status-info="${info}">${main}</div>`;
+  }
+  if(!stockComposition)return `<div class="status-value ${color}" style="--fill:${statusMetric===0?share:0}%" data-status-info="${info}">${main}</div>`;
   // Exposure and LND as fractions of this cell's >10M stock; LND is always part of Exposure.
   const ratio=j=>{if(!c||!(c[0]>0)||!(c[j]>0))return 0;const r=c[j]/c[0];return Number((r*100).toFixed(1))===0?0:Math.min(1,r)};
   const stock=c?.[0]>0,exp=ratio(1),lnd=Math.min(ratio(2),exp);
-  const cls='long-value '+color+(stock?' has-stock':'')+(exp?' has-exp':'')+(lnd?' has-lnd':'');
+  const cls='long-value'+(stock?' has-stock':'')+' '+color+(exp?' has-exp':'')+(lnd?' has-lnd':'');
   return `<div class="${cls}" style="--fill:${stock?100:0}%;--exp:${exp};--lnd:${lnd}" data-status-info="${info}">${main}</div>`;
 }
 const statusTip=document.createElement('div');statusTip.className='status-tip';statusTip.hidden=true;document.body.append(statusTip);
@@ -2698,10 +3054,10 @@ const statusTip=document.createElement('div');statusTip.className='status-tip';s
 let statusScrolledAt=-Infinity;
 const statusScrolling=()=>performance.now()-statusScrolledAt<200;
 function showStatusTip(cell){
-  const {group,values,totals}=JSON.parse(cell.dataset.statusInfo),isLong=group.replace(/\s/g,'')==='>10M';
+  const {group,values,totals,stockComposition,exposureComposition}=JSON.parse(cell.dataset.statusInfo);
   const pct=(value,total)=>value==null||!(total>0)?'—':f(value/total*100,1)+'%';
-  const rows=['Stock','Exposure','L&D FC'].map((name,j)=>`<tr><td>${name}${j===statusMetric?' •':''}</td><td>${values?amount(values[j]):'—'}</td><td>${pct(values?.[j],isLong?values?.[0]:totals?.[j])}</td></tr>`).join('');
-  statusTip.html=`<strong>${esc(group)} · ${esc(unitLabel())}</strong><table><thead><tr><th>Measure</th><th>Value</th><th>${isLong?'% of &gt;10M stock':'% of row total'}</th></tr></thead><tbody>${rows}</tbody></table><small>• Selected metric${cell.closest('td')?.dataset.evolution?' · Right-click to show evolution':''}</small>`;
+  const rows=['Stock','Exposure','L&D FC'].map((name,j)=>`<tr><td>${name}${j===statusMetric?' •':''}</td><td>${values?amount(values[j]):'—'}</td><td>${exposureComposition&&j===0?'—':pct(values?.[j],stockComposition?values?.[0]:exposureComposition?values?.[1]:totals?.[j])}</td></tr>`).join('');
+  statusTip.html=`<strong>${esc(group)} · ${esc(unitLabel())}</strong><table><thead><tr><th>Measure</th><th>Value</th><th>${stockComposition?'% of &gt;10M stock':exposureComposition?'% of cell exposure':'% of row measure total'}</th></tr></thead><tbody>${rows}</tbody></table><small>${exposureComposition?(group.replace(/\s/g,'')==='<3M'?'<3M: no shading · ':'Red = L&D FC ÷ this cell’s exposure · '):''}• Selected metric${cell.closest('td')?.dataset.evolution?' · Right-click to show evolution':''}</small>`;
   statusTip.hidden=false;const r=cell.getBoundingClientRect(),tip=statusTip.getBoundingClientRect();
   statusTip.style.left=Math.max(8,Math.min(r.left,innerWidth-tip.width-8))+'px';
   statusTip.style.top=(r.bottom+tip.height+8<=innerHeight?r.bottom+6:Math.max(8,r.top-tip.height-6))+'px';
@@ -2719,7 +3075,8 @@ function statusName(n){
 function drawStatus(){
   statusTip.hidden=true;
   statusRoot=filteredStatusTree();statusNodes=new Map();indexStatus(statusRoot);
-  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,statusPairs()),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
+  const dohPairs=statusPairs();
+  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,dohPairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
   const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
   const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
   function visit(n){
@@ -2733,13 +3090,13 @@ function drawStatus(){
   const cols=[{k:'name',h:statusHierarchy().replaceAll(' → ',' / '),cls:'name',r:statusName},
     ...STATUS.groups.map((g,i)=>({k:'g'+i,h:esc(g),num:1,cls:'rsl-cell'+(g.replace(/\s/g,'')==='>10M'?' long-rsl':''),r:n=>statusCell(n,i)})),
     {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
-    {k:'spark',h:'Stock trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
+    {k:'spark',h:statusMetricLabel()+' trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
     {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
     {k:'now',h:(statusEnd()?STATUS.labels[0].split(' ')[0]+'→':'')+STATUS.labels[statusEnd()].split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);if(p.length<2)return `<b style="font-weight:600">${p[0]==null?'—':amount(p[0],1)}</b>`;return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
   const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
-  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:'Stock overview'}],
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:statusMetricLabel()+' overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
-    onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected Brand, Parent SKU and Town filters. Clear a filter to see more records.'});
+    onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected filters. Clear a filter to see more records.'});
   if(!statusScope&&(statusMetric===1||statusMetric===2)){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
@@ -2753,6 +3110,7 @@ function drawStatus(){
   $('#sExp').textContent=allOpen?'Collapse all':'Expand all';$('#sExp').dataset.all=allOpen?'1':'';
   $('#sCount').textContent=`${flat.filter(n=>!n.level).length} ${statusView==='town'?'towns':'brands'} · ${flat.length} rows`;
   $('#sHierarchyNote').textContent='▸ '+statusHierarchy();
+  $('#sCategoryNote').textContent=statusCategoryLabel()+' · latest saved snapshot each month';
 }
 $('#sT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[data-stg]');if(!b)return;e.stopPropagation();const id=b.dataset.stg;statusOpen.has(id)?statusOpen.delete(id):statusOpen.add(id);drawStatus();$(`#sT [data-stg="${id}"]`)?.focus({preventScroll:true})},true);
 $('#sMetric').onchange=e=>{statusMetric=+e.target.value;drawStatus()};
@@ -2761,6 +3119,7 @@ $('#sSort').onchange=e=>{const [k,d]=e.target.value.split(':');statusSort={k,d:+
 $('#sExp').onclick=e=>{const all=!!e.currentTarget.dataset.all;statusNodes.forEach(n=>{if(n.id!=='total'&&n.kids.length)all?statusOpen.delete(n.id):statusOpen.add(n.id)});drawStatus()};
 const statusColors=['var(--bad)','var(--warn)','var(--ink3)','var(--accent)'];
 function openStatusChart(n){
+  delete $('#mv').dataset.mode;
   statusFocus=$('#sT').closest('.tw');
   const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=STATUS.labels.length;
   const cs=n.m,totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
@@ -2794,10 +3153,10 @@ drawStatus();
 const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
 const SCOPE_ORDERS='<option value="parent">Brand → Parent → Town</option><option value="town">Brand → Town → Parent</option><option value="town-first">Town → Brand → Parent</option>';
 let statusSaved=null,scopeHomes=[];
-function openStatusScope({leaves,lens,snapshot,group,note}){
+function openStatusScope({leaves,lens,snapshot,group,note,categories}){
   const order=$('#sOrder');
   statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
-  statusSnap=snapshot;statusGroup=group;statusScope=new Map();
+  statusSnap=snapshot;statusGroup=group;statusCategoryScope=categories?.length?categories:null;statusScope=new Map();
   leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
   statusFilters.states=new Map();statusStates.clear();
   statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
@@ -2807,7 +3166,7 @@ function openStatusScope({leaves,lens,snapshot,group,note}){
 }
 function closeStatusScope(){
   const saved=statusSaved;if(!saved)return;
-  statusSaved=null;statusScope=null;statusSnap=null;statusGroup=null;
+  statusSaved=null;statusScope=null;statusSnap=null;statusGroup=null;statusCategoryScope=null;
   statusStates.clear();saved.states.forEach((v,k)=>statusStates.set(k,v));
   statusFilters.states=saved.filterStates;
   const order=$('#sOrder');order.html=saved.orderHtml;order.value=saved.order;
@@ -2832,7 +3191,8 @@ function showScopedData(request){
   $('#scopeDialogBody').append(page);page.hidden=false;
   SCOPE_MODALS.forEach(id=>dialog.append($(id)));
   $('#scopeDialogTitle').textContent='Show data · '+request.title;
-  const note=`${request.scope} · ${STATUS.labels[snapshot]} snapshot · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock the chart traced to this selection`;
+  const categoryNote=request.categories?.length?' · '+request.categories.join(' + '):'';
+  const note=`${request.scope}${categoryNote} · ${STATUS.labels[snapshot]} snapshot · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock the chart traced to this selection`;
   $('#scopeDialogScope').textContent=note;
   dialog.showModal();
   openStatusScope({...request,note});
@@ -2849,22 +3209,25 @@ $('#scopeDialog').addEventListener('close',closeScopedData);
 // Escape belongs to an open chart, DOH or help sheet first; only a bare overlay closes the dialog.
 $('#scopeDialog').addEventListener('keydown',e=>{if(e.key==='Escape'&&SCOPE_MODALS.some(id=>!$(id).hidden))e.preventDefault()},true);
 
-$$('#reportUnit button').forEach(button=>button.onclick=()=>{
+function applyReportUnit(unit,keepWaterfall){
   if(!$('#doh').hidden)closeDohExplanation();
-  reportUnit=button.dataset.unit;
-  $$('#reportUnit button').forEach(b=>b.setAttribute('aria-pressed',b===button));
-  $('#mv').hidden=true;sel=null;
+  reportUnit=unit;
+  $$('#reportUnit button,#mvUnit button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.unit===unit));
+  if(!keepWaterfall){$('#mv').hidden=true;sel=null}
   $$('#r-move .movement-notes summary,#r-status .movement-notes summary,#r-plan .movement-notes summary').forEach(el=>el.title='Notes · amounts in '+unitLabel());
   statusMetricNames=['stock','exposure','lnd'].map(name=>name+'-'+reportUnit);
   $$('#sMetric option').forEach(o=>o.textContent=statusMetricNames[+o.value]);
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
   if(minStock)minStock=+size.dataset.s;
-  buildData();drawB();drawNote();drawM();drawTransfer();drawRescue();
+  buildData();drawB();drawNote();drawScale();drawM();drawTransfer();drawRescue();
   setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
   if(curRep==='not-actionables')drawNotActionables();
   if(curRep==='evolution'&&window.FSNE&&window.FSNE.evolution)window.FSNE.evolution.setUnit(reportUnit);
-});
+  if(keepWaterfall&&sel){B.some(x=>x.brand===sel.brand)?drawDetail():($('#mv').hidden=true,sel=null)}
+}
+$$('#reportUnit button').forEach(button=>button.onclick=()=>applyReportUnit(button.dataset.unit,false));
+$$('#mvUnit button').forEach(button=>button.onclick=()=>applyReportUnit(button.dataset.unit,true));
 
 /* metric help overlay: definitions + waterfall with dummy data */
 const DUMMY={lm:100,cleared:30,carried:70,added:25,now:95};
@@ -2872,7 +3235,7 @@ function waterfall(m){
   const W=620,H=262,top=34,bot=34,left=22,bw=80,gap=44,ph=H-top-bot,mx=110,y=v=>top+(1-v/mx)*ph,x=i=>left+i*(bw+gap);
   const d=DUMMY,bars=[
    {l:'Last month',a:0,b:d.lm,v:String(d.lm),c:'var(--ink)'},
-   {l:'Cleared',a:d.carried,b:d.lm,v:'−'+d.cleared,c:'var(--ok)'},
+   {l:'Net reduction',a:d.carried,b:d.lm,v:'−'+d.cleared,c:'var(--ok)'},
    {l:'Carried over',a:0,b:d.carried,v:String(d.carried),c:'var(--ink3)'},
    {l:'New inclusions',a:d.carried,b:d.now,v:'+'+d.added,c:'var(--bad)'},
    {l:'This month',a:0,b:d.now,v:String(d.now),c:'var(--ink)'}];
@@ -2973,29 +3336,29 @@ const HELP={
   worked:'12 KL ÷ 12 weeks = <b>1.0 KL/week</b> · 1.0 ÷ 0.6 = <b>1.67× uplift</b>',
   cap:'Dummy data: 12 KL, 12 weeks, baseline 0.6 and observed peak 0.9 KL/week. Required pace is above the peak, so the pool is flagged for review.',
   notes:['The deadline is a planning target chosen for this view, not an expiry, customer acceptance rule or the 300/90-day warning.','Uplift multipliers are assumptions, not predicted demand or probability of success. No seasonality, causality or cannibalisation is modelled.','Pools are never added into a portfolio requirement. Only the declared scenarios are precomputed; economics (cost, margin, discount) is unavailable.','Above the observed peak is a review flag, not impossibility. The source has missing calendar months and no stock-availability data.']},
- doh:{title:'Days on hand',lead:'How many days the latest all-stock town or brand cohort with known demand would cover at the adjusted historical run rate. Missing-demand stock is excluded and flagged; this is not a seasonal forecast.',
+ doh:{title:'Days on hand',lead:'How many days the latest selected town or brand stock cohort with known demand would cover at the adjusted historical run rate. Missing-demand stock is excluded and flagged; this is not a seasonal forecast.',
   formula:'<b>DOH</b> = Selected stock KL ÷ Relevant monthly secondary-sales KL × 30',
-  terms:[['Selected stock','Latest saved snapshot, all stock in this town/brand/parent with known demand'],['Relevant rate','Sum of rates counted once for each town + parent with selected stock'],['Adjusted rate','Monthly town-parent sales are winsorized only for isolated extreme deviations after a robust cross-town seasonal adjustment; low/zero months and ambiguous peaks are preserved']],
+  terms:[['Selected stock','Latest saved snapshot, selected stock categories in this town/brand/parent with known demand'],['Relevant rate','Sum of rates counted once for each town + parent with selected stock'],['Adjusted rate','Monthly town-parent sales are winsorized only for isolated extreme deviations after a robust cross-town seasonal adjustment; low/zero months and ambiguous peaks are preserved']],
   worked:'6 KL ÷ 3 KL/month × 30 = <b>60 days</b>',cap:'Dummy data: two batches sharing a town-parent have 2 KL + 4 KL stock and one shared 3 KL/month rate. Count that rate once, not twice.',
-  notes:['DOH stays in days when switching BDT/KL. Parent and footer values are recomputed, never averaged from batch or brand DOH.','Town and brand DOH includes all RSL groups and is independent of the stock/exposure/LND display metric. Stock movement filters do not affect it.','⚠ means missing-demand stock is excluded from DOH; click for missing sources and coverage. — means no stock with known demand. ∞ means known zero demand.','The source has one annual cycle: cross-town consensus protects shared peaks but cannot prove recurring or every local seasonal event. Sparse histories and ambiguous peaks stay unmodified.','Latest rate-dependent measures are refreshed from the current source. Saved historical workbooks remain unchanged.']},
- trend:{title:'Stock trend',lead:"A small line of the brand's Actionable stock across the months, with a coloured dot that shows where it ended up compared with where it started.",
+  notes:['DOH stays in days when switching BDT/KL. Parent and footer values are recomputed, never averaged from batch or brand DOH.','Town and brand DOH uses the selected stock categories across all RSL groups and is independent of the stock/exposure/LND display metric. Each town-parent demand rate is counted once, even when several categories are selected. Stock movement filters do not affect it.','⚠ means missing-demand stock is excluded from DOH; click for missing sources and coverage. — means no stock with known demand. ∞ means known zero demand.','The source has one annual cycle: cross-town consensus protects shared peaks but cannot prove recurring or every local seasonal event. Sparse histories and ambiguous peaks stay unmodified.','Latest rate-dependent measures are refreshed from the current source. Saved historical workbooks remain unchanged.']},
+ trend:{title:'Stock trend',lead:"A small line of the brand's total saved stock across the months, with a coloured dot that shows where it ended up compared with where it started.",
   formula:'<b>Dot colour</b> = Last stock ÷ First stock, compared with ±5%',
   terms:[['Line',"One point per month: the stock carried in from the previous saved report (LM stock). The final point is this month's stock: Carried over + New inclusions"],['First point',"The first month's LM stock (blue dot and dashed line in the chart)"],['Last point',"This month's stock (the coloured dot)"],['Grey band','First stock ± 5%. Ending inside the band counts as flat']],
   worked:'Grew: 62 > 40 × 1.05 = 42 → <b>red</b> · Fell: 36 < 40 × 0.95 = 38 → <b>green</b> · Flat: 47.5 ≤ 51 ≤ 52.5 → <b>gray</b>',
   cap:'Dummy data: six stock values per brand. Only the first and last values decide the dot colour; the points in between only shape the line.',
-  notes:['Red means stock grew by more than 5%. Green means it fell by more than 5%. Gray means it stayed within 5%.','Each line is scaled to its own lowest and highest value, so heights of two rows cannot be compared. Use the latest stock breakdown for actual amounts.','A line can swing a lot in the middle and still get a gray dot, because only the first and last points count.','The "All actionable" row at the bottom uses the same rule on the total across all brands.']},
- red:{title:'Reduction %',lead:"How much of last month's Actionable stock is gone this month. New batches that arrived this month are ignored.",
+  notes:['Red means stock grew by more than 5%. Green means it fell by more than 5%. Gray means it stayed within 5%.','Each line is scaled to its own lowest and highest value, so heights of two rows cannot be compared. Use the latest stock breakdown for actual amounts.','A line can swing a lot in the middle and still get a gray dot, because only the first and last points count.','The "All stock" row at the bottom uses the same rule on the total across all brands.']},
+ red:{title:'Reduction on existing batches',lead:"Opening stock cleared per physical batch key. Every planning status is included; stock added to already-present batch keys counts under New inclusions. This measures saved inventory change, not proven sales or disposal.",
   formula:'<b>Reduction %</b> = (LM stock − Carried over) ÷ LM stock',
-  terms:[['LM stock',"Actionable stock in last month's saved report"],['Carried over',"This month's stock in batches that were already in last month's report"],['Cleared','LM stock − Carried over (the green step in the chart)']],
+  terms:[['LM stock',"All stock in last month's saved report"],['Carried over',"This month's remaining stock from last month's physical batch keys (capped per key at last month's stock)"],['Cleared','LM stock − Carried over; never negative']],
   worked:`(${DUMMY.lm} − ${DUMMY.carried}) ÷ ${DUMMY.lm} = <b>${DUMMY.cleared}%</b>`,
-  cap:`Dummy data: ${DUMMY.lm} in last month, ${DUMMY.cleared} cleared, ${DUMMY.added} of new batches arrive. The new batches do not change Reduction %.`,
-  notes:['Darker blue means a larger share was cleared.','Red with a minus sign means batches already in stock grew.','"new" means the brand had no Actionable stock last month, so there is nothing to divide by.',"The Avg column is total cleared ÷ total LM stock across the months, so bigger months count for more."]},
- net:{title:'Net change %',lead:"Whether the brand's total Actionable stock went up or down this month, counting the new batches that arrived.",
+  cap:`Dummy data: ${DUMMY.lm} in last month, ${DUMMY.cleared} cleared on existing batches, ${DUMMY.added} added in new inclusions. Additions do not change Reduction %.`,
+  notes:['Darker blue means a larger reduction relative to opening stock.','Stock added to an already-existing batch key counts under New inclusions, so Cleared and Reduction % are never negative.','"new" means the brand had no positive opening stock, so there is nothing to divide by.',"The Avg column is summed reduction ÷ summed opening stock across the months, so bigger months count for more.",'Status changes alone do not change stock totals or new-batch membership.']},
+ net:{title:'Net change %',lead:"Whether the brand's total saved stock went up or down this month, counting new batches and additions.",
   formula:'<b>Net change %</b> = (Carried over + New inclusions − LM stock) ÷ LM stock',
-  terms:[['Carried over',"This month's stock in batches that were already in last month's report"],['New inclusions',"This month's stock in batches that were not in last month's report"],['This month',"Carried over + New inclusions"]],
+  terms:[['Carried over',"This month's remaining stock from last month's physical batch keys (capped per key at last month's stock)"],['New inclusions',"New batch keys plus any stock added to keys already present in last month's report"],['This month',"Carried over + New inclusions"]],
   worked:`(${DUMMY.carried} + ${DUMMY.added} − ${DUMMY.lm}) ÷ ${DUMMY.lm} = <b>−5%</b>`,
-  cap:`Same dummy data: stock falls from ${DUMMY.lm} to ${DUMMY.now}. The brand cleared ${DUMMY.cleared}% but took in ${DUMMY.added}, so the net change is small.`,
-  notes:['Green means stock fell. Red means stock grew.','A brand can clear a lot and still grow overall when new inclusions are larger than what was cleared.','A small last-month stock can give an extreme percentage (for example +974%). Check the detail panel for the selected-unit amounts.','"new" means the brand had no Actionable stock last month.']}
+  cap:`Same dummy data: stock falls from ${DUMMY.lm} to ${DUMMY.now}. Net reduction on existing batches was ${DUMMY.cleared}, while new inclusions added ${DUMMY.added}, so the net change is small.`,
+  notes:['Green means stock fell. Red means stock grew.','Total stock can grow even when existing batches reduce, if new inclusions are larger.','A small last-month stock can give an extreme percentage (for example +974%). Check the detail panel for the selected-unit amounts.','"new" means the brand had no positive opening stock last month.']}
 };
 let helpOpener=null;
 function showHelp(m){
@@ -3024,9 +3387,18 @@ addEventListener('keydown',e=>{
     else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
   }
 });
-function closeMovementOverlay(){$('#mv').hidden=true;if(statusFocus){statusFocus.focus({preventScroll:true});statusFocus=null}}
+function closeMovementOverlay(){$('#mv').hidden=true;delete $('#mv').dataset.mode;if(statusFocus){statusFocus.focus({preventScroll:true});statusFocus=null}}
 $$('#mv [data-mvclose]').forEach(b=>b.onclick=closeMovementOverlay);
-addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mv').hidden)closeMovementOverlay();if(e.key==='Tab'&&!$('#mv').hidden){const focusable=$$('button,[tabindex="0"]',$('#mv'));const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+addEventListener('keydown',e=>{
+  if($('#mv').hidden)return;
+  if(e.key==='Escape')closeMovementOverlay();
+  if($('#mv').dataset.mode==='waterfall'&&sel&&(e.key==='ArrowLeft'||e.key==='ArrowRight')){
+    e.preventDefault();
+    const next=Math.max(0,Math.min(NM-1,sel.mi+(e.key==='ArrowRight'?1:-1)));
+    if(next!==sel.mi){sel.mi=next;drawDetail()}
+  }
+  if(e.key==='Tab'){const focusable=$$('button,[tabindex="0"]',$('#mv')).filter(b=>b.getClientRects().length);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+});
 /*DOH_OVERLAY*/
 /* Action plans pages: rescue, rebalance, loading-watch. One view, parameterised by the page payload
    (ui/rescue_data.py ships one row per batch and the page's meta); this view only sums the rows,
@@ -3393,6 +3765,31 @@ $('#naSort').onchange=e=>{const [k,d]=e.target.value.split(':');naSort={k,d:+d};
 $('#naExpand').onclick=e=>{if(e.currentTarget.dataset.all)naOpen.clear();else naExpandable.forEach(id=>naOpen.add(id));drawNotActionables()};
 $('#naT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[data-na-toggle]');if(!b)return;const id=b.dataset.naToggle;naOpen.has(id)?naOpen.delete(id):naOpen.add(id);drawNotActionables()},true);
 addEventListener('resize',fitNotActionables);
+function movementCsvRows(source,selected,dates,openingDate){
+  const rows=[],entries=source.brands.flatMap(b=>[{level:'brand',brand:b.b,parent:'',description:'',m:b.m},...(b.p||[]).map(p=>({level:'parent',brand:b.b,parent:p.c,description:p.d,m:p.m}))]);
+  entries.push({level:'total',brand:'All stock',parent:'',description:'',m:source.total});
+  for(const entry of entries)entry.m.forEach((cs,i)=>{
+    if(!cs)return;
+    const chosen=cs.filter((c,g)=>c&&selected.has(g));if(!chosen.length)return;
+    const row={level:entry.level,brand:entry.brand,parent:entry.parent,description:entry.description,opening_date:i?dates[i-1]:openingDate,closing_date:dates[i]};
+    for(const unit of ['bdt','kl']){
+      const cells=chosen.map(c=>unit==='bdt'?c:c.kl),add=k=>cells.some(c=>c[k]!=null)?sum(cells.map(c=>c[k])):null;
+      const lm=add('lm'),carried=add('o'),added=add('n'),closing=num(carried)+num(added),reduction=lm==null?null:lm-num(carried);
+      Object.assign(row,{['opening_'+unit]:lm,['carried_'+unit]:carried,['new_'+unit]:added,['closing_'+unit]:closing,['net_reduction_'+unit]:reduction,['net_change_pct_'+unit]:lm>0?(closing-lm)/lm*100:null});
+    }
+    rows.push(row);
+  });
+  return rows;
+}
+function exportMovement(){
+  const source=moveFilters.active?FSNEFilters.mergeMovement(moveFilters.rows(),NM,GROUPS.length):SERIES;
+  const rows=movementCsvRows(source,gsel,SERIES.dates,SERIES.opening_date);
+  if(!rows.length){toast('No matching stock to export');return}
+  const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"',headers=Object.keys(rows[0]);
+  const lines=[headers.map(quote).join(','),...rows.map(r=>headers.map(k=>quote(r[k])).join(','))];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  a.download=`total-stock-movement-${SERIES.dates.at(-1)}.csv`;a.click();URL.revokeObjectURL(a.href);toast('Exported all-stock movement in BDT and KL');
+}
 function exportNotActionables(){
   if(!naMonths.length){toast('No saved stock available');return}
   const quote=v=>'"'+String(v??'').replaceAll('"','""')+'"',m=naMonths[naMonth],rows=naFiltered();
@@ -3402,7 +3799,7 @@ function exportNotActionables(){
   a.download=`not-actionables-${m.date}.csv`;a.click();URL.revokeObjectURL(a.href);toast(`Exported ${rows.length} batches`);
 }
 
-$('#exportBtn').onclick=()=>curRep==='evolution'?toast(window.FSNE&&window.FSNE.evolution&&window.FSNE.evolution.exportCsv()?'Exported flows':'Nothing to export'):curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():curRep==='not-actionables'?exportNotActionables():ACTION_PLANS.includes(curRep)?exportRescue():toast('Export is not connected yet');
+$('#exportBtn').onclick=()=>curRep==='evolution'?toast(window.FSNE&&window.FSNE.evolution&&window.FSNE.evolution.exportCsv()?'Exported flows':'Nothing to export'):curRep==='transfer'?exportTransfer():curRep==='salespush'?exportSP():curRep==='not-actionables'?exportNotActionables():curRep==='move'?exportMovement():ACTION_PLANS.includes(curRep)?exportRescue():toast('Export is not connected yet');
 })();
 </script>
 </body>
