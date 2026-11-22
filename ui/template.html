@@ -524,7 +524,8 @@ td.mono{font-size:12px}
 .rn{position:sticky;left:0;z-index:2;width:44px;min-width:44px;max-width:44px;padding:0;text-align:center!important;background:var(--sunken)!important;color:var(--ink3);font:500 11px var(--mono)!important;border-right:1px solid var(--line2)}
 th.rn{z-index:5}
 td.rn.hl{background:var(--accent-soft)!important;color:var(--accent)}
-tbody tr:hover td:not(.rn){background:var(--hover)}
+/* Not in #sT: rows sliding under a still pointer while scrolling would repaint the whole status table every frame. */
+:where(table:not(#sT)) tbody tr:hover td:not(.rn){background:var(--hover)}
 td:nth-child(2),th:nth-child(2){position:sticky;left:44px;z-index:1;border-right:1px solid var(--line2)}
 th:nth-child(2){z-index:4}
 td.empty{position:static;white-space:normal;text-align:center;color:var(--ink3);padding:40px 16px}
@@ -823,27 +824,25 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #sT td.rsl-cell{padding:0}
 #sT .status-value{min-width:104px;display:flex;align-items:center;justify-content:flex-end;height:25px;padding:0 8px}
 #sT .long-value{min-width:140px;height:25px;display:flex;align-items:center;padding:0 8px}
-#sT .status-value,#sT .long-value{position:relative;isolation:isolate}
 #sT .rsl-red{--fill-light:#fce1e4;--fill-deep:#c62d3a}
 #sT .rsl-amber{--fill-light:#fff0cf;--fill-deep:#d99519}
 #sT .rsl-green{--fill-light:#dcf3e4;--fill-deep:#17803d}
 [data-theme=dark] #sT .rsl-red{--fill-light:#382027;--fill-deep:#a74350}
 [data-theme=dark] #sT .rsl-amber{--fill-light:#34291a;--fill-deep:#986a21}
 [data-theme=dark] #sT .rsl-green{--fill-light:#1a3024;--fill-deep:#296f45}
-#sT :is(.rsl-red,.rsl-amber,.rsl-green)::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));z-index:-1;pointer-events:none}
-#sT .status-main{position:relative;text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}
+/* Bars are background layers of the value cell, not positioned boxes: thousands of positioned boxes made every scroll frame's hit test slow. */
+#sT :is(.rsl-red,.rsl-amber,.rsl-green){--bar:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light))}
+#sT .status-value:is(.rsl-red,.rsl-amber,.rsl-green){background:linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
+#sT .status-main{text-shadow:0 0 3px var(--surface),0 0 3px var(--surface)}
 #sT .long-value.has-stock .status-main{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
 .status-tip{position:fixed;z-index:100;pointer-events:none;padding:10px 12px;border:1px solid var(--line2);border-radius:9px;background:var(--surface);box-shadow:0 8px 24px rgba(18,21,40,.18);color:var(--ink);font-size:12px}
 .status-tip[hidden]{display:none}.status-tip strong{display:block;margin-bottom:6px}.status-tip table{width:auto;min-width:0;border-collapse:collapse;font-size:12px}.status-tip th,.status-tip td{position:static;height:auto;padding:3px 8px;border:0;background:none;text-align:right;white-space:nowrap;font:inherit}.status-tip th:first-child,.status-tip td:first-child{text-align:left;padding-left:0}.status-tip th{color:var(--ink3);font-weight:500}.status-tip small{display:block;margin-top:6px;color:var(--ink3)}
-/* >10M: the full-width bar sits behind the number; its tail is Exposure and its tip LND, both as a share of the bar. */
-#sT .long-value::before{content:none}
-#sT .long-track{position:absolute;inset:0;pointer-events:none}
-#sT .long-track::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--fill,0%);background:color-mix(in srgb,var(--fill-deep) var(--fill,0%),var(--fill-light));pointer-events:none}
-#sT .risk{position:absolute;top:0;bottom:0;right:calc(100% - var(--fill,0%));width:min(var(--fill,0%),var(--w));pointer-events:none}
-#sT .risk.exp{--w:max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px));background:#ee8b96}
-#sT .risk.lnd{--w:max(2px,calc(var(--fill,0%) * var(--lnd,0)));background:#b01f2c}
-[data-theme=dark] #sT .risk.exp{background:#8a3a46}
-[data-theme=dark] #sT .risk.lnd{background:#e2505e}
+/* >10M: the full-width bar sits behind the number; its right-hand tail is Exposure and its tip LND, both as a share of the bar.
+   Layers paint top first: LND tip, Exposure tail, bar. */
+#sT .long-value{--exp-c:#ee8b96;--lnd-c:#b01f2c;--exp-w:0px;--lnd-w:0px;background:linear-gradient(270deg,var(--lnd-c) 0 var(--lnd-w),transparent 0),linear-gradient(270deg,var(--exp-c) 0 var(--exp-w),transparent 0),linear-gradient(90deg,var(--bar) 0 var(--fill,0%),transparent 0)}
+#sT .long-value.has-exp{--exp-w:min(var(--fill,0%),max(3px,calc(var(--fill,0%) * var(--exp,0)),calc(var(--fill,0%) * var(--lnd,0) + 1px)))}
+#sT .long-value.has-lnd{--lnd-w:min(var(--fill,0%),max(2px,calc(var(--fill,0%) * var(--lnd,0))))}
+[data-theme=dark] #sT .long-value{--exp-c:#8a3a46;--lnd-c:#e2505e}
 :is(#sT,#rT) td.bk,:is(#sT,#rT) th.bk{background:color-mix(in srgb,var(--accent-soft) 55%,var(--surface))}
 :is(#sT,#rT) .bk-l{border-left:2px solid var(--accent)}:is(#sT,#rT) .bk-r{border-right:2px solid var(--accent)}
 :is(#sT,#rT) th.group-h.bk{background:var(--accent-soft);color:var(--accent);font-weight:600;border-top:2px solid var(--accent);border-bottom:1px solid var(--accent)}
@@ -1984,7 +1983,7 @@ $('#evoDialog').addEventListener('close',()=>{
 });
 document.addEventListener('contextmenu',e=>{const td=e.target.closest('td[data-evolution]');if(!td)return;e.preventDefault();showEvolutionMenu(td,e.clientX,e.clientY)});
 document.addEventListener('pointerdown',e=>{if(!e.target.closest('#reportEvolutionMenu'))closeEvolutionMenu()});
-document.addEventListener('scroll',()=>closeEvolutionMenu(),true);
+document.addEventListener('scroll',()=>{if(!$('#reportEvolutionMenu').hidden)closeEvolutionMenu()},{capture:true,passive:true});
 addEventListener('resize',()=>closeEvolutionMenu());
 document.addEventListener('keydown',e=>{
   if(!$('#reportEvolutionMenu').hidden&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();closeEvolutionMenu(true);return}
@@ -2686,18 +2685,19 @@ function statusCell(n,i){
   const color={'3M-6M':'rsl-red','6M-10M':'rsl-amber','>10M':'rsl-green'}[group]||'';
   const totals=statusLatest(n)?.[0]?.map((_,j)=>sum(statusLatest(n).map(values=>values[j])));
   const info=esc(JSON.stringify({group:STATUS.groups[i],values:c??null,totals:totals??null}));
-  const fill=`class="${group==='>10M'?'long-value'+(c?.[0]>0?' has-stock':''):'status-value'} ${color}" style="--fill:${group==='>10M'?(c?.[0]>0?100:0):share}%" data-status-info="${info}"`;
   const main=`<span class="status-main">${v==null?'—':amount(v)}</span>`;
-  if(group!=='>10M')return `<div ${fill}>${main}</div>`;
+  if(group!=='>10M')return `<div class="status-value ${color}" style="--fill:${share}%" data-status-info="${info}">${main}</div>`;
   // Exposure and LND as fractions of this cell's >10M stock; LND is always part of Exposure.
   const ratio=j=>{if(!c||!(c[0]>0)||!(c[j]>0))return 0;const r=c[j]/c[0];return Number((r*100).toFixed(1))===0?0:Math.min(1,r)};
-  const exp=ratio(1),lnd=Math.min(ratio(2),exp);
-  const tail=(exp?'<i class="risk exp"></i>':'')+(lnd?'<i class="risk lnd"></i>':'');
-  return `<div ${fill}><span class="long-track" style="--exp:${exp};--lnd:${lnd}">${tail}</span>${main}</div>`;
+  const stock=c?.[0]>0,exp=ratio(1),lnd=Math.min(ratio(2),exp);
+  const cls='long-value '+color+(stock?' has-stock':'')+(exp?' has-exp':'')+(lnd?' has-lnd':'');
+  return `<div class="${cls}" style="--fill:${stock?100:0}%;--exp:${exp};--lnd:${lnd}" data-status-info="${info}">${main}</div>`;
 }
 const statusTip=document.createElement('div');statusTip.className='status-tip';statusTip.hidden=true;document.body.append(statusTip);
-$('#sT').addEventListener('pointerover',e=>{
-  const cell=e.target.closest('[data-status-info]');if(!cell)return;
+// Wheel scrolling slides a new cell under a still pointer every frame; building a tooltip for each one stalls scrolling.
+let statusScrolledAt=-Infinity;
+const statusScrolling=()=>performance.now()-statusScrolledAt<200;
+function showStatusTip(cell){
   const {group,values,totals}=JSON.parse(cell.dataset.statusInfo),isLong=group.replace(/\s/g,'')==='>10M';
   const pct=(value,total)=>value==null||!(total>0)?'—':f(value/total*100,1)+'%';
   const rows=['Stock','Exposure','L&D FC'].map((name,j)=>`<tr><td>${name}${j===statusMetric?' •':''}</td><td>${values?amount(values[j]):'—'}</td><td>${pct(values?.[j],isLong?values?.[0]:totals?.[j])}</td></tr>`).join('');
@@ -2705,9 +2705,13 @@ $('#sT').addEventListener('pointerover',e=>{
   statusTip.hidden=false;const r=cell.getBoundingClientRect(),tip=statusTip.getBoundingClientRect();
   statusTip.style.left=Math.max(8,Math.min(r.left,innerWidth-tip.width-8))+'px';
   statusTip.style.top=(r.bottom+tip.height+8<=innerHeight?r.bottom+6:Math.max(8,r.top-tip.height-6))+'px';
-});
+}
+$('#sT').addEventListener('pointerover',e=>{if(statusScrolling())return;const cell=e.target.closest('[data-status-info]');if(cell)showStatusTip(cell)});
+// Once scrolling stops, the next pointer movement shows the tooltip for the cell under the pointer.
+$('#sT').addEventListener('pointermove',e=>{if(!statusTip.hidden||statusScrolling())return;const cell=e.target.closest('[data-status-info]');if(cell)showStatusTip(cell)});
 $('#sT').addEventListener('pointerout',e=>{if(e.target.closest('[data-status-info]')&&!e.relatedTarget?.closest?.('[data-status-info]'))statusTip.hidden=true});
-addEventListener('scroll',()=>{statusTip.hidden=true},true);
+// Writing hidden=true on an already hidden element still invalidates style, so only hide a visible tooltip.
+addEventListener('scroll',()=>{statusScrolledAt=performance.now();if(!statusTip.hidden)statusTip.hidden=true},{capture:true,passive:true});
 function statusName(n){
   const label=n.code?`<span title="${esc(n.name)}">${esc(n.name)}</span><small>${esc(n.code)}</small>`:esc(n.name);
   return `<span class="pn" style="padding-left:${n.level*22}px">${n.kids.length?`<button class="tg" data-stg="${n.id}" aria-expanded="${n.isOpen}" aria-label="${n.isOpen?'Collapse':'Expand'} ${esc(n.name)}">▸</button>`:''}${label}</span>`;
