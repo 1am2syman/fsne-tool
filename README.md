@@ -89,7 +89,7 @@ Town-level stock movement and action-plan cohort projections are derived from sa
 
 - The hero table has one row per RSL group and a Total row. Stock percentages use national stock; Exposure and LND FC percentages use that row’s own stock.
 - Each RSL card shows stock, its share of national stock and its change from the previous saved month. Trend lines use a separate scale per card, with subtle month labels and peak/trough values.
-- The bottom cards show Exposure and LND FC by RSL, the LND FC change from the previous saved month, and a comparison with that month. The first saved month shows LND ÷ Exp instead of a change.
+- The bottom cards show Exposure and LND FC by RSL, the LND FC change from the previous saved month, and a comparison with that month. Exposure and LND FC amounts and percentages match the hero table: both percentages use the RSL group’s Stock. Each risk bar represents 100% of that group’s Stock, with a green base, pink Exposure tail and dark red LND FC tip, following the status reports’ >10M color logic. The first saved month shows LND ÷ Exp instead of a change.
 - Two small trend charts sit beside the comparison card, stacked: **Exposure trend** (total Exposure, with the > 10M group's Exposure as a second line on the same scale) and **LND FC trend**. Both mark the selected month and label the peak and trough.
 - Stock changes are neutral. Falling Exposure/LND FC is green and rising is red. The LND ÷ Stock change is shown in percentage points.
 - The layout fits widescreen laptop viewports without scrolling, in light and dark themes.
@@ -186,12 +186,12 @@ uv run --with pytest python -m pytest -q tests/test_fsne_month.py tests/test_for
 uv run python -m unittest tests.test_saved_report_cache tests.test_history_parquet -v
 uv run python -m unittest tests.test_action_plans -v
 POLARS_MAX_THREADS=2 uv run python -m pytest tests/test_filter_data.py tests/test_movement.py tests/test_server.py -q
-node --unhandled-rejections=strict --test tests/report_filters.test.cjs tests/doh_summary.test.cjs tests/evolution_page.test.cjs tests/evolution_layout.test.cjs
+node --unhandled-rejections=strict --test tests/overview.test.cjs tests/report_filters.test.cjs tests/doh_summary.test.cjs tests/evolution_page.test.cjs tests/evolution_layout.test.cjs
 uvx ruff check src tests ui server
 uvx pyright --project pyrightconfig.json
 ```
 
-The focused pytest checks cover FSNE-month detection, previous-month sales validation, month-end and year rollover, upload persistence and calculation integration. The history tests cover settlement and reopening, first-use Parquet repair, full-record caching after projected reads, reuse across runs, concurrent readers, preservation of supplied Parquets, and failed-write cleanup. Filter regressions cover connected catalogs, Excel selection/search behavior, frozen movement reconciliation in both units, completed-run upgrades and filtered DOH/evolution scopes. UI validation uses light-mode screenshots at widescreen laptop widths; use `validation-artifacts/` for temporary screenshots and browser evidence, then remove task-owned artifacts before delivery. The `tests/e2e_*` suites are separate and are not required for UI-only work.
+The focused pytest checks cover FSNE-month detection, previous-month sales validation, month-end and year rollover, upload persistence and calculation integration. The history tests cover settlement and reopening, first-use Parquet repair, full-record caching after projected reads, reuse across runs, concurrent readers, preservation of supplied Parquets, and failed-write cleanup. Filter regressions cover connected catalogs, Excel selection/search behavior, frozen movement reconciliation in both units, completed-run upgrades and filtered DOH/evolution scopes. Overview regressions verify that the lower Exposure/LND FC percentages match the hero table in BDT and KL, that bar widths use each group’s Stock, and that zero-stock rows show unavailable percentages. UI validation uses light-mode screenshots at widescreen laptop widths; use `validation-artifacts/` for temporary screenshots and browser evidence, then remove task-owned artifacts before delivery. The `tests/e2e_*` suites are separate and are not required for UI-only work.
 
 ## Rebuild generated outputs and the UI
 
