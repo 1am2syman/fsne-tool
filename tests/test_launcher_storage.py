@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -127,6 +130,60 @@ class BatchScriptContractTests(unittest.TestCase):
         block = match.group("block")
         self.assertNotRegex(block, r"(?im)^\s*(goto\b|:)")
         self.assertNotRegex(block, r"(?<!%)%[A-Za-z_][A-Za-z0-9_]*%")
+
+
+@unittest.skipUnless(shutil.which("git"), "Updater regression tests require Git")
+class UpdaterStashTests(unittest.TestCase):
+    def test_stash_preserves_legacy_vendor_even_before_ignore_rules_are_updated(self):
+        text = (ROOT / "update.bat").read_text(encoding="utf-8")
+        stash_line = next(line.strip() for line in text.splitlines() if " stash push " in line)
+        command = shlex.split(stash_line)
+        with tempfile.TemporaryDirectory(prefix="FSNE updater test ") as temp_str:
+            repo = Path(temp_str)
+
+            def git(*args):
+                return subprocess.run(
+                    ["git", "-c", "user.name=Updater test", "-c", "user.email=test@localhost", *args],
+                    cwd=repo, capture_output=True, text=True, check=True, timeout=15,
+                )
+
+            git("init", "-q")
+            # Simulate the checkout's old rules: the replacement updater can run
+            # before reset installs the new .gitignore.
+            (repo / ".gitignore").write_text(".fsne-packages/\n", encoding="utf-8")
+            (repo / "start.py").write_text("published\n", encoding="utf-8")
+            git("add", ".")
+            git("commit", "-qm", "Published version")
+            (repo / "start.py").write_text("local edit\n", encoding="utf-8")
+            git("add", "start.py")
+            (repo / "start.py").write_text("local unstaged edit\n", encoding="utf-8")
+            vendor = repo / "vendor" / "leftover.txt"
+            vendor.parent.mkdir()
+            vendor.write_bytes(b"old runtime")
+            packages = repo / ".fsne-packages" / "installed.txt"
+            packages.parent.mkdir()
+            packages.write_bytes(b"installed dependency")
+            stray_name = "neProcessId = (Get-NetTCPConnection -LocalPort 8770 -State Listen"
+            (repo / stray_name).write_text("stray command file\n", encoding="utf-8")
+
+            result = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(vendor.is_file(), "The updater must leave the retired runtime folder in place")
+            self.assertEqual(vendor.read_bytes(), b"old runtime")
+            self.assertEqual(packages.read_bytes(), b"installed dependency")
+            self.assertEqual((repo / "start.py").read_text(encoding="utf-8"), "published\n")
+            self.assertFalse((repo / stray_name).exists())
+            self.assertEqual(git("show", "stash@{0}:start.py").stdout, "local unstaged edit\n")
+            self.assertEqual(git("show", "stash@{0}^2:start.py").stdout, "local edit\n")
+            self.assertEqual(git("show", f"stash@{{0}}^3:{stray_name}").stdout, "stray command file\n")
+
+    def test_current_ignore_rules_exclude_only_root_vendor(self):
+        result = subprocess.run(
+            ["git", "check-ignore", "--no-index", "vendor/leftover.txt", "src/vendor/module.py"],
+            cwd=ROOT, capture_output=True, text=True, timeout=15,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.splitlines(), ["vendor/leftover.txt"])
 
 
 if __name__ == "__main__":

@@ -30,15 +30,19 @@ if errorlevel 1 goto fetch_error
 set "FSNE_LOCAL="
 for /f "delims=" %%i in ('git status --porcelain') do set "FSNE_LOCAL=1"
 
+rem Leave the retired vendor runtime folder in place, even when this checkout
+rem still has the old ignore rules. Windows may keep that directory open.
 rem Parse the complete update block before Git can replace this batch file.
 rem Labels and goto must not be used below this point.
 (
     echo Updating FSNE...
     if defined FSNE_LOCAL (
-        git -c "user.name=FSNE updater" -c "user.email=fsne-updater@localhost" stash push --include-untracked --quiet -m "Set aside by update.bat"
+        git -c "user.name=FSNE updater" -c "user.email=fsne-updater@localhost" stash push --include-untracked --quiet -m "Set aside by update.bat" -- . ":(top,exclude)vendor/"
         if errorlevel 1 (
             echo.
-            echo Update stopped. Nothing was changed. Close programs using files in the FSNE folder, then run update.bat again.
+            echo Update stopped while setting aside local files. Git may have saved a stash.
+            echo Close programs using files in the FSNE folder, then run update.bat again.
+            echo Use git stash list to inspect any saved local files.
             popd
             pause
             endlocal

@@ -11,6 +11,9 @@ dist/
 .fsne-python/
 .fsne-packages/
 
+# Retired Windows runtime archive and local extraction leftovers
+/vendor/
+
 # Optional sample data (downloaded separately)
 sample_input/
 sample_output/
