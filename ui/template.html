@@ -1740,6 +1740,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <div class="seg" id="mMetric" aria-label="Metric">
         <div class="mb"><button aria-pressed="true" data-m="red">Net reduction %</button><button class="help" data-help="red" aria-label="How Net reduction % is calculated" title="How Net reduction % is calculated">?</button></div>
         <div class="mb"><button aria-pressed="false" data-m="net">Net change %</button><button class="help" data-help="net" aria-label="How Net change % is calculated" title="How Net change % is calculated">?</button></div>
+        <div class="mb"><button aria-pressed="false" data-m="stock">Total stock</button></div>
       </div>
       <i class="vr" aria-hidden="true"></i>
       <div class="seg" id="mSize" aria-label="Brand size"><button aria-pressed="true" data-s="0">All brands</button><button aria-pressed="false" data-s="500000">Stock ≥ 0.5M</button></div>
@@ -2259,6 +2260,8 @@ let metric='red',minStock=0,ms={k:'now',d:-1},sel=null;
 buildData();
 const mix=(c,t)=>`color-mix(in srgb, var(--${c}) ${Math.round(8+80*t)}%, var(--surface))`;
 const mval=x=>!x?null:!(x.lm>0)?null:metric==='red'?x.p:(num(x.o)+num(x.n)-x.lm)/x.lm;
+const pastStock=x=>num(x?.o)+num(x?.n);
+const pastCell=x=>metric==='stock'?hm({t:amount(pastStock(x))}):hm(cell(x));
 function cell(x){
   if(!x)return {t:'·',s:'color:var(--line2)'};
   if(!(x.lm>0))return {t:'new',s:'color:var(--bad);font-style:italic'};
@@ -2292,7 +2295,7 @@ const components=[
 const componentCell=(x,c)=>!x||c.value(x)==null?'–':amount(c.value(x));
 const mcols=[
  {k:'brand',h:'Brand',r:r=>r.parent?`<span class="pn" title="${esc(r.desc)} · parent ${esc(r.code)}">${esc(r.desc)}<small>${esc(r.code)}</small></span>`:`<button class="tg" data-tg="${esc(r.brand)}" aria-expanded="${!!r.isOpen}" aria-label="${r.isOpen?'Collapse':'Expand'} ${esc(r.brand)} parents" title="${r.kids.length} parent${r.kids.length===1?'':'s'}" ${r.kids.length?'':'disabled'}>▸</button>${esc(r.brand)}`,cls:'name'},
- ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>hm(cell(r.m[i]))})),
+ ...SERIES.labels.slice(0,-1).map((l,i)=>({k:'m'+i,h:l,ctr:1,cls:'hmc',r:r=>pastCell(r.m[i])})),
  ...components.map(c=>({k:c.k,h:c.h,num:1,cls:c.cls||'',r:r=>componentCell(r.m[NM-1],c)})),
  {k:'m'+(NM-1),h:'Net reduction % / Net %',ctr:1,cls:'hmc',r:r=>hm(cell(r.m[NM-1]))},
  {k:'spark',h:'Stock trend',help:'trend',ctr:1,nosort:1,cls:'hmc sp',r:r=>spark(r.pts)},
@@ -2300,9 +2303,10 @@ const mcols=[
  {k:'avg',h:'Avg',num:1,r:r=>avgCell(r.avg)}];
 const full=i=>new Date(SERIES.dates[i]+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function drawNote(){
-  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Each month compares with the previous saved report</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
+  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Total stock shows closing amounts in ${unitLabel()} in the earlier-month columns. Reduction and Net change compare each month with the previous saved report.</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
 }
 function drawScale(){
+  if(metric==='stock'){$('#mScale').textContent='Earlier months · total stock in '+unitLabel();return}
   $('#mScale').html=metric==='red'
    ? `<span>Reduction on existing batches as a share of opening stock</span>0%<i style="background:linear-gradient(90deg,var(--surface),var(--accent))"></i>60%+`
    : `<span>Stock change vs last month</span>−50%<i style="background:linear-gradient(90deg,var(--ok),var(--surface),var(--bad))"></i>+50%`;
@@ -2607,7 +2611,7 @@ function drawDetail(){
 }
 function drawM(){
   mcols.find(c=>c.k==='now').h=SERIES.start+'→'+latestMonth+' ('+unitLabel()+')';
-  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
+  const dec=r=>({...r,...Object.fromEntries(r.m.map((x,i)=>['m'+i,metric==='stock'&&i<NM-1?pastStock(x):mval(x)])),...Object.fromEntries(components.map(c=>[c.k,r.m[NM-1]?c.value(r.m[NM-1]):null]))});
   const cmpK=ms.k==='brand'?(a,b)=>a.desc.localeCompare(b.desc):cmp(ms.k,ms.d);
   const rows=[];
   B.filter(r=>r.now>=minStock).forEach(r=>rows.push({...dec(r),isOpen:open.has(r.brand)}));
@@ -2618,7 +2622,7 @@ function drawM(){
   rows.length=0;rows.push(...flat);
   const nb=B.filter(r=>r.now>=minStock&&r.kids.length),allOpen=nb.length>0&&nb.every(r=>open.has(r.brand));
   $('#mExp').textContent=allOpen?'Collapse all':'Expand all';$('#mExp').dataset.all=allOpen?1:'';
-  const foot=['All stock',...TOT.slice(0,-1).map(x=>hm(cell(x))),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
+  const foot=['All stock',...TOT.slice(0,-1).map(pastCell),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
   mcols[NM+5].h=metric==='red'?'Net reduction %':'Net change %';
   table({t:'#mT',cols:mcols,rows,groups:[{span:NM,label:'Earlier months'},{span:6,label:latestMonth+' breakdown · '+unitLabel()},{span:3,label:'Stock overview'}],sort:ms,onSort:k=>{if(k==='spark')return;ms=ms.k===k?{k,d:-ms.d}:{k,d:k==='brand'?1:-1};$('#mSort').value='';drawM()},foot,
     onSelect:(r,c)=>{sel={brand:r.brand,code:r.parent?r.code:null,mi:c>=1&&c<NM?c-1:NM-1};drawDetail()},emptyMsg:'No brands match these filters.'});
@@ -3212,7 +3216,7 @@ function applyReportUnit(unit,keepWaterfall){
   $$('#sMetric option').forEach(o=>o.textContent=statusMetricNames[+o.value]);
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
   if(minStock)minStock=+size.dataset.s;
-  buildData();drawB();drawNote();drawM();drawTransfer();drawRescue();
+  buildData();drawB();drawNote();drawScale();drawM();drawTransfer();drawRescue();
   setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
   if(curRep==='not-actionables')drawNotActionables();

@@ -93,6 +93,8 @@ Detailed reports use three connected value filters: **Brand**, **Parent SKU**, a
 
 Values within a field combine with OR; fields combine with AND. Each dropdown offers values matching the other two fields and the report’s month, RSL or review controls. Existing selections are retained when another filter excludes them, so incompatible selections show an empty result instead of silently broadening the report. Filters persist when changing units, sorting or hierarchy and remain separate between reports. Table totals, related charts, DOH explanations, evolution scopes and connected CSV exports follow the selected facts. The batch-wise report remains a top-400 preview; its filters and filtered cards apply to that preview population. The national Overview retains its national scope. Inventory evolution uses the same dropdown interaction for its additional Material and RSL fields.
 
+In **total-stock-movement**, **Total stock** replaces percentages in the earlier-month columns with saved closing stock amounts in M BDT or KL. The table layout, latest-month breakdown, stock overview and reduction average stay the same. Amounts follow the existing filters and parent expansion.
+
 Town-level stock movement and action-plan cohort projections are derived from saved snapshots. Opening an older completed run adds these derived fields without changing its frozen report calculations or prices. After updating, restart the app server and refresh the browser to load both the filter data support and the new controls.
 
 ## Not-actionables
