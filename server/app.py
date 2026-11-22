@@ -37,9 +37,11 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from src import evolution
 from src.movement import read_raw_reports
+from src.saved_reports import read_saved_report
 from ui.not_actionables_data import COLS as NOT_ACTIONABLE_COLS
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import extract_legacy, render
+from ui.rescue_data import CURRENT_COLS, with_current_plans
 
 from . import runs as runs_mod
 from . import storage
@@ -340,9 +342,20 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     data = json.loads(payload.read_text())
                 except (OSError, ValueError) as exc:
                     raise RunError("Could not read this run's dashboard data") from exc
+                changed = False
+                pages = data.get('ACTIONPLANS', {})
+                if not pages and 'RESCUE' in data:
+                    pages = {'rescue': data['RESCUE']}
+                if any(not set(CURRENT_COLS) <= set(page.get('cols', [])) for page in pages.values()):
+                    # Read accepted entries from this run's private snapshot, never shared history.
+                    data['ACTIONPLANS'] = with_current_plans(pages, read_saved_report(run / 'history/snapshot.xlsx'))
+                    data.pop('RESCUE', None)
+                    changed = True
                 if data.get('NOTACTIONABLES', {}).get('cols') != NOT_ACTIONABLE_COLS:
                     # Upgrade this derived view from private snapshots; preserve all frozen results.
                     data['NOTACTIONABLES'] = not_actionables_payload(read_raw_reports(run / 'history'))
+                    changed = True
+                if changed:
                     tmp = run / 'data.json.tmp'
                     tmp.write_text(json.dumps(data, separators=(',', ':'), allow_nan=False))
                     tmp.replace(payload)

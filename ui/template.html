@@ -701,7 +701,7 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .item.subitem small{margin-left:6px;color:var(--ink3);font:500 11px var(--mono)}
 #rNotesBtn b{font:600 11px var(--mono);margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.22);color:inherit}
 .rc-empty{padding:40px 16px;text-align:center;color:var(--ink3)}
-/* KPI band: one slim line between hairlines; on action plans the exposure split is its bottom edge. */
+/* KPI band: one slim line between hairlines. */
 .strip,.rc-band{position:relative;display:flex;min-width:0;margin:0 0 8px;border-block:1px solid var(--line)}
 .rc-cards{display:flex;flex:1;min-width:0}
 :is(.stat,.rc-card){flex:1 1 0;min-width:0;display:flex;align-items:baseline;gap:8px;padding:8px 16px;border-right:1px solid var(--line);white-space:nowrap;overflow:hidden}
@@ -712,11 +712,8 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .stat .v i,.rc-card b i{font:450 11px var(--font);font-style:normal;color:var(--ink3);margin-left:3px;letter-spacing:0}
 .stat .d,.rc-card span{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:var(--ink3)}
 .rc-card>div{display:contents}
-.rc-split{position:absolute;left:0;right:0;bottom:-1px;height:6px;display:flex;align-items:flex-end}
-.rc-bar{flex:1;display:flex;height:3px;overflow:hidden;background:var(--sunken)}
-.rc-bar i{display:block;height:100%}
 #rcBody>.sheet .tw{min-height:200px}
-#rT td.name{min-width:240px;max-width:340px;overflow:hidden;text-overflow:ellipsis}
+#rT td.name{min-width:200px;max-width:280px;overflow:hidden;text-overflow:ellipsis}
 #rT th .ar{width:0;margin-left:2px;overflow:visible}
 #rT td.rc-cell{padding:0}
 /* Full-cell layers: 100% always means the whole cell. Numbers sit on light tones, so they stay readable. */
@@ -726,17 +723,13 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #rT .rc-red{background:#f4c3c9}#rT .rc-green{background:#bfe5cb}
 [data-theme=dark] #rT .rc-red{background:#4a2329}[data-theme=dark] #rT .rc-green{background:#1d4430}
 #rT .rc-cov{min-width:170px}
+#rT.rc-current .rc-cov{min-width:110px}
 #rT .rc-new{margin-right:auto;font:500 10.5px var(--mono);font-style:normal;color:var(--ink2);background:var(--surface);border:1px solid var(--line2);border-radius:9px;padding:0 6px;line-height:16px;cursor:pointer}
 #rT .rc-new.done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,var(--line2))}
-#rT td.rc-plans{max-width:440px;min-width:220px;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
-/* loading-watch has one more measure column: tighten name and plans so the sheet still fits a laptop width */
-#rT.rc-rot td.name{min-width:200px;max-width:210px}
-#rT.rc-rot td.rc-plans{min-width:200px;max-width:230px}
-.rc-viz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;margin-top:16px;align-items:start}
-.rc-viz-body{padding:12px 16px 4px}
-.rc-viz-note{padding:0 16px 12px;color:var(--ink3);font-size:12px}
-#r-plan .rc-viz .tw{min-height:0;max-height:none}
-.rc-viz svg text{font-family:var(--mono)}
+#rT td.rc-plans{max-width:300px;min-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+/* Both plan months stay visible with the sidebar open; loading-watch also has rotation. */
+#rT.rc-rot td.name{min-width:180px;max-width:200px}
+#rT.rc-rot td.rc-plans{min-width:150px;max-width:200px}
 /* new action plans for uncovered batches: brand → SKU → town, category multi-select + remarks */
 .sheetm.rcn-sheet{width:min(1400px,96vw);max-height:88vh;display:flex;flex-direction:column}
 .sheetm.rcn-sheet .lead{max-width:none}
@@ -1530,7 +1523,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <span class="rh-crumb"><span id="repGroup">Reports</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>
     <h1 id="repName">total-batch-wise</h1>
     <span class="rh-range" id="repRange" hidden></span>
-    <div id="planFlag" data-state="<!--PLAN_STATE-->" role="status"><!--PLAN_FLAG--></div>
+    <div id="planFlag" data-state="<!--PLAN_STATE-->" data-accepted="<!--PLAN_ACCEPTED-->" role="status"><!--PLAN_FLAG--></div>
     <div class="rh-end">
       <span class="rh-meta"><span id="reportIdentity"><!--REPORT_IDENTITY-->Sample</span><span id="repSep"> · </span><span id="repRun"><!--REPORT_SNAPSHOT--></span><span id="repDate" hidden></span></span>
       <div class="seg" id="overviewMonths" role="group" aria-label="Month"></div>
@@ -1641,7 +1634,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
     <div id="rcBody">
     <div class="rc-band">
       <div class="rc-cards" id="rcCards"></div>
-      <div class="rc-split"><div class="rc-bar" id="rcSplit" role="img"></div></div>
     </div>
     <div class="tools" id="rTools">
       <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="rSearch" placeholder="Brand, parent, SKU or town" aria-label="Search brands, parents, SKUs and towns" autocomplete="off"></label>
@@ -1655,10 +1647,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note" id="rcNote"></div></details>
     </div>
     <div data-sheet="rT"></div>
-    <div class="rc-viz">
-      <section class="panel"><div class="panel-h"><div><h2 id="rcTrendH">LND FC reduced from last month · incumbents</h2><p id="rcTrendSub"></p></div></div><div class="rc-viz-body" id="rcTrend"></div><p class="rc-viz-note" id="rcTrendNote"></p></section>
-      <section class="panel"><div class="panel-h"><div><h2 id="rcOutH">Which remark moved LND</h2><p id="rcOutSub"></p></div></div><div class="rc-viz-body"><div data-sheet="rqT"></div></div><p class="rc-viz-note">Last month's action plan grouped by keyword (first match: Incorrect Stock status, L&amp;D, liquidat-, rotation, TLO/QDD/2+1, winter/season, push). Association, not proof of cause.</p></section>
-    </div>
     </div>
   </div>
   <div id="r-not-actionables" hidden>
@@ -2909,16 +2897,21 @@ function rcSelect(k){
   if(SHEETS['#rT'])SHEETS['#rT'].on=false;
 }
 const rcMonth=d=>new Date(d+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
-const rcSigned=v=>{const r=Math.round(v*100);return (r>0?'+':'')+String(r)+'%'};
 const rcPct=(v,d=1)=>v==null||!Number.isFinite(v)?f(null):f(v*100,d)+'%';
 const rcClamp=v=>v==null||!Number.isFinite(v)?0:Math.min(100,Math.max(0,v*100));
 const rcApi=path=>location.origin+location.pathname.replace(/\/index\.html$/,'').replace(/\/?$/,'/')+'api/'+path;
-function rcNode(id,level,name,code){return {id,level,name,code,kids:[],kmap:new Map(),rows:[],exp:0,lnd:0,rot:0,n:0,cs:0,csMissing:0,towns:new Set(),cov:0,plans:new Map(),st:new Map()}}
+const rcHasCurrent=()=>$('#planFlag').dataset.accepted==='true';
+const rcCoverageLabel=()=>rcHasCurrent()?rcMonth(RESCUE.date):RESCUE.lm_label;
+const rcPendingPlan=()=>$('#planFlag').dataset.state==='settled'?'No accepted plan':'Awaiting accepted plan';
+function rcNode(id,level,name,code){return {id,level,name,code,kids:[],kmap:new Map(),rows:[],exp:0,lnd:0,rot:0,n:0,cs:0,csMissing:0,towns:new Set(),cov:0,plans:new Map(),currentPlans:new Map(),st:new Map()}}
 function rcAdd(n,r){
   const v=rcExp(r)||0;n.exp+=v;n.lnd+=rcLndOf(r)||0;n.rot+=rcRotOf(r)||0;n.n++;n.towns.add(r.town);n.rows.push(r);
   if(r.cs==null)n.csMissing++;else n.cs+=r.cs;
-  if(r.has_plan){n.cov+=v;n.plans.set(r.plan,(n.plans.get(r.plan)||0)+v)}
-  const st=r.has_plan?(r.status||'No status'):'No plan';n.st.set(st,(n.st.get(st)||0)+v);
+  if(r.has_plan)n.plans.set(r.plan,(n.plans.get(r.plan)||0)+v);
+  if(rcHasCurrent()&&r.current_has_plan)n.currentPlans.set(r.current_plan,(n.currentPlans.get(r.current_plan)||0)+v);
+  const covered=rcHasCurrent()?r.current_has_plan:r.has_plan,status=rcHasCurrent()?r.current_status:r.status;
+  if(covered)n.cov+=v;
+  const st=covered?(status||'No status'):'No plan';n.st.set(st,(n.st.get(st)||0)+v);
 }
 function rcTree(rows){
   const root=rcNode('all',-1,'Total',null);
@@ -2928,7 +2921,8 @@ function rcTree(rows){
     rcAdd(c,r);p=c})});
   const done=n=>{n.share=n.exp>0?n.lnd/n.exp:null;n.covShare=n.exp>0?n.cov/n.exp:null;n.tn=n.towns.size;
     n.unc=n.rows.filter(r=>!r.has_plan);n.noted=n.unc.filter(r=>rcEffective(r)).length;
-    n.plansTxt=[...n.plans].sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(', ');n.kids.forEach(done)};
+    n.plansTxt=[...n.plans].sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(', ');
+    n.currentPlansTxt=[...n.currentPlans].sort((a,b)=>b[1]-a[1]).map(x=>x[0]).join(', ');n.kids.forEach(done)};
   done(root);return root;
 }
 function rcMatches(r,q){return [r.brand,r.pdesc,r.parent,r.town,r.mdesc,r.material,r.batch].join(' ').toLowerCase().includes(q)}
@@ -2943,21 +2937,14 @@ function rcExpCell(n){
 }
 function rcCovCell(n){
   const s=rcClamp(n.covShare),parts=[...n.st].sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k} ${rcPct(n.exp>0?v/n.exp:null)}`).join(' · ');
-  const badge=n.unc.length?`<em class="rc-new${n.noted===n.unc.length?' done':''}" data-rcn="${esc(n.id)}" role="button" tabindex="0" title="New action plans noted for batches without a ${esc(RESCUE.lm_label)} plan">✎ ${n.noted}/${n.unc.length}</em>`:'';
-  return `<div class="rc-v rc-cov" title="${esc(RESCUE.lm_label)} action plan on ${rcPct(n.covShare)} of this row's ${reportUnit==='bdt'?'value':'volume'} · ${esc(parts)}${n.unc.length?` · ${n.unc.length} uncovered batches, ${n.noted} with a new plan`:''}"><span class="rc-layer"><i class="rc-green" style="width:${s}%"></i></span>${badge}<span>${rcPct(n.covShare)}</span></div>`;
+  const badge=!rcHasCurrent()&&n.unc.length?`<em class="rc-new${n.noted===n.unc.length?' done':''}" data-rcn="${esc(n.id)}" role="button" tabindex="0" title="Draft plans noted for batches without a ${esc(RESCUE.lm_label)} plan">✎ ${n.noted}/${n.unc.length}</em>`:'';
+  return `<div class="rc-v rc-cov" title="${esc(rcCoverageLabel())}${rcHasCurrent()?' accepted':''} action plan on ${rcPct(n.covShare)} of this row's exposure ${reportUnit==='bdt'?'value':'volume'} · ${esc(parts)}${badge?` · ${n.unc.length} last-month gaps, ${n.noted} with a draft plan`:''}"><span class="rc-layer"><i class="rc-green" style="width:${s}%"></i></span>${badge}<span>${rcPct(n.covShare)}</span></div>`;
 }
 function drawRescueSummary(){
-  const all=rcTree(RCR),u=unitLabel(),pg=rcMeta(),soon=RCR.filter(r=>r.rsl<=pg.soon_days),lots=RESCUE.lots;
-  const nLnd=RCR.filter(r=>r.lnd_kl>0).length,soonLnd=soon.reduce((s,r)=>s+(rcLndOf(r)||0),0);
+  const u=unitLabel(),pg=rcMeta(),soon=RCR.filter(r=>r.rsl<=pg.soon_days);
+  const soonLnd=soon.reduce((s,r)=>s+(rcLndOf(r)||0),0);
   const card=(l,v,d)=>`<div class="rc-card" title="${esc(l.replaceAll('&lt;','<'))}: ${esc(d)}"><small>${l}</small><div><b>${v}</b><span>${d}</span></div></div>`;
-  $('#rcCards').html=card(pg.exposure_only?'Exposure (not sold before 300 days RSL)':'Exposure (= stock)',`${amount(all.exp)}<i>${u}</i>`,`${f(all.n)} batches · ${f(all.cs,0)} cases · ${f(all.tn)} towns`)
-    +card('LND FC · the target',`${amount(all.lnd)}<i>${u}</i>`,`${rcPct(all.share)} of exposure · ${f(nLnd)} batches`)
-    +card(`LND in lots ≥ ${f((lots?.threshold_bdt??20000)/1000)}K BDT`,lots?`${amount(lots[reportUnit])}<i>${u}</i>`:'—',lots?`${f(lots.big)} of ${f(lots.lots)} SKU × region lots`:'region unavailable')
-    +card(`LND entering ${esc(pg.soon_label)} in 30 days`,`${amount(soonLnd)}<i>${u}</i>`,`${f(soon.length)} batches · RSL ≤ ${pg.soon_days} days`);
-  const sell=Math.max(0,all.exp-all.lnd),w=v=>all.exp>0?v/all.exp*100:0;
-  $('#rcSplit').html=`<i style="width:${w(all.lnd)}%;background:var(--bad)"></i><i style="width:${w(sell)}%;background:#9aa0ab"></i>`;
-  $('#rcSplit').setAttribute('aria-label',`Exposure ${amount(all.exp)} ${u}: ${rcPct(sell/all.exp,0)} sells before 90 days RSL, ${rcPct(all.share,0)} LND FC`);
-  $('#rcSplit').closest('.rc-split').title=`Exposure split by LND FC · LND FC ${amount(all.lnd)} (${rcPct(all.share,0)}) · Sells before 90 days RSL ${amount(sell)} (${rcPct(all.exp>0?sell/all.exp:null,0)})`;
+  $('#rcCards').html=card(`LND entering ${esc(pg.soon_label)} in 30 days`,`${amount(soonLnd)}<i>${u}</i>`,`${f(soon.length)} batch${soon.length===1?'':'es'} · RSL ≤ ${pg.soon_days} days`);
 }
 function drawRescueTable(){
   const pg=rcMeta(),rot=pg.rotation?1:0;
@@ -2976,11 +2963,16 @@ function drawRescueTable(){
     {k:'cs',h:'Cases (CS)',num:1,r:n=>n.csMissing===n.n?f(null):f(n.cs,1)},
     {k:'tn',h:'Towns',num:1,r:n=>f(n.tn)},
     {k:'covShare',h:'Coverage',cls:'rc-cell',r:rcCovCell},
-    {k:'plans',h:'Action plans',nosort:1,cls:'rc-plans',r:n=>n.plansTxt?`<span title="${esc(n.plansTxt)}">${esc(n.plansTxt)}</span>`:'<span style="color:var(--ink3)">No action plan</span>'}];
-  const foot=['Total',rcExpCell(root),amount(root.lnd,3),...(rot?[amount(root.rot,3)]:[]),rcPct(root.share),f(root.n),f(root.cs,1),f(root.tn),rcCovCell(root),`${f(root.plans.size)} distinct plan${root.plans.size===1?'':'s'}`];
+    {k:'currentPlans',h:'Action plans',nosort:1,cls:'rc-plans',r:n=>rcHasCurrent()?(n.currentPlansTxt?`<span title="${esc(n.currentPlansTxt)}">${esc(n.currentPlansTxt)}</span>`:'<span class="dim">No action plan</span>'):`<span class="dim">${rcPendingPlan()}</span>`},
+    {k:'plans',h:'Action plans',nosort:1,cls:'rc-plans',r:n=>n.plansTxt?`<span title="${esc(n.plansTxt)}">${esc(n.plansTxt)}</span>`:'<span class="dim">No action plan</span>'}];
+  const planCount=plans=>`${f(plans.size)} distinct plan${plans.size===1?'':'s'}`;
+  const foot=['Total',rcExpCell(root),amount(root.lnd,3),...(rot?[amount(root.rot,3)]:[]),rcPct(root.share),f(root.n),f(root.cs,1),f(root.tn),rcCovCell(root),rcHasCurrent()?planCount(root.currentPlans):rcPendingPlan(),planCount(root.plans)];
   $('#rT').classList.toggle('rc-rot',!!rot);
+  $('#rT').classList.toggle('rc-current',rcHasCurrent());
   table({t:'#rT',cols,rows:flat,sort:rcSort,foot,emptyMsg:'No brands, parents, SKUs, towns or batches match this search.',
-    groups:[{span:1,label:hier},{span:3+rot,label:`${rcMonth(RESCUE.date)} · ${pg.label} · ${unitLabel()}`},{span:3,label:'Spread'},{span:2,label:`${RESCUE.lm_label} action plan`}],
+    groups:[{span:1,label:hier},{span:3+rot,label:`${rcMonth(RESCUE.date)} · ${pg.label} · ${unitLabel()}`},{span:3,label:'Spread'},
+      ...(rcHasCurrent()?[{span:2,label:`${rcMonth(RESCUE.date)} action plan`}]:[{span:1,label:`${RESCUE.lm_label} coverage`},{span:1,label:`${rcMonth(RESCUE.date)} action plan`}]),
+      {span:1,label:`${RESCUE.lm_label} action plan`}],
     onSort:k=>{rcSort=rcSort.k===k?{k,d:-rcSort.d}:{k,d:k==='name'||k==='covShare'?1:-1};$('#rSort').value='';drawRescueTable()}});
   const scope=n=>{
     const values=n.id==='all'?[]:n.id.split('\u0001').slice(1);
@@ -3004,28 +2996,6 @@ function fitRescue(){
   const top=tw.getBoundingClientRect().top+$('main').scrollTop-$('main').getBoundingClientRect().top;
   tw.style.maxHeight=Math.max(200,Math.floor($('main').clientHeight-top-14))+'px';
 }
-function drawRescueOutcomes(){
-  const u=reportUnit,T=RESCUE.trend||[],pct=x=>x.lm[u]>0?(x.lm[u]-x.cm[u])/x.lm[u]:null;
-  const W=560,H=172,L=8,Z=80,bw=Math.min(44,(W-L*2)/Math.max(1,T.length)-16),vals=T.map(pct),mx=Math.max(.1,...vals.map(v=>Math.abs(v??0)));
-  let g=`<line x1="0" x2="${W}" y1="${Z}" y2="${Z}" style="stroke:var(--ink3)"/>`;
-  T.forEach((x,i)=>{const v=vals[i],cx=L+i*(W-L*2)/T.length+(W-L*2)/T.length/2,h=v==null?0:Math.abs(v)/mx*56,y=v>0?Z-h:Z,col=v>0?'var(--ok)':'var(--bad)';
-    g+=`<rect x="${cx-bw/2}" y="${y}" width="${bw}" height="${Math.max(1,h)}" style="fill:${col}"><title>${x.m}: ${f(x.batches)} batches · LM LND ${amount(x.lm[u],3)} → ${amount(x.cm[u],3)} ${unitLabel()}</title></rect>`
-      +`<text x="${cx}" y="${v>0?y-4:Z+h+12}" text-anchor="middle" style="fill:var(--ink);font-size:11px">${v==null?'–':rcSigned(v)}</text>`
-      +`<text x="${cx}" y="${H-4}" text-anchor="middle" style="fill:var(--ink3);font-size:11px">${x.m}</text>`});
-  $('#rcTrend').html=T.length?`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;stroke:none" role="img" aria-label="Monthly LND FC reduction of last month's ${esc(rcMeta().label)} batches">${g}</svg>`:'<p class="rc-viz-note">Needs at least two saved months.</p>';
-  $('#rcTrendSub').textContent=`Each month vs the saved report before it · ${u==='bdt'?'saved BDT values':'KL'}`;
-  $('#rcTrendH').textContent=`LND FC reduced from last month · ${rcMeta().label} incumbents`;
-  $('#rcTrendNote').textContent=`Cohort: last month’s ${rcMeta().label} batches with LND FC > 0, matched by batch key (no new inclusions). If sales run at the forecast pace this stays near 0; only beating the forecast moves it up.`;
-  const O=RESCUE.outcomes||{rows:[],window:[]},win=O.window.length?O.window[0]+'–'+O.window.at(-1):'';
-  $('#rcOutH').textContent=`Which remark moved LND · ${rcMeta().outcome_label}`+(win?', '+win:'');
-  $('#rcOutSub').textContent=`LND FC (${unitLabel()}) of last month’s ${rcMeta().outcome_label} batches, by their action plan · same batches this month · ${O.window.length} months pooled`;
-  const rows=O.rows.map(x=>({...x,lmv:x.lm[u],red:x.lm[u]>0?(x.lm[u]-x.cm[u])/x.lm[u]:null}));
-  const tot=rows.reduce((a,x)=>({n:a.n+x.n,lm:a.lm+x.lm[u],cm:a.cm+x.cm[u]}),{n:0,lm:0,cm:0});
-  const red=v=>v==null?f(null):`<span class="${Math.round(v*100)>0?'good':Math.round(v*100)<0?'badc':''}">${rcSigned(v)}</span>`;
-  table({t:'#rqT',rows,sort:{},cols:[{k:'c',h:'Plan in LM',cls:'name',r:x=>esc(x.c)},{k:'n',h:'Batches',num:1,r:x=>f(x.n)},
-    {k:'lmv',h:'LND LM',num:1,r:x=>amount(x.lm[u],3)},{k:'cm',h:'LND now',num:1,r:x=>amount(x.cm[u],3)},{k:'red',h:'Reduced',num:1,r:x=>red(x.red)}],
-    foot:['Total',f(tot.n),amount(tot.lm,3),amount(tot.cm,3),red(tot.lm>0?(tot.lm-tot.cm)/tot.lm:null)]});
-}
 function drawRescue(){
   const has=RCR.length>0,pg=rcMeta();$('#rcEmpty').hidden=has;
   $('#rcEmpty').textContent=RESCUE.rows?`No ${pg.label} batches${pg.exposure_only?' with exposure':''} in this run.`:'This run was calculated before this report existed. Start a new run to see it.';
@@ -3037,10 +3007,10 @@ function drawRescue(){
     'LND FC = stock still unsold at 90 days RSL at today’s run rate',
     ...(pg.rotation?['Rotation req = report column: exposure still left at twice the run rate. Exposure − Rotation req is what doubling the rate clears']:[]),
     `Cases (CS) = shelf-life file cases for the row’s batches${pg.exposure_only?' (whole batches, not only the exposed part)':''}`,`Towns = distinct towns holding the row’s ${pg.label} stock (how scattered it is)`,
-    `Coverage = share of the row’s ${reportUnit==='bdt'?'value':'volume'} whose batch had a ${esc(RESCUE.lm_label)} action plan (exact batch match to the ${esc(RESCUE.lm_label)} saved report, as in the action plan input file); new batches count as uncovered; green fill = coverage, hover for the status split`,
-    '✎ planned/uncovered = batches without a last-month plan that a new plan (brand, SKU or town) reaches; click it to plan',
-    `Action plans = distinct ${esc(RESCUE.lm_label)} remarks, largest ${reportUnit==='bdt'?'value':'volume'} first`].map(x=>`<span>${x}</span>`).join('');
-  drawRescueSummary();drawRescueTable();drawRescueOutcomes();
+    `Coverage = share of the row’s exposure ${reportUnit==='bdt'?'value':'volume'} with a ${esc(rcCoverageLabel())}${rcHasCurrent()?' accepted':''} action plan, matched by exact batch. Blank plans and the Good stock label count as uncovered. Green fill = coverage; hover for the same month’s status split`,
+    'Draft plans and ✎ counts refer to batches without a last-month plan. Drafts pre-fill the input file; only an accepted upload changes current coverage',
+    `Action plans = distinct remarks for each labelled month, largest exposure ${reportUnit==='bdt'?'value':'volume'} first. Current-month entries appear after an upload is accepted`].map(x=>`<span>${x}</span>`).join('');
+  drawRescueSummary();drawRescueTable();
   requestAnimationFrame(fitRescue);rcLoadNotes();
 }
 /* New action plans for uncovered batches, set on a brand, an SKU or a town; the nearest scope wins for a batch
@@ -3052,7 +3022,12 @@ function rcIndexPlans(){rcPlanIdx=new Map(Object.values(rcPlans).map(p=>[rcPK(p.
 function rcEffective(r){return rcPlanIdx.get(rcKey('town',r.brand,r.material,r.town))||rcPlanIdx.get(rcKey('sku',r.brand,r.material))||rcPlanIdx.get(rcKey('brand',r.brand))||null}
 function rcPlanStatus(p){const st=new Set(p.categories.map(c=>RC_CATS.find(x=>x.c===c)?.status));return ['Actionable','Incorrect Stock','Not actionable'].find(s=>st.has(s))||null}
 function rcPlanText(p){return [...RC_CATS.map(x=>x.c).filter(c=>p.categories.includes(c)),...(p.remarks?[p.remarks]:[])].join('; ')||null}
-function rcCount(){const unc=RCR.filter(r=>!r.has_plan);$('#rNotesN').textContent=`${unc.filter(r=>rcEffective(r)).length}/${unc.length}`}
+function rcCount(){
+  const unc=RCR.filter(r=>!r.has_plan),button=$('#rNotesBtn');
+  button.firstChild.textContent=rcHasCurrent()?'Draft plans ':'New plans ';
+  button.title=`Draft plans for batches without a ${RESCUE.lm_label} plan; pre-fills the input file, separate from accepted coverage`;
+  $('#rNotesN').textContent=`${rcHasCurrent()?'LM gaps: ':''}${unc.filter(r=>rcEffective(r)).length}/${unc.length}`;
+}
 async function rcLoadNotes(){
   if(!RUN_ID||rcNotesState!=='idle')return;
   rcNotesState='loading';
@@ -3163,8 +3138,8 @@ $('#rcnExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;(function wal
 function exportRescue(){
   if(!RCR.length){toast(`This run has no ${rcMeta().key} data`);return}
   const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v,s=rcQ.trim().toLowerCase();
-  const head=['snapshot_date','batch_index','brand','parent_material_code','parent_desc','town','material_code','material_desc','batch_code','rsl_days','exposure_kl','exposure_bdt','lnd_fc_kl','lnd_fc_bdt','cases','lm_report_date','lm_action_plan','lm_mitigation_status','lm_plan_counted','new_action_plan','new_mitigation_status','new_plan_scope'];
-  const lines=RCR.filter(r=>!s||rcMatches(r,s)).sort((a,b)=>b.lnd_bdt-a.lnd_bdt).map(r=>{const p=rcEffective(r);return [RESCUE.date,r.batch_index,r.brand,r.parent,r.pdesc,r.town,r.material,r.mdesc,r.batch,r.rsl,r.exp_kl,r.exp_bdt,r.lnd_kl,r.lnd_bdt,r.cs,RESCUE.lm_date,r.plan,r.status,r.has_plan,p&&rcPlanText(p),p&&rcPlanStatus(p),p&&p.scope].map(q).join(',')});
+  const head=['snapshot_date','batch_index','brand','parent_material_code','parent_desc','town','material_code','material_desc','batch_code','rsl_days','exposure_kl','exposure_bdt','lnd_fc_kl','lnd_fc_bdt','cases','action_plan','mitigation_status','plan_counted','lm_report_date','lm_action_plan','lm_mitigation_status','lm_plan_counted','new_action_plan','new_mitigation_status','new_plan_scope'];
+  const lines=RCR.filter(r=>!s||rcMatches(r,s)).sort((a,b)=>b.lnd_bdt-a.lnd_bdt).map(r=>{const p=rcEffective(r);return [RESCUE.date,r.batch_index,r.brand,r.parent,r.pdesc,r.town,r.material,r.mdesc,r.batch,r.rsl,r.exp_kl,r.exp_bdt,r.lnd_kl,r.lnd_bdt,r.cs,rcHasCurrent()?r.current_plan:null,rcHasCurrent()?r.current_status:null,rcHasCurrent()?r.current_has_plan:false,RESCUE.lm_date,r.plan,r.status,r.has_plan,p&&rcPlanText(p),p&&rcPlanStatus(p),p&&p.scope].map(q).join(',')});
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[head.join(','),...lines].join('\n')+'\n'],{type:'text/csv'}));
   a.download=`${rcMeta().key}-${rcMeta().label.toLowerCase().replace('>','gt').replace('–','-')}-${RESCUE.date}.csv`;a.click();URL.revokeObjectURL(a.href);toast(`Exported ${lines.length} batches`);
 }

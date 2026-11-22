@@ -36,6 +36,7 @@ def render(payload: dict | None = None, run: dict | None = None) -> str:
     template = (template.replace("<!--REPORT_IDENTITY-->Sample", escape(identity))
                 .replace("<!--REPORT_SNAPSHOT-->", escape(snapshot))
                 .replace("<!--PLAN_STATE-->", flag["plan_state"])
+                .replace("<!--PLAN_ACCEPTED-->", str(bool(run and run.get("plan_upload"))).lower())
                 .replace("<!--PLAN_FLAG-->", escape(flag["view_flag"])))
     for name in NAMES:
         empty = "[]" if name == "BATCH" else "{}"

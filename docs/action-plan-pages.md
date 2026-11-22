@@ -4,7 +4,7 @@ Sidebar: **Action plans → rescue · 3M–6M**, **rebalance · 6M–10M**, **lo
 
 ## What it shows
 
-Only established report measures; nothing is re-forecast. Every page has the summary strip, the Exposure split bar, the spreadsheet-style sheet (drill-down hierarchies, search, Expand all, BDT/KL switch, Export CSV), the Coverage and Action plans columns, **New plans**, and the two outcome panels.
+Only established report measures; nothing is re-forecast. Every page has one summary stat, **LND entering the next band in 30 days**, the spreadsheet-style sheet (drill-down hierarchies, search, Expand all, BDT/KL switch, Export CSV), Coverage, current-month then last-month Action plans, and draft planning. Exposure, LND FC and cases remain in the sheet; the other summary stats and Exposure split bar are omitted.
 
 | Element | Definition |
 | --- | --- |
@@ -12,14 +12,15 @@ Only established report measures; nothing is re-forecast. Every page has the sum
 | LND FC | `lnd_fc_*`: stock still unsold at 90 days RSL at today's run rate. |
 | Cases (CS) | Sum of the shelf-life file's `CS` for the row's batches (batch identity as in `soh_db`). Not unit-dependent. |
 | Towns | Distinct towns holding the row's stock in the page's band: how scattered it is. |
-| Coverage | Share of the row's Exposure (value or volume, following the BDT/KL switch) whose batch had a last-month action plan. The green fill spans that share of the whole cell. Hover shows the split by last month's mitigation status. `✎ planned/uncovered` counts batches without a last-month plan that a new plan reaches. |
-| Action plans | Distinct last-month remarks, largest Exposure first. Full text in the formula bar. |
-| LND in lots ≥ 20K BDT | LND pooled by SKU × region (region from the shelf-life file). A lot is the unit one liquidation or transfer can collect. |
+| Coverage | Share of the row's Exposure (value or volume, following the BDT/KL switch) with a plan. Once an upload is accepted, uses the current month's accepted entries immediately, including before settlement; green fill and mitigation-status tooltip use that same month. Before acceptance, shows explicitly labelled last-month coverage. Settling without an upload also retains last-month coverage. Blank current entries never fall back to last month. |
+| Action plans | Two columns, current month first, then last month, each labelled with its month and year. Distinct remarks, largest Exposure first, independently aggregated for each month. Full text in the formula bar. Current month says **Awaiting accepted plan** until acceptance (**No accepted plan** if settled without upload). |
 | LND entering the next band in 30 days | LND of batches whose RSL falls into the next shorter band within 30 days. The threshold is per page (below). |
 
-**Last month** is the latest saved report in the previous calendar month, joined by exact `batch_index`: the same join that fills the `lm_` columns of the action plan input file. Batches absent from it are new and count as uncovered. A remark of `RSL>10M_Good stock` is a label, not a plan.
+**Last month** is the latest saved report in the previous calendar month, joined by exact `batch_index`: the same join that fills the `lm_` columns of the action plan input file. Batches absent from it count as last-month gaps. **Current month** comes from this run's private snapshot, joined by exact `batch_index`. Acceptance replaces its entries; loading an older completed run upgrades its cached page data from that snapshot without recalculating stock, rates or prices. A remark of `RSL>10M_Good stock` is a label, not a plan, for either month's coverage.
 
-The sheet ends at the viewport bottom, so its sticky total row is visible on load; the outcome panels follow below.
+CSV exports include accepted current `action_plan`, `mitigation_status` and `plan_counted`, followed by the separate `lm_` fields and draft `new_` fields. Current fields stay empty/un-counted before acceptance.
+
+The sheet ends at the viewport bottom, so its sticky total row is visible on load. These pages show the table and the single LND-entering stat; there are no outcome panels below the table.
 
 ## Band differences
 
@@ -30,17 +31,15 @@ The sheet ends at the viewport bottom, so its sticky total row is visible on loa
 | Exposure | equals stock | equals stock (≤ 10M: the whole batch) | part of stock not sold before 300 days RSL |
 | Extra column | none | none | **Rotation req** after LND FC |
 | LND entering the next band in 30 days | RSL ≤ 120 → <3M | RSL ≤ 210 → 3M–6M | RSL ≤ 330 → 6M–10M |
-| Incumbent panel | 3M–6M | 6M–10M | >10M |
-| Remark panel bands | 3M–10M | 6M–10M | >10M |
 | Uncovered-batch list | `output/rescue_batches.parquet` | `output/rebalance_batches.parquet` | `output/loading_watch_batches.parquet` |
 
-**loading-watch rows.** At >10M most stock sells before the 300-day line and is not at risk, so a batch is listed only when the report's `exposure_*` is above zero. A batch with LND FC > 0 also has Exposure > 0: the corrected report uses the same 90-day selling queue for both measures. Earlier reports used separate queue rules that could violate this relationship; newly calculated reports correct it. Saved months retain their stored Exposure and Rotation req, so the first month across this change compares methods once. The saved reports behind the two outcome panels carry no exposure column, so those panels cover every >10M batch with LND FC > 0.
+**loading-watch rows.** At >10M most stock sells before the 300-day line and is not at risk, so a batch is listed only when the report's `exposure_*` is above zero. A batch with LND FC > 0 also has Exposure > 0: the corrected report uses the same 90-day selling queue for both measures. Earlier reports used separate queue rules that could violate this relationship; newly calculated reports correct it. Saved months retain their stored Exposure and Rotation req, so the first month across this change compares methods once.
 
 **Rotation req.** The report's own `rotation_req_*`: the exposure still left if the run rate doubled. Exposure − Rotation req is what doubling the rate clears. It follows the BDT/KL switch and has its own total. It is not part of the CSV export, whose columns are the same on every page.
 
 **Cases (CS)** on loading-watch are the cases of the whole batch, not only of its exposed part.
 
-`RSL>10M_Good stock` stays a label, not a plan, on every page; it matters most on loading-watch. The lot threshold (≥ 20K BDT by SKU × region) is the same on every page.
+`RSL>10M_Good stock` stays a label, not a plan, on every page; it matters most on loading-watch.
 
 ## Inventory evolution drill-down
 
@@ -52,7 +51,7 @@ Evolution uses saved snapshot figures. A current report forecast refreshed from 
 
 ## New plans for uncovered batches
 
-**New plans** in the toolbar, or a row's `✎ planned/uncovered` badge, opens the page's batches without a last-month plan as **Brand → SKU → Town**, collapsed to brands, largest LND FC first. A plan can be set on any level:
+**New plans** in the toolbar, or a row's `✎ planned/uncovered` badge before acceptance, opens the page's batches without a last-month plan as **Brand → SKU → Town**, collapsed to brands, largest LND FC first. After acceptance the button reads **Draft plans**, its count is labelled **LM gaps**, and badges are removed from current Coverage so draft notes cannot be mistaken for accepted coverage. Drafts still target the same last-month gaps and only affect coverage through a subsequent accepted upload. A plan can be set on any level:
 
 - **Action plan**: one or more categories from a fixed list (`src/rescue.py: PLAN_CATEGORIES`), grounded in the 85 distinct remarks of the saved reports, each with the status sales gave such remarks: Sales push, Seasonal sales push, Trade offer (TLO / QDD / 2+1), EC drive / activation, Free with bundle, Stock rotation, Liquidation - E-Com / Modern Trade / RTM, Emerging channel, Office sales (Actionable); Stock adjustment (Incorrect Stock); L&D claim (Not actionable).
 - **Remarks**: free text, up to 300 characters.
@@ -67,13 +66,16 @@ Plans reach only the uncovered batches listed in their page's batch file in the 
 - are read-only once the month is settled, and on saved static pages;
 - appear in the CSV export (`new_action_plan`, `new_mitigation_status`, `new_plan_scope`).
 
-## Outcome panels (saved reports only)
-
-Latest saved report per calendar month. The cohort is last month's batches of the page's band(s) with LND FC > 0, matched to this month by the movement batch key (`batch_index` without its last two segments), so new inclusions never count as reductions.
-
-- **LND FC reduced from last month · incumbents** (the page's band): `(LM LND − same batches' LND now) ÷ LM LND`, per month. At forecast pace this stays near zero; only beating the forecast raises it.
-- **Which remark moved LND** (bands per page, 3M–10M on rescue): the same, pooled over the latest three months and grouped by last month's remark keyword. First match wins: Incorrect Stock status, `l&d`, `liquidat`, `rotation`, `tlo|qdd|2+1|incentive`, `winter|season`, `push`. Association, not proof of cause.
-
-BDT values in these panels are the saved values of each month; months valued before the shelf-life `DB Landing value` switch compare different bases once (see [stock-valuation.md](stock-valuation.md)). KL is basis-free.
-
 Runs calculated before this report existed show a notice; a new run builds it.
+
+## Updating and checking saved runs
+
+Restart the app server and refresh the browser after updating the backend and template. Open a completed run through the live server to load its current UI. Older cached action-plan pages gain the current-plan columns from the run's private snapshot on first load; this updates only derived dashboard data, preserving the frozen report, snapshot, rates and prices. Saved snapshot dates accept ISO dates and Excel serial days. A run without action-plan page data still needs a new calculation to create those pages.
+
+Run the focused regressions with:
+
+```bash
+POLARS_MAX_THREADS=2 uv run python -m unittest tests.test_current_action_plans tests.test_rescue tests.test_action_plans tests.test_not_actionables tests.test_plan_notes tests.test_server
+```
+
+Validate the live UI in light mode at a widescreen laptop width. Check all three pages before and after plan acceptance in BDT and KL: current then previous-month columns, coverage and its status tooltip from the same month, blank current plans uncovered, and the single LND-entering stat above the table.
