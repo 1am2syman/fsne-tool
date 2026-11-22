@@ -58,6 +58,17 @@ class HistoryParquetTests(unittest.TestCase):
         self.assertFalse(parquet.exists())
         assert_frame_equal(read_saved_report(frozen), self.frame)
 
+    def test_reopening_previously_archived_settlement_returns_it_to_ongoing(self):
+        run_id = self.make_run()
+        self.settle(run_id)
+        self.store.archive(run_id, True)
+        folder = self.store.path(run_id)
+        result = self.store.cycle.reopen(run_id, True, "test")
+        self.assertIsNone(result["archived"])
+        self.assertEqual(result["plan_state"], "provisional")
+        self.assertTrue(folder.is_dir())
+        self.assertTrue((folder / "history/snapshot.xlsx").exists())
+
     def test_movement_and_evolution_read_parquet_without_excel(self):
         from src import evolution, movement
 

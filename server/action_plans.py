@@ -300,7 +300,7 @@ class ActionPlanCycle:
             removed = [target, parquet] if parquet.exists() else [target]
             parquet.unlink(missing_ok=True)
             reopened = {"time": now(), "user": user[:255], "commit": {"ok": False, "error": "Commit pending"}}
-            self.store.update(run_id, plan_state="plan_uploaded" if meta.get("plan_upload") else "provisional", reopened=reopened)
+            self.store.update(run_id, plan_state="plan_uploaded" if meta.get("plan_upload") else "provisional", reopened=reopened, archived=None)
             month = meta["report_date"][:7]
             for other in self.store.list():
                 if other["id"] == run_id:
