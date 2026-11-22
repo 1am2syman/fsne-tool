@@ -120,7 +120,7 @@ class BatchScriptContractTests(unittest.TestCase):
             "git fetch --prune",
             'stash push --include-untracked --quiet -m "Set aside by update.bat"',
             'git reset --hard --quiet "@{u}"',
-            "git clean -fdxq -- src server ui",
+            'git clean -fdxq -e "__pycache__/" -e "*.py[oc]" -- src server ui',
         ):
             self.assertIn(required, text)
         # Ensure the parenthesized update block contains no goto/labels or parse-time %VAR% expansion.
@@ -133,7 +133,51 @@ class BatchScriptContractTests(unittest.TestCase):
 
 
 @unittest.skipUnless(shutil.which("git"), "Updater regression tests require Git")
-class UpdaterStashTests(unittest.TestCase):
+class UpdaterGitTests(unittest.TestCase):
+    def test_cleanup_preserves_python_caches_but_removes_obsolete_code(self):
+        text = (ROOT / "update.bat").read_text(encoding="utf-8")
+        clean_line = next(line.strip() for line in text.splitlines() if line.strip().startswith("git clean "))
+        command = shlex.split(clean_line)
+        with tempfile.TemporaryDirectory(prefix="FSNE updater cleanup ") as temp_str:
+            repo = Path(temp_str)
+            subprocess.run(["git", "init", "-q"], cwd=repo, check=True, timeout=15)
+            (repo / ".gitignore").write_bytes((ROOT / ".gitignore").read_bytes())
+            for folder in ("src", "server", "ui"):
+                (repo / folder).mkdir()
+                (repo / folder / "published.py").write_text("published\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, timeout=15)
+            preserved = {
+                "src/__pycache__/published.cpython-311.pyc": b"source cache",
+                "server/__pycache__/published.cpython-311.pyc": b"server cache",
+                "ui/__pycache__/published.cpython-311.pyc": b"UI cache",
+                "server/retired/__pycache__/old.cpython-311.pyc": b"nested cache",
+                "src/legacy.pyc": b"legacy bytecode",
+                "server/legacy.pyo": b"legacy optimized bytecode",
+                ".fsne-packages/installed.txt": b"installed dependency",
+                ".cache/history.parquet": b"parsed history",
+                "runs/RUN-0001/result.html": b"saved run",
+                "history/2026_03_03.xlsx": b"settled history",
+            }
+            removed = ("src/obsolete.py", "server/retired/obsolete.py", "ui/obsolete.js", "ui/index.html")
+            for relative, content in preserved.items():
+                path = repo / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+            for relative in removed:
+                (repo / relative).write_text("obsolete\n", encoding="utf-8")
+
+            # Execute the updater's actual command, including its exclusions.
+            result = subprocess.run(command, cwd=repo, capture_output=True, text=True, check=False, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for relative, content in preserved.items():
+                path = repo / relative
+                self.assertTrue(path.is_file(), f"Updater deleted {relative}")
+                self.assertEqual(path.read_bytes(), content)
+            for relative in removed:
+                self.assertFalse((repo / relative).exists(), f"Updater left obsolete file {relative}")
+            for folder in ("src", "server", "ui"):
+                self.assertEqual((repo / folder / "published.py").read_text(encoding="utf-8"), "published\n")
+
     def test_stash_preserves_legacy_vendor_even_before_ignore_rules_are_updated(self):
         text = (ROOT / "update.bat").read_text(encoding="utf-8")
         stash_line = next(line.strip() for line in text.splitlines() if " stash push " in line)
@@ -166,7 +210,7 @@ class UpdaterStashTests(unittest.TestCase):
             stray_name = "neProcessId = (Get-NetTCPConnection -LocalPort 8770 -State Listen"
             (repo / stray_name).write_text("stray command file\n", encoding="utf-8")
 
-            result = subprocess.run(command, cwd=repo, capture_output=True, text=True, timeout=15)
+            result = subprocess.run(command, cwd=repo, capture_output=True, text=True, check=False, timeout=15)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(vendor.is_file(), "The updater must leave the retired runtime folder in place")
             self.assertEqual(vendor.read_bytes(), b"old runtime")
@@ -180,7 +224,7 @@ class UpdaterStashTests(unittest.TestCase):
     def test_current_ignore_rules_exclude_only_root_vendor(self):
         result = subprocess.run(
             ["git", "check-ignore", "--no-index", "vendor/leftover.txt", "src/vendor/module.py"],
-            cwd=ROOT, capture_output=True, text=True, timeout=15,
+            cwd=ROOT, capture_output=True, text=True, check=False, timeout=15,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.splitlines(), ["vendor/leftover.txt"])

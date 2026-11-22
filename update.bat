@@ -59,7 +59,9 @@ rem Labels and goto must not be used below this point.
         endlocal
         exit /b 1
     )
-    git clean -fdxq -- src server ui
+    rem Windows can keep cache directories open even after Python exits.
+    rem Leave bytecode in place; Git still removes obsolete source files.
+    git clean -fdxq -e "__pycache__/" -e "*.py[oc]" -- src server ui
     if errorlevel 1 (
         echo.
         echo Update did not finish. Close programs using files in the FSNE folder, then run update.bat again.
