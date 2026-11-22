@@ -19,7 +19,7 @@ from src.movement import (
     transform_series,
 )
 from src.rescue import PAGES, _cohorts, category, monthly, saved_report
-from ui.movement_data import SCOPE
+from ui.movement_data import METHOD, SCOPE
 from ui.movement_data import payload as movement_payload
 from ui.rescue_data import shelf_life_facts
 
@@ -116,7 +116,7 @@ def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: 
     history = history.with_columns(
         pl.coalesce(pl.col(PARENT).replace('', None), 'material_code').fill_null('').alias(PARENT),
     )
-    if series.get('scope') != SCOPE:
+    if series.get('scope') != SCOPE or series.get('method') != METHOD:
         series = {**series, **movement_payload(history, months=len(series.get('labels', [])) or 6)}
     materials = _materials(current)
     descriptions = {r['parent_code']: r['parent_desc'] for r in

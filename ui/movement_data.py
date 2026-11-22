@@ -15,6 +15,7 @@ from src.movement import (
 )
 
 SCOPE = 'all-stock'
+METHOD = 'batch-delta'
 FIELDS = {'lm': 'lm_stock_bdt', 'o': 'cm_no_new_bdt', 'n': 'cm_new_bdt', 'r': 'reduced_bdt'}
 
 
@@ -52,7 +53,7 @@ def payload(history: pl.DataFrame, months: int = 6) -> dict:
         slot(parent['by'], row)
     total = by.pop(TOTAL)
     return {
-        'scope': SCOPE, 'labels': [m.strftime('%b') for m in closing_dates],
+        'scope': SCOPE, 'method': METHOD, 'labels': [m.strftime('%b') for m in closing_dates],
         'dates': [m.isoformat() for m in closing_dates], 'opening_date': dates[0].isoformat(),
         'start': dates[0].strftime('%b'), 'year': closing_dates[-1].year, 'groups': groups,
         'total': [total[m] for m in closing_dates],

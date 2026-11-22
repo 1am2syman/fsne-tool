@@ -51,9 +51,10 @@ class MovementTest(unittest.TestCase):
         self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"]), (1149.0, 560.0, 346.0))
         self.assertEqual(x["reduced_bdt"], 589.0)
         self.assertAlmostEqual(x["reduction_pct"], 589 / 1149)
+        # Y's existing batch t2C grew 80 -> 100: 80 carries over, +20 top-up counts under new inclusions, 0 reduced.
         y = self.row(out, "Y")
-        self.assertEqual(y["reduced_bdt"], -20.0)  # increase is negative
-        self.assertIsNone(y["cm_new_bdt"])
+        self.assertEqual((y["lm_stock_bdt"], y["cm_no_new_bdt"], y["cm_new_bdt"]), (80.0, 80.0, 20.0))
+        self.assertEqual((y["reduced_bdt"], y["reduction_pct"]), (0.0, 0.0))
 
     def test_brand_only_in_one_side(self):
         out = transform(self.cm, self.lm)
@@ -69,8 +70,8 @@ class MovementTest(unittest.TestCase):
         out = transform(self.cm, self.lm)
         self.assertEqual(out["brand"].to_list(), ["X", "Z", "Y", "W", TOTAL])
         t = self.row(out, TOTAL)
-        self.assertEqual((t["lm_stock_bdt"], t["cm_no_new_bdt"], t["cm_new_bdt"], t["reduced_bdt"]), (1239.0, 660.0, 353.0, 579.0))
-        self.assertAlmostEqual(t["reduction_pct"], 579 / 1239)
+        self.assertEqual((t["lm_stock_bdt"], t["cm_no_new_bdt"], t["cm_new_bdt"], t["reduced_bdt"]), (1239.0, 640.0, 373.0, 599.0))
+        self.assertAlmostEqual(t["reduction_pct"], 599 / 1239)
 
     def test_remarks_distinct_case_insensitive_first_seen(self):
         out = transform(self.cm, self.lm)
@@ -110,9 +111,9 @@ class SeriesTest(unittest.TestCase):
         # Mar: X LM 100, carried a (70), new c (30)
         x = out.filter((pl.col("brand") == "X") & (pl.col("month").dt.month() == 3)).row(0, named=True)
         self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"], x["reduced_bdt"]), (100.0, 70.0, 30.0, 30.0))
-        # Apr: X LM 100 (70+30), carried a(20)+c(50)=70, none new
+        # Apr: X LM 100 (a=70, c=30); CM has a=20 (carried 20, cleared 50) and c=50 (carried 30, +20 top-up)
         x = out.filter((pl.col("brand") == "X") & (pl.col("month").dt.month() == 4)).row(0, named=True)
-        self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"], x["reduced_bdt"]), (100.0, 70.0, None, 30.0))
+        self.assertEqual((x["lm_stock_bdt"], x["cm_no_new_bdt"], x["cm_new_bdt"], x["reduced_bdt"]), (100.0, 50.0, 20.0, 50.0))
         z = out.filter((pl.col("brand") == "Z") & (pl.col("month").dt.month() == 4)).row(0, named=True)
         self.assertEqual((z["lm_stock_bdt"], z["cm_new_bdt"], z["reduced_bdt"]), (None, 9.0, None))
         # same numbers as the single-pair function
@@ -120,6 +121,54 @@ class SeriesTest(unittest.TestCase):
             pair = transform(cm, lm).drop("remarks")
             ser = out.filter(pl.col("month").dt.month() == d).drop("month", "remarks")
             self.assertTrue(pair.sort("brand").equals(ser.sort("brand")), (d, pair, ser))
+
+    def test_edge_cases_never_produce_negative_cleared_or_nan(self):
+        from src.movement import transform_series
+
+        # Covers: zero LM stock growing, null LM/CM stock, duplicate keys in a month,
+        # negative credit row, mixed shrinking+growing keys, and cross-month brand/RSL remaps.
+        lm = pl.DataFrame({
+            "report_date": [date(2026, 7, 31)] * 7,
+            "batch_index": ["z-1-1", "n-1-1", "d-1-1", "d-2-2", "g-1-1", "s-1-1", "r-1-1"],
+            "Brand Name": ["ZERO", "NULLB", "DUP", "DUP", "MIX", "MIX", "OLD_BRAND"],
+            "rsl_group": ["6M - 10M"] * 6 + ["> 10M"],
+            "total_closing_stock_bdt": pl.Series([0.0, None, 30.0, 20.0, 10.0, 90.0, 40.0], dtype=pl.Float64),
+            "status": [A] * 7,
+            "remarks": pl.Series([None] * 7, dtype=pl.String),
+        })
+        cm = pl.DataFrame({
+            "report_date": [date(2026, 8, 30)] * 7,
+            "batch_index": ["z-2-2", "n-2-2", "d-3-3", "d-4-4", "g-2-2", "s-2-2", "r-2-2"],
+            "Brand Name": ["ZERO", "NULLB", "DUP", "DUP", "MIX", "MIX", "NEW_BRAND"],
+            "rsl_group": ["6M - 10M"] * 6 + ["6M - 10M"],
+            "total_closing_stock_bdt": pl.Series([4.0, 15.0, 40.0, 30.0, 80.0, -5.0, 40.0], dtype=pl.Float64),
+            "status": [A] * 7,
+            "remarks": pl.Series([None] * 7, dtype=pl.String),
+        })
+        h = pl.concat([lm, cm])
+        out = transform_series(h, months=6)
+        by_b = {r["brand"]: r for r in out.iter_rows(named=True)}
+
+        self.assertEqual((by_b["ZERO"]["lm_stock_bdt"], by_b["ZERO"]["cm_no_new_bdt"], by_b["ZERO"]["cm_new_bdt"], by_b["ZERO"]["reduced_bdt"]), (0.0, 0.0, 4.0, 0.0))
+        self.assertIsNone(by_b["ZERO"]["reduction_pct"])
+        self.assertEqual((by_b["NULLB"]["lm_stock_bdt"], by_b["NULLB"]["cm_no_new_bdt"], by_b["NULLB"]["cm_new_bdt"], by_b["NULLB"]["reduced_bdt"]), (0.0, 0.0, 15.0, 0.0))
+        self.assertIsNone(by_b["NULLB"]["reduction_pct"])
+        self.assertEqual((by_b["DUP"]["lm_stock_bdt"], by_b["DUP"]["cm_no_new_bdt"], by_b["DUP"]["cm_new_bdt"], by_b["DUP"]["reduced_bdt"]), (50.0, 50.0, 20.0, 0.0))
+        self.assertEqual((by_b["MIX"]["lm_stock_bdt"], by_b["MIX"]["cm_no_new_bdt"], by_b["MIX"]["cm_new_bdt"], by_b["MIX"]["reduced_bdt"]), (100.0, 10.0, 70.0, 90.0))
+        self.assertAlmostEqual(by_b["MIX"]["reduction_pct"], 0.9)
+        self.assertNotIn("OLD_BRAND", by_b)
+        self.assertEqual((by_b["NEW_BRAND"]["lm_stock_bdt"], by_b["NEW_BRAND"]["cm_no_new_bdt"], by_b["NEW_BRAND"]["reduced_bdt"]), (40.0, 40.0, 0.0))
+
+        by_rsl = transform_series(h, months=6, keys=("Brand Name", "rsl_group"))
+        self.assertTrue((by_rsl["reduced_bdt"].drop_nulls() >= 0.0).all())
+        rsl_tot = by_rsl.filter(pl.col("brand") == TOTAL)
+        plain_tot = by_b[TOTAL]
+        for col in ("lm_stock_bdt", "cm_no_new_bdt", "cm_new_bdt", "reduced_bdt"):
+            self.assertAlmostEqual(rsl_tot[col].sum(), plain_tot[col])
+
+        pair = transform(cm, lm).drop("remarks")
+        ser = out.drop("month", "remarks")
+        self.assertTrue(pair.sort("brand").equals(ser.sort("brand")), (pair, ser))
 
     def test_rsl_groups_add_up_and_use_later_month_group(self):
         from src.movement import transform_series

@@ -1,23 +1,27 @@
 """total-stock-movement: all saved stock, independent of planning status.
 
+Batch-level delta accounting per ``(Town, Material, Batch)`` key:
+
     LM Stock BDT          = sum of LM ``total_closing_stock_bdt`` across every row
-    CM Closing (No New)   = CM batches whose physical key is in LM
-    CM Closing (New)      = CM batches whose physical key is absent from LM
-    Net reduction         = LM Stock - CM Closing (No New Inclusions)
-    Reduction %           = Net reduction / LM Stock
+    CM Closing (No New)   = sum over keys in both LM & CM of min(LM_k, CM_k)
+    CM Closing (New)      = sum of new-key CM stock + sum over existing keys of max(0, CM_k - LM_k)
+    Reduced from LM       = LM Stock - CM Closing (No New) = sum over LM keys of max(0, LM_k - CM_k) >= 0
+    Reduction %           = Reduced from LM / LM Stock (null when LM Stock <= 0)
     Latest Month Remarks  = distinct remark phrases of the CM batches
 
-Net reduction measures a change in saved inventory, not proven sales or disposal.
-Each calendar month uses its latest saved report, retaining that report's prices.
-Status edits never change stock totals or physical new/remaining batch membership.
+Stock added to an already-existing physical batch key counts under New inclusions
+rather than offsetting clearance, so reductions are never negative while Opening (LM)
+and Closing (Carried over + New inclusions) stay exact. Reduction measures a change
+in saved inventory, not proven sales or disposal. Each calendar month uses its latest
+saved report, retaining that report's prices. Status edits never change stock totals
+or physical new/remaining batch membership.
 
 The batch key is ``batch_index`` without its last two hyphen segments (same as
 ``history.batch_index_short``). Saved reports carry two user-entered columns that
 were renamed in June: ``action_plan_remarks``/``action_plan`` and
 ``mitigation_status_category``/``mitigation_status``.
 
-All work is columnar Polars (joins, one ``group_by`` per side, a full join between
-sides). There are no Python row loops.
+All work is columnar Polars (joins, ``group_by``, no Python row loops).
 """
 
 from pathlib import Path
@@ -148,28 +152,79 @@ def _remark_phrases(
     )
 
 
+def _split_cm_deltas(
+    cm_by_key: pl.LazyFrame,
+    lm_by_key: pl.LazyFrame,
+    join_on: list[str],
+    group_by: list[str],
+) -> pl.LazyFrame:
+    """Split each CM key's stock into carried-over ``min(cm, lm)`` and additions ``max(0, cm - lm)``.
+
+    Both inputs must already be aggregated to one row per key so duplicate rows
+    within a month never multiply LM stock during the join.
+    """
+    cm_pos = pl.col("_cm_stock").fill_null(0.0).clip(lower_bound=0.0)
+    lm_pos = pl.col("_lm_stock").fill_null(0.0).clip(lower_bound=0.0)
+    in_lm = pl.col("_in_lm").fill_null(False)
+    return (
+        cm_by_key.join(lm_by_key, on=join_on, how="left", maintain_order="left")
+        .with_columns(
+            pl.when(in_lm)
+            .then(pl.min_horizontal(cm_pos, lm_pos))
+            .alias("_carried"),
+            pl.when(~in_lm)
+            .then(cm_pos)
+            .when(cm_pos > lm_pos)
+            .then(cm_pos - lm_pos)
+            .alias("_added"),
+        )
+        .group_by(group_by)
+        .agg(
+            pl.when(pl.col("_carried").is_not_null().any())
+            .then(pl.col("_carried").sum())
+            .alias("cm_no_new_bdt"),
+            pl.when(pl.col("_added").is_not_null().any())
+            .then(pl.col("_added").sum())
+            .alias("cm_new_bdt"),
+        )
+    )
+
+
 def transform(
     cm: pl.DataFrame,
     lm: pl.DataFrame,
 ) -> pl.DataFrame:
-    """All-stock brand rows sorted by net reduction, then one Grand Total row."""
+    """All-stock brand rows sorted by reduction, then one Grand Total row."""
     cm_lf = cm.lazy().with_columns(batch_key())
     lm_lf = lm.lazy().with_columns(batch_key())
 
-    # New inclusion = physical CM key absent from all LM stock.
-    cm_lf = cm_lf.join(
-        lm_lf.select(KEY).unique().with_columns(pl.lit(True).alias("_in_lm")),
-        on=KEY,
-        how="left",
-        maintain_order="left",
-    ).with_columns(pl.col("_in_lm").is_null().alias("_new"))
-
     bdt = pl.col("total_closing_stock_bdt")
-    old, new = ~pl.col("_new"), pl.col("_new")
-    lm_side = lm_lf.group_by(BRAND).agg(bdt.sum().alias("lm_stock_bdt"))
-    cm_side = cm_lf.group_by(BRAND).agg(
-        pl.when(old.any()).then(bdt.filter(old).sum()).alias("cm_no_new_bdt"),
-        pl.when(new.any()).then(bdt.filter(new).sum()).alias("cm_new_bdt"),
+    # Collapse per key before joining so duplicate keys or cross-month brand remaps stay exact.
+    lm_by_key = lm_lf.group_by(KEY).agg(
+        bdt.fill_null(0.0).clip(lower_bound=0.0).sum().alias("_lm_stock"),
+        pl.lit(True).alias("_in_lm"),
+    )
+    cm_by_key = cm_lf.group_by(KEY).agg(
+        pl.col(BRAND).first().alias(BRAND),
+        bdt.fill_null(0.0).clip(lower_bound=0.0).sum().alias("_cm_stock"),
+    )
+    cm_side = _split_cm_deltas(cm_by_key, lm_by_key, [KEY], [BRAND])
+    # Align surviving LM keys to their CM brand so brand-level reduced_bdt never drifts.
+    lm_side = (
+        lm_lf.group_by(KEY)
+        .agg(
+            pl.col(BRAND).first().alias(BRAND),
+            bdt.fill_null(0.0).clip(lower_bound=0.0).sum().alias("_lm_stock"),
+        )
+        .join(
+            cm_by_key.select(KEY, pl.col(BRAND).alias("_next_brand")),
+            on=KEY,
+            how="left",
+            maintain_order="left",
+        )
+        .with_columns(pl.coalesce("_next_brand", BRAND).alias(BRAND))
+        .group_by(BRAND)
+        .agg(pl.col("_lm_stock").sum().alias("lm_stock_bdt"))
     )
     remarks = (
         _remark_phrases(cm_lf)
@@ -183,11 +238,16 @@ def transform(
         .rename({BRAND: "brand"})
         .with_columns(
             pl.when(pl.col("lm_stock_bdt").is_not_null())
-            .then(pl.col("lm_stock_bdt") - pl.col("cm_no_new_bdt").fill_null(0.0))
+            .then(
+                (pl.col("lm_stock_bdt") - pl.col("cm_no_new_bdt").fill_null(0.0))
+                .clip(lower_bound=0.0)
+            )
             .alias("reduced_bdt")
         )
         .with_columns(
-            (pl.col("reduced_bdt") / pl.col("lm_stock_bdt")).alias("reduction_pct")
+            pl.when(pl.col("lm_stock_bdt") > 0)
+            .then(pl.col("reduced_bdt") / pl.col("lm_stock_bdt"))
+            .alias("reduction_pct")
         )
         .sort(["reduced_bdt", "brand"], descending=[True, False], nulls_last=True)
         .select(OUTPUT)
@@ -200,9 +260,9 @@ def transform(
         pl.col("cm_no_new_bdt").sum(),
         pl.col("cm_new_bdt").sum(),
         pl.col("reduced_bdt").sum(),
-        (pl.col("reduced_bdt").sum() / pl.col("lm_stock_bdt").sum()).alias(
-            "reduction_pct"
-        ),
+        pl.when(pl.col("lm_stock_bdt").sum() > 0)
+        .then(pl.col("reduced_bdt").sum() / pl.col("lm_stock_bdt").sum())
+        .alias("reduction_pct"),
         _remark_phrases(cm_lf)
         .unique(subset=["_k"], keep="first", maintain_order=True)
         .select(pl.col("phrase").str.join(", "))
@@ -247,43 +307,50 @@ def transform_series(
         {"report_date": dates, "prev_date": dates.shift(1), "next_date": dates.shift(-1)}
     ).lazy()
 
-    # Match physical membership against all stock, never against planning labels.
-    previous_keys = h.select(
-        pl.col("report_date").alias("prev_date"), KEY
-    ).unique().with_columns(pl.lit(True).alias("_in_lm"))
-    cm = (
-        h.join(calendar.select("report_date", "prev_date"), on="report_date")
-        .filter(pl.lit(len(dates) == 1) | pl.col("prev_date").is_not_null())
-        .join(previous_keys, on=["prev_date", KEY], how="left", maintain_order="left")
-        .with_columns(pl.col("_in_lm").is_null().alias("_new"))
-    )
     # Output field names are stable; stock_column selects the source unit.
     bdt = pl.col(stock_column)
-    old, new = ~pl.col("_new"), pl.col("_new")
     by = ["report_date", *keys]
-    cm_side = cm.group_by(by).agg(
-        pl.when(old.any()).then(bdt.filter(old).sum()).alias("cm_no_new_bdt"),
-        pl.when(new.any()).then(bdt.filter(new).sum()).alias("cm_new_bdt"),
+    # Aggregate each month to one row per key so duplicate rows never multiply LM stock
+    # and surviving keys align on every requested grouping dimension (including RSL aging).
+    h_by_key = h.group_by("report_date", KEY).agg(
+        *[pl.col(k).first().alias(k) for k in keys],
+        bdt.fill_null(0.0).clip(lower_bound=0.0).sum().alias("_stock"),
+    )
+    lm_by_key = h_by_key.select(
+        pl.col("report_date").alias("prev_date"),
+        KEY,
+        pl.col("_stock").alias("_lm_stock"),
+        pl.lit(True).alias("_in_lm"),
+    )
+    cm_by_key = (
+        h_by_key.join(calendar.select("report_date", "prev_date"), on="report_date")
+        .filter(pl.lit(len(dates) == 1) | pl.col("prev_date").is_not_null())
+        .rename({"_stock": "_cm_stock"})
+    )
+    cm_side = _split_cm_deltas(cm_by_key, lm_by_key, ["prev_date", KEY], by)
+    cm_raw = (
+        h.join(calendar.select("report_date", "prev_date"), on="report_date")
+        .filter(pl.lit(len(dates) == 1) | pl.col("prev_date").is_not_null())
     )
     remarks = (
-        _remark_phrases(cm, by=tuple(by))
+        _remark_phrases(cm_raw, by=tuple(by))
         .group_by(by, maintain_order=True)
         .agg(pl.col("phrase").str.join(", ").alias("remarks"))
     )
-    next_rsl = h.group_by("report_date", KEY).agg(pl.col(RSL).first().alias("_next_rsl"))
+    next_dims = h_by_key.select(
+        pl.col("report_date").alias("next_date"),
+        KEY,
+        *[pl.col(k).alias(f"_next_{i}") for i, k in enumerate(keys)],
+    )
     lm_side = (
-        h.join(calendar.select("report_date", "next_date"), on="report_date")
+        h_by_key.join(calendar.select("report_date", "next_date"), on="report_date")
         .filter(pl.col("next_date").is_not_null())
-        .join(
-            next_rsl,
-            left_on=["next_date", KEY],
-            right_on=["report_date", KEY],
-            how="left",
-            maintain_order="left",
+        .join(next_dims, on=["next_date", KEY], how="left", maintain_order="left")
+        .with_columns(
+            *[pl.coalesce(f"_next_{i}", k).alias(k) for i, k in enumerate(keys)]
         )
-        .with_columns(pl.coalesce("_next_rsl", RSL).alias(RSL))
         .group_by("next_date", *keys)
-        .agg(bdt.sum().alias("lm_stock_bdt"))
+        .agg(pl.col("_stock").sum().alias("lm_stock_bdt"))
         .rename({"next_date": "report_date"})
     )
     brands = (
@@ -292,11 +359,16 @@ def transform_series(
         .rename({BRAND: "brand", "report_date": "month"})
         .with_columns(
             pl.when(pl.col("lm_stock_bdt").is_not_null())
-            .then(pl.col("lm_stock_bdt") - pl.col("cm_no_new_bdt").fill_null(0.0))
+            .then(
+                (pl.col("lm_stock_bdt") - pl.col("cm_no_new_bdt").fill_null(0.0))
+                .clip(lower_bound=0.0)
+            )
             .alias("reduced_bdt")
         )
         .with_columns(
-            (pl.col("reduced_bdt") / pl.col("lm_stock_bdt")).alias("reduction_pct")
+            pl.when(pl.col("lm_stock_bdt") > 0)
+            .then(pl.col("reduced_bdt") / pl.col("lm_stock_bdt"))
+            .alias("reduction_pct")
         )
         .select(*SERIES_OUTPUT, *keys[1:])
     )
@@ -308,9 +380,9 @@ def transform_series(
         pl.col("cm_no_new_bdt").sum(),
         pl.col("cm_new_bdt").sum(),
         pl.col("reduced_bdt").sum(),
-        (pl.col("reduced_bdt").sum() / pl.col("lm_stock_bdt").sum()).alias(
-            "reduction_pct"
-        ),
+        pl.when(pl.col("lm_stock_bdt").sum() > 0)
+        .then(pl.col("reduced_bdt").sum() / pl.col("lm_stock_bdt").sum())
+        .alias("reduction_pct"),
         pl.lit(None, dtype=pl.String).alias("remarks"),
     ).select(*SERIES_OUTPUT, *keys[1:])
     # Keep zero totals for empty RSL groups within the saved calendar.

@@ -41,7 +41,7 @@ from src import evolution
 from src.movement import read_raw_reports
 from src.saved_reports import read_saved_report
 from ui.filter_data import enrich_payload
-from ui.movement_data import SCOPE as MOVEMENT_SCOPE
+from ui.movement_data import METHOD as MOVEMENT_METHOD, SCOPE as MOVEMENT_SCOPE
 from ui.not_actionables_data import COLS as NOT_ACTIONABLE_COLS
 from ui.not_actionables_data import build_payload as not_actionables_payload
 from ui.render import extract_legacy, render
@@ -349,6 +349,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                 changed = False
                 if 'SERIES' in data and (
                     data['SERIES'].get('scope') != MOVEMENT_SCOPE
+                    or data['SERIES'].get('method') != MOVEMENT_METHOD
                     or not {'facets', 'materials', 'regions'} <= data['SERIES'].keys()
                     or any(not {'filter_trend', 'filter_outcomes'} <= page.keys()
                            for page in data.get('ACTIONPLANS', {}).values())
