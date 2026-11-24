@@ -47,7 +47,7 @@ test('movement merges selected town-parent facts in both units preserving missin
 test('town-level evolution and DOH scopes include every brand unless explicitly filtered',()=>{
   const template=fs.readFileSync('ui/template.html','utf8');
   const start=template.indexOf('function statusEvolutionFilters('),end=template.indexOf('function statusDohPairs(',start);
-  const context=vm.createContext({statusFilters:{selection:()=>({})}});
+  const context=vm.createContext({STATUS:{groups:[]},statusSelectedGroups:()=>[],statusFilters:{selection:()=>({})}});
   vm.runInContext(template.slice(start,end),context);
   const scope=n=>JSON.parse(JSON.stringify(context.statusEvolutionFilters(n,'town')));
   assert.deepEqual(scope({id:'town',level:0,name:'Dhaka',town:'Dhaka',brand:'A'}),{town:['Dhaka']});

@@ -19,6 +19,7 @@ beforeEach(() => {
       total:{m:[month(1100),month(1400)],kids:[]},total_kl:{m:[month(11),month(14)],kids:[]}},
     SERIES:{doh:{pairs:[{t:'A',b:'X',p:'10',rate:2},{t:'B',b:'Y',p:'20',rate:1}]}},
     statusScope:null,statusSnap:null,statusGroup:null,statusCategoryScope:null,statusMetric:0,statusView:'town',reportUnit:'bdt',
+    statusRslSelections:new Map(),normalizeEvolutionRsl:g=>g.replace(/\s/g,'').replaceAll('-','–'),
     statusFilters:{matches:(row,exclude)=>matches(row,selections,exclude),
       selection:()=>Object.fromEntries(Object.entries(selections).filter(([,s])=>s!=null).map(([k,s])=>[k,[...s]]))},
     sum:items=>items.reduce((a,b)=>a+b,0),
@@ -88,6 +89,33 @@ test('linked evolution carries the category selection alongside the clicked row'
   selections.brand = new Set(['X','Y']);
   const filters = plain(context.statusEvolutionFilters({id:'town-A',level:0,name:'A'},'town'));
   assert.deepEqual(filters,{category:['Actionable','Incorrect stock'],brand:['X','Y'],town:['A']});
+});
+
+test('RSL selection recomputes every hierarchy, metric and unit without changing saved facts', () => {
+  context.STATUS.groups.push('> 10M');
+  for (const row of context.STATUS.facets) {
+    for (const key of ['m','m_kl']) row[key].forEach(cs => {if(cs) cs.push(cs[0].map(v => v * 3))});
+  }
+  const before = JSON.stringify(context.STATUS.facets);
+  context.statusRslSelections.set(undefined,new Set(['> 10M']));
+  selections.category = new Set(['Actionable','Incorrect stock']);
+  for (const [unit,scale] of [['bdt',100],['kl',1]]) {
+    context.reportUnit = unit;
+    for (const view of ['town','brand-town','brand-parent']) {
+      context.statusView = view;
+      const tree = context.filteredStatusTree();
+      assert.deepEqual(plain(tree.m),[[[0,0,0],[6*scale,3*scale,1.5*scale]],[[0,0,0],[12*scale,6*scale,3*scale]]]);
+      assert.deepEqual(plain(tree.kids[0].kids[0].kids[0].m),plain(tree.m));
+    }
+  }
+  assert.equal(JSON.stringify(context.STATUS.facets),before);
+  const cover = context.dohSummary(context.statusPairs(),new Set(context.statusSelectedGroups()));
+  assert.equal(cover.stock,12);
+  assert.equal(cover.rate,2);
+  assert.equal(cover.value,180);
+  assert.deepEqual(plain(context.statusEvolutionFilters({id:'total'},'town')).rsl,['>10M']);
+  context.statusRslSelections.delete(undefined);
+  assert.equal(context.filteredStatusTree().m[1][0][0],4);
 });
 
 test('Show data bounds categories and applies one traced scale per leaf across category parts', () => {

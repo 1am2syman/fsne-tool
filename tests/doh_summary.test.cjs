@@ -6,7 +6,7 @@ const {matches} = require('../ui/report_filters.js');
 const template = fs.readFileSync('ui/template.html', 'utf8');
 const summarySource = template.slice(template.indexOf('function dohSummary('), template.indexOf('let B,TOT,TPTS;'));
 let selections = {};
-const context = vm.createContext({statusFilters: {
+const context = vm.createContext({STATUS:{groups:[]},statusSelectedGroups:()=>[],statusFilters: {
   selection: () => Object.fromEntries(Object.entries(selections).map(([key, values]) => [key, [...values]])),
   matches: row => matches(row, selections),
 }});

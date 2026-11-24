@@ -56,7 +56,8 @@ test('zero or unavailable exposure has no red segment even when stock is present
     assert.doesNotMatch(render({m:[[[0,0,0],[0,0,0],[0,0,0],[100,0,0]]]},3),/class="risk |has-exposure/);
   }
 });
-function statusTable(metric,months,scopeEnd=null){
+function statusTable(metric,months,scopeEnd=null,selected=['< 3M','> 10M']){
+  months=months.map(cs=>cs&&cs.map((c,i)=>selected.includes(['< 3M','> 10M'][i])?c:[0,0,0]));
   const leaf={id:'row',name:'Example',level:0,kids:[],m:months};
   const root={...leaf,id:'total',kids:[leaf]};
   const element={classList:{add(){}},dataset:{},closest(){return this}};
@@ -68,7 +69,7 @@ function statusTable(metric,months,scopeEnd=null){
     statusSort:{k:'total',d:-1},statusOpen:new Set(),statusTip:{},
     filteredStatusTree:()=>root,indexStatus(){},statusPairs:()=>[],statusDohPairs:()=>[],dohSummary:()=>({}),
     statusHierarchy:()=>'Town → Brand → Parent',statusName:n=>n.name,statusCell:()=>'',statusDohCell:()=>'',
-    statusCategoryLabel:()=>'All stock categories',bindEvolutionCells(){},
+    statusCategoryLabel:()=>'All stock categories',statusSelectedGroups:()=>selected,bindEvolutionCells(_t,_rows,specs){rendered.evolution=specs},normalizeEvolutionRsl:g=>g.replace(/\s/g,''),
     sum:a=>a.reduce((s,v)=>s+(v??0),0),amount:v=>String(v),esc:v=>v,unitLabel:()=>'BDT',
     spark:p=>JSON.stringify(p),cmp:()=>()=>0,$:()=>element,$$:()=>[],table:options=>{rendered=options},
   });
@@ -90,6 +91,19 @@ for(const [metric,label,points] of [[0,'Stock',[300,200]],[1,'Exposure',[80,40]]
     assert.equal(rendered.groups.at(-1).label,label+' overview');
   });
 }
+test('deselected RSL columns vanish and footer, trend and evolution columns stay aligned',()=>{
+  for(const metric of [0,1,2]){
+    const rendered=statusTable(metric,trendMonths,null,['> 10M']);
+    assert.deepEqual(Array.from(rendered.cols,c=>c.k),['name','g1','total','spark','doh','now']);
+    assert.equal(rendered.foot.length,rendered.cols.length);
+    assert.equal(rendered.groups[1].span,2);
+    const values=trendMonths.map(cs=>cs[1][metric]);
+    assert.equal(rendered.rows[0].total,values.at(-1));
+    assert.equal(rendered.cols.find(c=>c.k==='spark').r(rendered.rows[0]),JSON.stringify(values));
+    if(metric)assert.deepEqual(Array.from(rendered.evolution,s=>s.column),[1,2]);
+  }
+});
+
 test('status history preserves missing snapshots, zero values and scoped month endpoints',()=>{
   const missing=statusTable(1,[null,[[0,0,0],[0,0,0]]]);
   assert.equal(missing.cols.at(-1).r(missing.rows[0]),'— → <b style="font-weight:600">0</b>');

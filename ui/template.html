@@ -719,7 +719,10 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 /* Value filters share the compact report toolbar and Excel's checkbox interaction. */
 .value-filters{display:flex;align-items:center;gap:6px;min-width:342px;flex:1 1 420px;max-width:650px}
 .tools .value-filter{display:grid;grid-template-columns:minmax(0,1fr) 8px;grid-template-rows:10px 13px;justify-content:start;align-content:center;min-width:100px;flex:1 1 0;padding:2px 9px;column-gap:5px;row-gap:0;text-align:left}
+#sFilters{min-width:490px}
 #sFilters .value-filter[aria-label^="Stock category:"]{min-width:142px}
+#sRslFilter{min-width:124px;max-width:160px;flex:0 0 124px}
+#r-status .tools{flex-wrap:wrap}
 .value-filter-name{grid-column:1;grid-row:1;color:var(--ink3);font-size:10px;line-height:10px;white-space:nowrap}
 .value-filter-summary{grid-column:1;grid-row:2;line-height:13px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:550}
 .value-filter-arrow{grid-column:2;grid-row:1/3;align-self:center;flex:none;width:6px;height:6px;border-right:1.5px solid var(--ink3);border-bottom:1.5px solid var(--ink3);transform:translateY(-2px) rotate(45deg)}
@@ -1866,6 +1869,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div id="r-status" hidden>
     <div class="tools" id="sTools">
       <div id="sFilters" aria-label="Report filters"></div>
+      <div id="sRslFilter" class="value-filters"></div>
 
       <i class="vr" aria-hidden="true"></i>
       <select id="sMetric" class="btn" aria-label="Status metric"><option value="0">stock-bdt</option><option value="1">exposure-bdt</option><option value="2">lnd-bdt</option></select>
@@ -1875,7 +1879,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <button class="btn" id="sExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta" id="sCount"></span>
-      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span id="sCategoryNote">All stock categories · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>Exposure: each cell is 100% of its exposure, shown in light red; its red portion is LND ÷ that cell’s exposure. &lt;3M stays unshaded. LND mode shows plain values. Stock mode keeps its RSL colours.</span><span>Stock trend always uses total stock across all RSL groups</span><span>In Stock mode only, each &gt;10M bar represents 100% of its stock: light red tail = Exposure, dark red tip = LND, both divided by that cell’s stock. Hover for values and denominators.</span><span>Click a value or trend for monthly RSL history</span></div></details>
+      <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span id="sCategoryNote">All stock categories · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>Exposure: each cell is 100% of its exposure, shown in light red; its red portion is LND ÷ that cell’s exposure. &lt;3M stays unshaded. LND mode shows plain values. Stock mode keeps its RSL colours.</span><span>RSL group filters hide deselected columns. Totals, percentages, trends, monthly charts and DOH use only selected RSL groups.</span><span>In Stock mode only, each &gt;10M bar represents 100% of its stock: light red tail = Exposure, dark red tip = LND, both divided by that cell’s stock. Hover for values and denominators.</span><span>Click a value or trend for monthly RSL history</span></div></details>
     </div>
     <div data-sheet="sT"></div>
   </div>
@@ -3017,12 +3021,19 @@ let statusMetric=0,statusSort={k:'total',d:-1},statusFocus=null;
 const statusFilters=new FSNEFilters.Group({container:$('#sFilters'),dimensions:[...FSNEFilters.dimensions,{key:'category',label:'Stock category'}],rows:()=>statusLeaves(STATUS.total),onChange:()=>{if(!$('#doh').hidden)closeDohExplanation();drawStatus();$('#mv').hidden=true}});
 if(STATUS.categories)for(const scope of ['town','brand'])statusFilters.states.set(scope,{category:new Set(STATUS.categories.filter(c=>c!=='Incorrect stock'))});
 statusFilters.use('town');
-const statusStates=new Map();
+const statusStates=new Map(),statusRslSelections=new Map();
+const statusRslFilter=new FSNEFilters.Dropdown({container:$('#sRslFilter'),key:'rsl',label:'RSL group',
+  options:()=>STATUS.groups.map(g=>({value:g,label:g})),selection:()=>statusRslSelections.get(statusFilters.scope)??null,
+  apply:selected=>{statusRslSelections.set(statusFilters.scope,selected);if(!$('#doh').hidden)closeDohExplanation();drawStatus();$('#mv').hidden=true}});
 /* While the scoped overlay is open, statusScope maps each JSON [town,brand,parent] key it may show to the amount the
  * chart traced for that row, and statusSnap is the saved snapshot (index into STATUS.labels) the chart node refers to. */
 let statusScope=null,statusSnap=null,statusGroup=null,statusCategoryScope=null;
 const statusCategoryLabel=()=>{const selected=statusFilters.selection().category||statusCategoryScope;return selected?.length?selected.join(' + '):'All stock categories'};
 const statusLeafKey=(town,brand,parent)=>JSON.stringify([town,brand,String(parent)]);
+function statusSelectedGroups(){
+  const selected=statusRslSelections.get(statusFilters.scope);
+  return STATUS.groups.filter(g=>selected==null||selected.has(g));
+}
 function statusLeaves(root){
   const leaves=STATUS.facets?STATUS.facets.filter(r=>!statusCategoryScope||statusCategoryScope.includes(r.category)).map(r=>({...r,m:root===STATUS.total_kl?r.m_kl:r.m})):root.kids.flatMap(t=>t.kids.flatMap(b=>b.kids.map(p=>({town:t.name,brand:b.name,parent:String(p.code),pdesc:p.name,m:p.m}))));
   if(!statusScope)return leaves;
@@ -3058,8 +3069,8 @@ function statusPairs(){
 function filteredStatusTree(){
   const source=reportUnit==='bdt'?STATUS.total:STATUS.total_kl;
   const root={name:statusView==='town'?'All towns':'All brands',id:'total',m:source.m.map(cs=>cs?STATUS.groups.map(()=>[0,0,0]):null),kids:[]};
-  const nodes=new Map();
-  function add(n,m){m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>c.forEach((v,j)=>n.m[i][g][j]+=v))})}
+  const nodes=new Map(),selected=new Set(statusSelectedGroups());
+  function add(n,m){m.forEach((cs,i)=>{if(!cs)return;if(!n.m[i])n.m[i]=STATUS.groups.map(()=>[0,0,0]);cs.forEach((c,g)=>{if(selected.has(STATUS.groups[g]))c.forEach((v,j)=>n.m[i][g][j]+=v)})})}
   for(const row of statusLeaves(source)){
     if(!statusFilters.matches(row))continue;
     add(root,row.m);
@@ -3080,6 +3091,7 @@ function setStatusView(view){
   const state=statusStates.get(key)||{metric:statusScope||key.startsWith('brand-')&&statusView.startsWith('brand-')?statusMetric:0,sort:{k:'total',d:-1},open:new Set()};
   statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
   statusFilters.use(statusScope?'scoped':key==='town'?'town':'brand');
+  statusRslFilter.refresh();
   $('#sOrder').hidden=view==='town';$('#sMetric').value=String(statusMetric);
   $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
   $('#sSort option[value="name:1"]').textContent=key==='town'?'Town A–Z':'Brand A–Z';
@@ -3088,11 +3100,13 @@ function setStatusView(view){
   drawStatus();
 }
 function statusEvolutionFilters(n,view){
-  if(n.id==='total')return statusFilters.selection();
+  const selected=statusSelectedGroups(),selection=statusFilters.selection();
+  if(selected.length!==STATUS.groups.length)selection.rsl=selected.map(normalizeEvolutionRsl);
+  if(n.id==='total')return selection;
   let town,brand,parent;
   if(view==='town'){town=n.level===0?n.name:n.town;brand=n.level>=1?(n.level===1?n.name:n.brand):undefined;parent=n.code}
   else{brand=n.path[0];if(view==='brand-town'){town=n.path[1];parent=n.code}else{parent=n.level>=1?n.code:undefined;town=n.level===2?n.path[2]:undefined;if(n.level===2)parent=n.parentCode}}
-  return {...statusFilters.selection(),...Object.fromEntries(Object.entries({town,brand,parent}).filter(([,value])=>value!=null).map(([key,value])=>[key,[String(value)]]))};
+  return {...selection,...Object.fromEntries(Object.entries({town,brand,parent}).filter(([,value])=>value!=null).map(([key,value])=>[key,[String(value)]]))};
 }
 function statusDohPairs(n,view,pairs){
   const filters=statusEvolutionFilters(n,view);
@@ -3158,8 +3172,9 @@ function statusName(n){
 function drawStatus(){
   statusTip.hidden=true;
   statusRoot=filteredStatusTree();statusNodes=new Map();indexStatus(statusRoot);
-  const dohPairs=statusPairs();
-  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,dohPairs),new Set(STATUS.groups)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
+  const dohPairs=statusPairs(),selected=statusSelectedGroups(),groupIndices=selected.map(g=>STATUS.groups.indexOf(g));
+  if(statusSort.k.startsWith('g')&&!groupIndices.includes(+statusSort.k.slice(1))){statusSort={k:'total',d:-1};$('#sSort').value='total:-1'}
+  const flat=[],decorate=n=>({...n,total:statusAmount(n),cover:dohSummary(statusDohPairs(n,statusView,dohPairs),new Set(selected)),...Object.fromEntries(STATUS.groups.map((_,i)=>['g'+i,statusLatest(n)?.[i]?.[statusMetric]??null]))});
   const decorated=new Map(),row=n=>{if(!decorated.has(n.id))decorated.set(n.id,decorate(n));return decorated.get(n.id)};
   const compare=(a,b)=>cmp(statusSort.k,statusSort.d)(row(a),row(b));
   function visit(n){
@@ -3171,23 +3186,23 @@ function drawStatus(){
   statusRoot.kids.slice().sort(compare).forEach(n=>visit(n));
   flat.forEach((n,i)=>{if(i%2)n.trc+=' alt'});
   const cols=[{k:'name',h:statusHierarchy().replaceAll(' → ',' / '),cls:'name',r:statusName},
-    ...STATUS.groups.map((g,i)=>({k:'g'+i,h:esc(g),num:1,cls:'rsl-cell'+(g.replace(/\s/g,'')==='>10M'?' long-rsl':''),r:n=>statusCell(n,i)})),
+    ...groupIndices.map(i=>({k:'g'+i,h:esc(STATUS.groups[i]),num:1,cls:'rsl-cell'+(STATUS.groups[i].replace(/\s/g,'')==='>10M'?' long-rsl':''),r:n=>statusCell(n,i)})),
     {k:'total',h:'Total ('+unitLabel()+')',num:1,r:n=>n.total==null?'—':amount(n.total)},
     {k:'spark',h:statusMetricLabel()+' trend',ctr:1,nosort:1,cls:'hmc sp',r:statusSpark},
     {k:'doh',h:'DOH (days)',help:'doh',num:1,r:statusDohCell},
     {k:'now',h:(statusEnd()?STATUS.labels[0].split(' ')[0]+'→':'')+STATUS.labels[statusEnd()].split(' ')[0]+' ('+unitLabel()+')',num:1,nosort:1,r:n=>{const p=statusPts(n);if(p.length<2)return `<b style="font-weight:600">${p[0]==null?'—':amount(p[0],1)}</b>`;return `${p[0]==null?'—':amount(p[0],1)} → <b style="font-weight:600">${p.at(-1)==null?'—':amount(p.at(-1),1)}</b>`}}];
-  const all=row(statusRoot),foot=[all.name,...STATUS.groups.map((_,i)=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
-  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:STATUS.groups.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:statusMetricLabel()+' overview'}],
+  const all=row(statusRoot),foot=[all.name,...groupIndices.map(i=>statusCell(all,i)),amount(statusAmount(all)),statusSpark(all),statusDohCell(all),cols.at(-1).r(all)];
+  table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:selected.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:statusMetricLabel()+' overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected filters. Clear a filter to see more records.'});
   if(!statusScope&&(statusMetric===1||statusMetric===2)){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
-    const specs=[...STATUS.groups.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
-      {column:STATUS.groups.length+1,lens,scope:n=>({filters:statusEvolutionFilters(n,statusView),asOf:date.toISOString().slice(0,10),label:n.name})}];
+    const specs=[...selected.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
+      {column:selected.length+1,lens,scope:n=>({filters:statusEvolutionFilters(n,statusView),asOf:date.toISOString().slice(0,10),label:n.name})}];
     bindEvolutionCells('#sT',flat,specs,all);
   }
-  $$('#sT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=STATUS.groups.length+2;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===STATUS.groups.length+2)tr.cells[i].classList.add('bk-r')}});
+  $$('#sT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=selected.length+2;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===selected.length+2)tr.cells[i].classList.add('bk-r')}});
   const gh=$$('#sT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
   const expandable=[...statusNodes.values()].filter(n=>n.id!=='total'&&n.kids.length),allOpen=expandable.every(n=>statusOpen.has(n.id));
   $('#sExp').textContent=allOpen?'Collapse all':'Expand all';$('#sExp').dataset.all=allOpen?'1':'';
@@ -3211,21 +3226,22 @@ function openStatusChart(n){
   let g='';
   for(let j=0;j<=Math.round(top/step);j++){const v=j*step;g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" style="stroke:var(--line)" stroke-dasharray="3 4"/><text x="${L-10}" y="${Y(v)+4}" text-anchor="end" style="fill:var(--ink3);font:11px var(--mono)">${amount(v)}</text>`}
   g+=`<text x="${L}" y="14" style="fill:var(--ink3);font:500 11px var(--font)">${statusMetricNames[statusMetric]} (${unitLabel()})</text>`;
-  STATUS.groups.forEach((group,j)=>{
-    const lower=i=>sum(cs[i].slice(0,j).map(v=>v[statusMetric])),upper=i=>lower(i)+cs[i][j][statusMetric];
+  const selected=statusSelectedGroups(),groupIndices=selected.map(group=>STATUS.groups.indexOf(group));
+  groupIndices.forEach(j=>{
+    const group=STATUS.groups[j],lower=i=>sum(cs[i].slice(0,j).map(v=>v[statusMetric])),upper=i=>lower(i)+cs[i][j][statusMetric];
     let run=[];const flush=()=>{if(!run.length)return;const color=statusColors[j%statusColors.length];
       if(run.length===1){const i=run[0];g+=`<rect x="${X(i)-3}" y="${Y(upper(i))}" width="6" height="${Math.max(0,Y(lower(i))-Y(upper(i)))}" style="fill:${color};fill-opacity:.7"/>`}
       else g+=`<path data-area="${esc(group)}" d="${overviewArea(run,i=>[lower(i),upper(i)],X,Y)}" style="fill:${color};fill-opacity:.65;stroke:${color};stroke-width:1"><title>${esc(group)}</title></path>`;
       run=[]};
     cs.forEach((c,i)=>{if(c==null)flush();else run.push(i)});flush();
   });
-  cs.forEach((c,i)=>{const x=X(i),title=c?`${STATUS.labels[i]} · Total ${amount(totals[i])} ${unitLabel()}\n`+STATUS.groups.map((group,j)=>`${group}: ${amount(c[j][statusMetric])} ${unitLabel()}`).join('\n'):`${STATUS.labels[i]} · No saved stock for this row`;
+  cs.forEach((c,i)=>{const x=X(i),title=c?`${STATUS.labels[i]} · Total ${amount(totals[i])} ${unitLabel()}\n`+groupIndices.map(j=>`${STATUS.groups[j]}: ${amount(c[j][statusMetric])} ${unitLabel()}`).join('\n'):`${STATUS.labels[i]} · No saved stock for this row`;
     g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-(W-L-R)/(N-1)/2)}" y="${T}" width="${(W-L-R)/(N-1)/2+(i&&i<N-1?(W-L-R)/(N-1)/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
   });
   $('#mvTitle').textContent=(n.path||[n.town,n.brand,n.name].filter(Boolean)).join(' · ');
   $('#mvSub').textContent=`${STATUS.labels[0]}${N>1?' → '+STATUS.labels.at(-1):''} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
   $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly ${statusMetricNames[statusMetric]} stacked by RSL group">${g}</svg>`;
-  function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${STATUS.groups.map((group,j)=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(group)}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
+  function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${groupIndices.map(j=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(STATUS.groups[j])}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
   monthInfo(N-1);
   $$('#mvBody [data-status-month]').forEach(el=>{el.onmouseenter=()=>monthInfo(+el.dataset.statusMonth);el.onclick=()=>monthInfo(+el.dataset.statusMonth);el.onfocus=()=>monthInfo(+el.dataset.statusMonth)});
   $('#mv').hidden=false;$('#mvClose').focus();
@@ -3244,7 +3260,7 @@ function openStatusScope({leaves,lens,snapshot,group,note,categories}){
   statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
   statusSnap=snapshot;statusGroup=group;statusCategoryScope=categories?.length?categories:null;statusScope=new Map();
   leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
-  statusFilters.states=new Map();statusStates.clear();
+  statusFilters.states=new Map();statusStates.clear();statusRslSelections.delete('scoped');
   statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
   order.html=SCOPE_ORDERS;order.value='parent';
   $('#sScopeNote').textContent=note;$('#sScopeNote').hidden=false;
@@ -3426,7 +3442,7 @@ const HELP={
   formula:'<b>DOH</b> = Selected stock KL ÷ Relevant monthly secondary-sales KL × 30',
   terms:[['Selected stock','Latest saved snapshot, selected stock categories in this town/brand/parent with known demand'],['Relevant rate','Sum of rates counted once for each town + parent with selected stock'],['Adjusted rate','Monthly town-parent sales are winsorized only for isolated extreme deviations after a robust cross-town seasonal adjustment; low/zero months and ambiguous peaks are preserved']],
   worked:'6 KL ÷ 3 KL/month × 30 = <b>60 days</b>',cap:'Dummy data: two batches sharing a town-parent have 2 KL + 4 KL stock and one shared 3 KL/month rate. Count that rate once, not twice.',
-  notes:['DOH stays in days when switching BDT/KL. Parent and footer values are recomputed, never averaged from batch or brand DOH.','Town and brand DOH uses the selected stock categories across all RSL groups and is independent of the stock/exposure/LND display metric. Each town-parent demand rate is counted once, even when several categories are selected. Stock movement filters do not affect it.','⚠ means missing-demand stock is excluded from DOH; click for missing sources and coverage. — means no stock with known demand. ∞ means known zero demand.','The source has one annual cycle: cross-town consensus protects shared peaks but cannot prove recurring or every local seasonal event. Sparse histories and ambiguous peaks stay unmodified.','Latest rate-dependent measures are refreshed from the current source. Saved historical workbooks remain unchanged.']},
+  notes:['DOH stays in days when switching BDT/KL. Parent and footer values are recomputed, never averaged from batch or brand DOH.','Town and brand DOH uses the selected stock categories and RSL groups and is independent of the stock/exposure/LND display metric. Each town-parent demand rate is counted once, even when several categories are selected. Stock movement filters do not affect it.','⚠ means missing-demand stock is excluded from DOH; click for missing sources and coverage. — means no stock with known demand. ∞ means known zero demand.','The source has one annual cycle: cross-town consensus protects shared peaks but cannot prove recurring or every local seasonal event. Sparse histories and ambiguous peaks stay unmodified.','Latest rate-dependent measures are refreshed from the current source. Saved historical workbooks remain unchanged.']},
  trend:{title:'Stock trend',lead:"A small line of the brand's total saved stock across the months, with a coloured dot that shows where it ended up compared with where it started.",
   formula:'<b>Dot colour</b> = Last stock ÷ First stock, compared with ±5%',
   terms:[['Line',"One point per month: the stock carried in from the previous saved report (LM stock). The final point is this month's stock: Carried over + New inclusions"],['First point',"The first month's LM stock (blue dot and dashed line in the chart)"],['Last point',"This month's stock (the coloured dot)"],['Grey band','First stock ± 5%. Ending inside the band counts as flat']],
