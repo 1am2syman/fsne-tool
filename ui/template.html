@@ -795,13 +795,13 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #unitTools{display:flex;align-items:center;gap:6px}
 #unitTools[hidden]{display:none}
 #unitTools>.l{font-size:12px;color:var(--ink3)}
-:is(#reportUnit,#overviewMonths){gap:2px;padding:2px;border:1px solid var(--seg-track-border);border-radius:8px;background:var(--seg-track);box-shadow:var(--seg-track-shadow)}
-:is(#reportUnit,#overviewMonths) button{min-width:0;height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
-:is(#reportUnit,#overviewMonths) button:hover{background:none;color:var(--ink)}
-:is(#reportUnit,#overviewMonths) button[aria-pressed=true]{background:var(--seg-pill-bg);border-color:rgba(18,21,40,.1);color:var(--ink);font-weight:600;box-shadow:var(--seg-pill-shadow)}
-[data-theme=dark] :is(#reportUnit,#overviewMonths) button[aria-pressed=true]{border-color:rgba(255,255,255,.08)}
-:is(#reportUnit,#overviewMonths) button:focus-visible{outline:none;box-shadow:var(--ring)}
-#overviewMonths button:disabled{opacity:.4;cursor:default}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg){gap:2px;padding:2px;border:1px solid var(--seg-track-border);border-radius:8px;background:var(--seg-track);box-shadow:var(--seg-track-shadow)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button{min-width:0;height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:hover{background:none;color:var(--ink)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button[aria-pressed=true]{background:var(--seg-pill-bg);border-color:rgba(18,21,40,.1);color:var(--ink);font-weight:600;box-shadow:var(--seg-pill-shadow)}
+[data-theme=dark] :is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button[aria-pressed=true]{border-color:rgba(255,255,255,.08)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:focus-visible{outline:none;box-shadow:var(--ring)}
+:is(#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:disabled{opacity:.4;cursor:default}
 /* Notes: matching 30px sculpted toolbar button with popover. */
 .movement-notes{position:relative;flex:none}
 .movement-notes>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;height:var(--h);padding:0 10px;border-radius:8px;border:1px solid var(--btn-sec-border);border-bottom-color:var(--btn-sec-border-b);background:var(--btn-sec-bg);box-shadow:var(--btn-sec-shadow);color:var(--ink);font-weight:550;white-space:nowrap;cursor:pointer;transition:all .14s}
@@ -978,44 +978,72 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-kv b{font:600 clamp(20px,3.2vh,26px)/1 var(--font);letter-spacing:-.02em}
 .ov-kv span{color:var(--ink3);font-size:12.5px}
 .ov-rc .ov-plot{margin:2px -16px 0}
-.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:1.25fr 1fr 2.4fr;gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
-.ov-sc-pair{min-width:0;min-height:0;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px}
+.ov-cards{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.52fr) minmax(0,1.38fr) minmax(0,.88fr);gap:14px;margin:clamp(10px,1.6vh,14px) 18px 0}
 .ov-trends{min-width:0;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:14px}
 .ov-trend{padding:clamp(8px,1.4vh,12px) 14px 0}
 .ov-trend .ov-card-h{margin-bottom:0}
 .ov-trend .ov-plot{margin:0 -14px}
-.ov-card-h{flex:none;display:flex;align-items:baseline;gap:14px;margin-bottom:clamp(6px,1.2vh,12px)}
+.ov-card-h{flex:none;display:flex;align-items:baseline;gap:8px;margin-bottom:clamp(6px,1.2vh,12px)}
 .ov-card-h b{font-weight:600;font-size:13.5px;white-space:nowrap}
 .ov-meta{margin-left:auto;color:var(--ink3);font-size:12px;white-space:nowrap}
 .ov-lg{display:flex;gap:14px;color:var(--ink2);font-size:12px;white-space:nowrap}
 .ov-lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-.5px}
-.ov-fd{flex:none;font-size:13.5px;line-height:1.45;color:var(--ink2);margin-bottom:clamp(4px,1vh,10px)}
-.ov-fd b{color:var(--ink);font-weight:600}
-.ov-br{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:3px 0;border-top:1px solid var(--ov-grid);line-height:1.15}
-.ov-br-t{display:flex;align-items:baseline;gap:8px;font-size:13px}
-.ov-br-t b{font-weight:500;white-space:nowrap}
-.ov-br-t .v{margin-left:auto;font-weight:500;color:var(--ink3);font-size:11.5px;white-space:nowrap}
-.ov-bar-key{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;color:var(--ink3);font-size:11px;white-space:nowrap}
-.ov-bar-key .ov-lg{gap:10px;font-size:11px}
-.ov-br-values{display:flex;justify-content:space-between;gap:8px;font-size:11px;white-space:nowrap}
-.ov-br-values span{display:flex;align-items:baseline;gap:5px}
-.ov-br-values small{font-size:inherit;color:var(--ink3)}
-.ov-br-values b{font-weight:600}
-.ov-br-values em{font-style:normal;color:var(--ink2)}
-/* Match the >10M status track: green Stock, pink Exposure tail, dark red LND tip. */
-.ov-track{flex:none;position:relative;height:8px;border-radius:5px;background:#dcf3e4}
-.ov-track i{position:absolute;right:0;top:0;bottom:0;border-radius:5px}
-:is(.ov-track,.ov-lg) .exp{background:#ee8b96}
-:is(.ov-track,.ov-lg) .lnd{background:#b01f2c}
-.ov-sc{flex:1;max-height:58px;display:grid;grid-template-columns:minmax(0,1fr) 46px 46px 66px;align-items:center;gap:0 6px;border-top:1px solid var(--ov-grid);font-size:13px}
-.ov-sc.h{flex:none;border-top:0;padding-bottom:clamp(4px,.8vh,7px);border-bottom:1px solid var(--line);color:var(--ink3);font-size:11.5px;font-weight:500}
-.ov-sc.h+.ov-sc{border-top:0}
-.ov-sc span{text-align:right}
-.ov-sc span:first-child{text-align:left;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ov-sc .now{font-weight:600}.ov-sc .was{color:var(--ink3)}
-.ov-sc .ov-chip{justify-self:end}
-@media(max-height:700px){:is(.ov-cards,.ov-rc) .ov-chip{height:18px}.ov-track{height:8px}.ov-fd{line-height:1.35}.ov-ch{flex-direction:row;align-items:center}.ov-br{padding:2px 0}}
-@media(max-height:640px){.ov-m{padding:2px 0}.ov-ms{padding-top:8px}.ov-br{padding:1px 0;gap:3px}.ov-card-h{margin-bottom:4px}.ov-cards .ov-chip{height:16px}.ov-track{height:6px}}
+.ov-bd{padding:clamp(10px,1.5vh,14px) 16px clamp(8px,1.1vh,11px)}
+.ov-bd .ov-card-h,.ov-pl-card .ov-card-h{align-items:center;margin-bottom:clamp(4px,.8vh,9px);min-width:0}
+.ov-bd-seg,.ov-pl-seg{margin-left:auto;display:inline-flex;flex:none}
+:is(.ov-bd-seg,.ov-pl-seg) button{height:22px;padding:0 8px;font-size:11.5px;white-space:nowrap}
+.ov-bd-sum{flex:none;display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;padding:clamp(4px,.65vh,7px) 11px;margin-bottom:clamp(4px,.8vh,9px);border:1px solid var(--line);border-radius:8px;background:#f6f8fb;color:var(--ink2);font-size:11.5px;line-height:1.3;font-variant-numeric:tabular-nums}
+.ov-bd-sum b{color:var(--ink);font-weight:600}
+.ov-bd-sep{width:1px;height:12px;background:var(--line2);flex:none}
+.ov-bd-tbl{flex:1;min-height:0;display:flex;flex-direction:column}
+.ov-bd-r{flex:1;min-height:0;display:grid;grid-template-columns:minmax(84px,.98fr) minmax(108px,1.45fr) 38px 46px 42px;align-items:center;gap:0 7px;border-top:1px solid var(--ov-grid);font-variant-numeric:tabular-nums}
+.ov-bd-r.h{flex:none;border-top:0;padding-bottom:clamp(4px,.6vh,6px);color:var(--ink3);font-size:11px;font-weight:500}
+.ov-bd-r.h span:nth-child(3),.ov-bd-r.h span:nth-child(5){text-align:right}
+.ov-bd-r.h span:nth-child(4){text-align:center}
+.ov-bd-name{font-weight:600;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-bd-bar{min-width:0;display:flex;flex-direction:column;gap:clamp(2px,.45vh,4px)}
+.ov-bd-track{position:relative;height:clamp(6px,.9vh,8px);border-radius:999px;background:var(--ov-grid);overflow:hidden}
+.ov-bd-track i{position:absolute;left:0;top:0;bottom:0;border-radius:999px}
+.ov-bd-track .exp{background:#efb0b8}
+.ov-bd-track .lnd{background:#b01f2c}
+.ov-bd-sub{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:11px;line-height:1.15;color:var(--ink3);white-space:nowrap}
+.ov-bd-lnd{text-align:right;font-weight:600;font-size:12.5px;color:var(--ink);white-space:nowrap}
+.ov-bd-pill{justify-self:center;display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:clamp(19px,2.5vh,22px);padding:0 6px;border-radius:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.ov-bd-pill.low{background:#eef1f6;color:#3d4659}
+.ov-bd-pill.mid{background:#fcf1d6;color:#9a5b08}
+.ov-bd-pill.high{background:#fbe8ea;color:#b01f2c}
+.ov-bd-delta{text-align:right;font-weight:600;font-size:12px;white-space:nowrap}
+.ov-bd-delta.bad{color:var(--bad)}
+.ov-bd-delta.good{color:var(--ok)}
+.ov-bd-delta.flat{color:var(--ink3)}
+.ov-bd-empty{margin:auto;color:var(--ink3);font-size:12.5px}
+/* Plan clearance card (middle bottom): inventory-evolution resolved/reduced flows by category. */
+.ov-pl-card{padding:clamp(9px,1.4vh,14px) 16px clamp(7px,1vh,10px)}
+.ov-pl-card .ov-card-h>b{font-size:clamp(12.5px,1vw,13.5px);overflow:hidden;text-overflow:ellipsis}
+.ov-pl-fd{flex:none;font-size:clamp(11.5px,1.35vh,12.5px);line-height:1.36;color:var(--ink2);margin-bottom:clamp(4px,.75vh,8px)}
+.ov-pl-fd b{color:var(--ink);font-weight:650}
+.ov-pls{flex:1;min-height:0;display:flex;flex-direction:column}
+.ov-pl{flex:1;min-height:0;display:grid;grid-template-columns:minmax(94px,1.06fr) 36px minmax(88px,1.3fr) 30px 28px;column-gap:7px;align-items:center;border-top:1px solid var(--ov-grid);font-size:clamp(11.5px,1.35vh,12.5px);line-height:1.15;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ov-pl.h{flex:none;border-top:0;padding-bottom:clamp(3px,.5vh,6px);font-size:10.5px;color:var(--ink3);align-items:end}
+.ov-pl.h>b{font-weight:500;color:var(--ink3)}
+.ov-pl-nm{display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.ov-pl-nm i{flex:none;width:9px;height:9px;border-radius:2px}
+.ov-pl>b{text-align:right;font-weight:600;color:var(--ink)}
+.ov-pl>b.rt{color:#007f72;font-weight:700}
+.ov-pl>b.av{font-weight:500;color:var(--ink2)}
+.ov-pl.h>b.rt{color:var(--ink3);font-weight:500}
+.ov-pl.h>b.av{color:var(--ink3)}
+.ov-pl-lg{display:inline-flex;align-items:center;gap:4px;color:var(--ink3);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-pl-lg i{display:inline-block;width:8px;height:8px;border-radius:2px;flex:none}
+.ov-pl-bar u{display:block;height:clamp(7px,1vh,10px);border-radius:3px;background:#dfe3ea;overflow:hidden;min-width:2px;text-decoration:none}
+.ov-pl-bar s{display:block;height:100%;background:#00a896;text-decoration:none}
+.ov-pl-foot{flex:none;margin-top:clamp(3px,.6vh,6px);padding-top:clamp(3px,.5vh,5px);border-top:1px solid var(--ov-grid);color:var(--ink3);font-size:10px;line-height:1.3}
+.ov-pl-link{border:0;background:none;padding:0;color:var(--accent);font:600 inherit;cursor:pointer;white-space:nowrap}
+.ov-pl-link:hover{text-decoration:underline}
+.ov-pl-empty{flex:1;display:grid;place-items:center;text-align:center;color:var(--ink3);font-size:12.5px;line-height:1.5;padding:0 16px}
+@media(max-height:800px){.ov-pl-fd{line-height:1.3}.ov-pl-foot{line-height:1.25}}
+@media(max-height:700px){:is(.ov-cards,.ov-rc) .ov-chip{height:18px}.ov-ch{flex-direction:row;align-items:center}}
+@media(max-height:640px){.ov-m{padding:2px 0}.ov-ms{padding-top:8px}.ov-card-h{margin-bottom:4px}.ov-cards .ov-chip{height:16px}.ov-bd-sum{padding:4px 10px;margin-bottom:4px}.ov-pl-fd{margin-bottom:4px}}
 .overview-nav{display:none}
 @media(max-width:700px){
   .app:has(#v-reports.on #r-overview:not([hidden])){height:100dvh;display:flex;flex-direction:column}
@@ -2735,10 +2763,12 @@ FSNEQuick.attach('#mT',{group:moveFilters,sheetState:()=>SHEETS['#mT'],path:r=>r
    change since the previous saved month. Totals sum every RSL group in the selected unit, and
    the selected month is independent of other report filters. */
 const OVERVIEW_RSL=['> 10M','6M - 10M','3M - 6M','< 3M'].filter(g=>(STATUS.groups||[]).includes(g));
-const OVERVIEW_SHORTER=['6M - 10M','3M - 6M','< 3M'];
 const OVERVIEW_SWATCH={'> 10M':'#dde2ec','6M - 10M':'#a7b3cc','3M - 6M':'#61749c','< 3M':'#1b2a4a'};
-const OVERVIEW_RATE={'> 10M':'#f3c5c8','6M - 10M':'#e48d94','3M - 6M':'#c94a55','< 3M':'#8c1c28'};
+const OVERVIEW_MONTH_LIST=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const OVERVIEW_MONTH_NAMES={Jan:'January',Feb:'February',Mar:'March',Apr:'April',May:'May',Jun:'June',Jul:'July',Aug:'August',Sep:'September',Oct:'October',Nov:'November',Dec:'December'};
+const OVERVIEW_PLAN_CATS={sales_push:['Sales push','#2f80ed'],rotation:['Rotation','#9b51e0'],strategic_misc:['Strategic Misc','#8b5cf6'],incorrect_stock:['Incorrect stock','#f2994a'],tbc:['TBC','#f2c94c'],not_actionable:['Not actionable','#27ae60'],good_stock:['Good stock','#059669'],unclassified:['Unclassified','#64748b']};
+const OVERVIEW_PLAN_RES='#00a896';
+const OVERVIEW_PLAN_MEAS={exposure:'Exposure',lnd:'LND FC'};
 // One entry per month label: per-RSL facts and their national sums, or null without a snapshot.
 function overviewFacts(source,groups){
   return source.map(cs=>{
@@ -2770,8 +2800,14 @@ function overviewArea(run,bounds,X,Y){
   return monotoneLine(upper)+' '+monotoneLine(lower.toReversed()).replace(/^M/,'L')+' Z';
 }
 let overviewMonth=null; // null follows the latest saved month
+let overviewBrandMode='largest'; // 'largest' | 'movers'
+let overviewPlanLens='exposure'; // 'exposure' | 'lnd'
+const overviewPlanCache=new Map();
 const ovMon=i=>STATUS.labels[i].split(' ')[0];
 const ovMonthName=i=>OVERVIEW_MONTH_NAMES[ovMon(i)]||STATUS.labels[i];
+const ovIsoMon=iso=>OVERVIEW_MONTH_LIST[Number(String(iso||'').slice(5,7))-1]||'';
+const ovIsoLong=iso=>OVERVIEW_MONTH_NAMES[ovIsoMon(iso)]||ovIsoMon(iso);
+const ovLabelYm=label=>{const [mon,yr]=String(label||'').split(' '),idx=OVERVIEW_MONTH_LIST.indexOf(mon);return yr&&idx>=0?yr+'-'+String(idx+1).padStart(2,'0'):null};
 // Adaptive precision keeps 1,235 and 0.11 equally readable in M BDT or KL.
 function ovNum(v){
   if(v==null||!isFinite(v))return '–';
@@ -2779,22 +2815,16 @@ function ovNum(v){
   return a>=100?Math.round(x).toLocaleString('en-US'):a>=10?x.toFixed(1):x.toFixed(2);
 }
 const ovPct=x=>{const a=Math.abs(x*100);return (a<10?a.toFixed(1):Math.round(a))+'%'};
+const ovPlanPct=x=>x==null||!isFinite(x)?'–':Math.round(x*100)+'%';
 const ovShare=x=>x==null||!isFinite(x)?'–':x<.1?(x*100).toFixed(2)+'%':ovPct(x);
 const ovSigned=v=>(v>0?'+':v<0?'−':'')+ovNum(Math.abs(v));
 const ovChange=(now,was)=>now==null||was==null||!was?null:now/was-1;
-const ovRatio=x=>x&&x.stock?x.lnd/x.stock:null;
-const ovShorter=x=>OVERVIEW_SHORTER.reduce((sum,g)=>sum+(x.b[g]?.stock||0),0);
 const ovPrev=(facts,m)=>{for(let i=m-1;i>=0;i--)if(facts[i])return i;return null};
 // Falling Exposure or LND FC is good and rising is bad; stock moves are shown neutral.
 function ovChip(change,label='',neutral=false){
   if(change==null)return '';
   const level=Math.abs(change)<.005,tone=level||neutral?'flat':change<0?'good':'bad';
   return '<span class="ov-chip '+tone+'">'+(level?'Level':(change<0?'▼ ':'▲ ')+ovPct(change))+(label?' <small>'+label+'</small>':'')+'</span>';
-}
-function ovChipPP(diff){
-  if(diff==null)return '';
-  const level=Math.abs(diff)<5e-5;
-  return '<span class="ov-chip '+(level?'flat':diff<0?'good':'bad')+'">'+(level?'Level':(diff<0?'▼ ':'▲ ')+Math.abs(diff*100).toFixed(2)+' pp')+'</span>';
 }
 const ovSvg=(w,h,body,label)=>'<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"'+(label?' role="img" aria-label="'+esc(label)+'"':' aria-hidden="true"')+'>'+body+'</svg>';
 const ovText=(x,y,text,style,anchor='middle',dy=0)=>'<text x="'+x+'" y="'+y+'" dy="'+dy+'" text-anchor="'+anchor+'" style="'+style+'">'+text+'</text>';
@@ -2873,32 +2903,87 @@ function overviewTrendCard(title,series,key,m,plot){
   const lg=series.length>1?'<span class="ov-lg">'+series.map(x=>'<span><i style="background:'+x.color+'"></i>'+esc(x.name)+'</span>').join('')+'</span>':'';
   return '<section class="ov-card ov-trend"><div class="ov-card-h"><b>'+esc(title)+'</b>'+lg+'</div>'+plot(key,overviewTrendChart(series,m))+'</section>';
 }
-const ovBarLabel=(g,y)=>ovText(0,y,esc(g),'font:500 12px var(--font);fill:var(--ink2)','start','.34em');
-// LND FC change by RSL vs the previous saved month, diverging from zero.
-function overviewMoveBars(facts,m,p){return(w,h)=>{
-  if(w<=0||h<=0)return '';
-  const t=facts[m],P=facts[p],L=72,bw=w-L-58,rh=Math.min(52,h/OVERVIEW_RSL.length),z=L+bw/2;
-  const diffs=OVERVIEW_RSL.map(g=>t.b[g].lnd-P.b[g].lnd),top=Math.max(...diffs.map(Math.abs))||1;
-  let s='<line x1="'+z+'" x2="'+z+'" y1="0" y2="'+rh*OVERVIEW_RSL.length+'" style="stroke:var(--line2)"/>';
-  OVERVIEW_RSL.forEach((g,k)=>{
-    const y=k*rh+rh/2,v=diffs[k],len=bw/2*Math.abs(v)/top,level=Math.abs(v/unitDivisor())<.005;
-    s+=ovBarLabel(g,y)+'<rect x="'+(v<0?z-len:z)+'" y="'+(y-5)+'" width="'+Math.max(1,len)+'" height="10" rx="2" style="fill:var(--'+(v<0?'ok':'bad')+')"/>';
-    s+=ovText(w,y,ovSigned(v),'font:600 12px var(--font);fill:var(--'+(level?'ink2':v<0?'ok':'bad')+')','end','.34em');
-  });
-  return ovSvg(w,h,s,'LND FC change by RSL vs '+STATUS.labels[p]);
-}}
-// The first saved month has nothing to compare against, so it shows LND ÷ Exp by RSL.
-function overviewRateBars(t){return(w,h)=>{
-  if(w<=0||h<=0)return '';
-  const L=72,bw=w-L-58,rh=Math.min(52,h/OVERVIEW_RSL.length);
-  let s='';
-  OVERVIEW_RSL.forEach((g,k)=>{
-    const y=k*rh+rh/2,b=t.b[g],r=b.exp?b.lnd/b.exp:0;
-    s+=ovBarLabel(g,y)+'<rect x="'+L+'" y="'+(y-5)+'" width="'+bw+'" height="10" rx="3" style="fill:var(--ov-grid)"/><rect x="'+L+'" y="'+(y-5)+'" width="'+bw*Math.min(1,r)+'" height="10" rx="3" fill="'+OVERVIEW_RATE[g]+'"/>';
-    s+=ovText(w,y,b.exp?ovPct(r):'–','font:600 12px var(--font);fill:var(--ink)','end','.34em');
-  });
-  return ovSvg(w,h,s,'LND ÷ Exp by RSL');
-}}
+const ovCellSum=cs=>{let stock=0,exp=0,lnd=0;if(cs)for(const [s,e,l] of cs){stock+=s;exp+=e;lnd+=l}return [stock,exp,lnd]};
+const ovConcPct=x=>x==null||!isFinite(x)?'–':(x*100).toFixed(1)+'%';
+// Aggregate brands and town LND concentration for month m (and previous saved month p) from the status tree.
+function overviewBrandDrivers(root,m,p,mode='largest'){
+  const brands=new Map(),townLnds=[];
+  let totalLnd=0;
+  for(const town of root?.kids||[]){
+    if(town.m?.[m])townLnds.push(ovCellSum(town.m[m])[2]);
+    for(const b of town.kids||[]){
+      const cur=b.m?.[m]?ovCellSum(b.m[m]):null;
+      const prev=p!=null&&b.m?.[p]?ovCellSum(b.m[p]):null;
+      if(!cur&&!prev)continue;
+      let rec=brands.get(b.name);
+      if(!rec){rec={brand:b.name,stock:0,exp:0,lnd:0,prevLnd:0,towns:0,present:false};brands.set(b.name,rec)}
+      if(cur){
+        rec.present=true;
+        rec.stock+=cur[0];rec.exp+=cur[1];rec.lnd+=cur[2];
+        totalLnd+=cur[2];
+        if(cur[2]>0)rec.towns+=1;
+      }
+      if(prev)rec.prevLnd+=prev[2];
+    }
+  }
+  const all=[...brands.values()].map(r=>({
+    ...r,
+    delta:p==null?null:r.lnd-r.prevLnd,
+    expRatio:r.stock>0?r.exp/r.stock:null,
+  }));
+  const active=all.filter(r=>r.present);
+  const byLnd=active.slice().sort((a,b)=>b.lnd-a.lnd||b.exp-a.exp||a.brand.localeCompare(b.brand));
+  const topBrandN=Math.min(5,byLnd.length);
+  const topBrandShare=totalLnd>0?byLnd.slice(0,topBrandN).reduce((s,r)=>s+r.lnd,0)/totalLnd:null;
+  townLnds.sort((a,b)=>b-a);
+  const topTownN=Math.min(5,townLnds.length);
+  const topTownShare=totalLnd>0?townLnds.slice(0,topTownN).reduce((s,v)=>s+v,0)/totalLnd:null;
+  const effectiveMode=mode==='movers'&&p!=null?'movers':'largest';
+  const rows=effectiveMode==='movers'
+    ?all.slice().sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||b.lnd-a.lnd||a.brand.localeCompare(b.brand)).slice(0,6)
+    :byLnd.slice(0,6);
+  const maxBar=rows.reduce((hi,r)=>Math.max(hi,r.exp,r.lnd),0);
+  return {
+    mode:effectiveMode,rows,maxBar,
+    brandCount:active.length,topBrandN,topBrandShare,
+    townCount:townLnds.length,topTownN,topTownShare,
+  };
+}
+function overviewBrandDriversCard(root,m,p,mode='largest'){
+  const d=overviewBrandDrivers(root,m,p,mode);
+  const barW=v=>(d.maxBar>0?Math.max(0,Math.min(100,100*v/d.maxBar)):0)+'%';
+  const ratioTone=r=>r==null||r<.05?'low':r<.25?'mid':'high';
+  const body=d.rows.length?d.rows.map(r=>{
+    const expPct=r.expRatio==null?'–':ovPct(r.expRatio);
+    const townLabel=r.towns+' '+(r.towns===1?'town':'towns');
+    let deltaCell='<span></span>',deltaTitle='';
+    if(p!=null&&r.delta!=null){
+      const level=Math.abs(r.delta/unitDivisor())<.005;
+      const text=level?'0.00':ovSigned(r.delta);
+      const tone=level?'flat':r.delta>0?'bad':'good';
+      deltaCell='<span class="ov-bd-delta '+tone+'">'+text+'</span>';
+      deltaTitle=' · vs '+ovMon(p)+' '+text;
+    }
+    const title=r.brand+' · LND FC '+ovNum(r.lnd)+' · Exposure '+ovNum(r.exp)+' ('+expPct+' of stock) · '+townLabel+deltaTitle+' '+unitLabel();
+    return '<div class="ov-bd-r" title="'+esc(title)+'">'
+      +'<span class="ov-bd-name">'+esc(r.brand)+'</span>'
+      +'<div class="ov-bd-bar"><div class="ov-bd-track"><i class="exp" style="width:'+barW(r.exp)+'"></i><i class="lnd" style="width:'+barW(r.lnd)+'"></i></div>'
+      +'<div class="ov-bd-sub"><span>Exp '+ovNum(r.exp)+'</span><span>'+townLabel+'</span></div></div>'
+      +'<span class="ov-bd-lnd">'+ovNum(r.lnd)+'</span>'
+      +'<span class="ov-bd-pill '+ratioTone(r.expRatio)+'">'+expPct+'</span>'
+      +deltaCell+'</div>';
+  }).join(''):'<p class="ov-bd-empty">No brand data for this month</p>';
+  const summary='<span>Top '+d.topBrandN+'/'+d.brandCount+' brands = <b>'+ovConcPct(d.topBrandShare)+'</b> of LND</span>'
+    +'<i class="ov-bd-sep" aria-hidden="true"></i>'
+    +'<span>Top '+d.topTownN+'/'+d.townCount+' towns = <b>'+ovConcPct(d.topTownShare)+'</b></span>';
+  const toggle='<div class="ov-bd-seg" role="group" aria-label="Sort brands">'
+    +'<button type="button" data-overview-brand-mode="largest" aria-pressed="'+(d.mode==='largest')+'">Largest</button>'
+    +'<button type="button" data-overview-brand-mode="movers" aria-pressed="'+(d.mode==='movers')+'"'+(p==null?' disabled title="Select a month with a prior snapshot to view movers"':'')+'>Movers</button></div>';
+  return '<section class="ov-card ov-bd"><div class="ov-card-h"><b>Top Brand Risk Drivers</b>'+toggle+'</div>'
+    +'<div class="ov-bd-sum">'+summary+'</div>'
+    +'<div class="ov-bd-tbl"><div class="ov-bd-r h"><span>Brand</span><span>Exposure / LND bar</span><span>LND</span><span>Exp/Stk</span><span>'+(p!=null?'vs '+esc(ovMon(p)):'')+'</span></div>'
+    +body+'</div></section>';
+}
 
 function overviewHero(facts,m,p,first,plot){
   const t=facts[m],P=p==null?null:facts[p];
@@ -2921,43 +3006,91 @@ function overviewRslCard(facts,m,p,g,plot){
     +'<div class="ov-kv"><b>'+ovNum(b.stock)+'</b><span>'+ovShare(t.stock?b.stock/t.stock:null)+' of stock</span></div>'
     +plot('rsl'+OVERVIEW_RSL.indexOf(g),overviewRslTrend(vals,m))+'</section>';
 }
-function overviewExposureCard(t){
-  const rows=OVERVIEW_RSL.map(g=>{
-    const b=t.b[g],pct=v=>b.stock?ovShare(v/b.stock):'–';
-    const width=v=>(b.stock>0?Math.max(0,Math.min(100,100*v/b.stock)):0)+'%';
-    const title=g+' · Stock '+ovNum(b.stock)+' · Exposure '+ovNum(b.exp)+' ('+pct(b.exp)+') · LND FC '+ovNum(b.lnd)+' ('+pct(b.lnd)+') '+unitLabel();
-    return '<div class="ov-br" title="'+esc(title)+'"><div class="ov-br-t"><b>'+esc(g)+'</b><span class="v">Stock '+ovNum(b.stock)+'</span></div>'
-      +'<div class="ov-br-values"><span><small>Exposure</small><b>'+ovNum(b.exp)+'</b><em>'+pct(b.exp)+'</em></span>'
-      +'<span><small>LND FC</small><b>'+ovNum(b.lnd)+'</b><em>'+pct(b.lnd)+'</em></span></div>'
-      +'<div class="ov-track"><i class="exp" style="width:'+width(b.exp)+'"></i><i class="lnd" style="width:'+width(b.lnd)+'"></i></div></div>';
+// Normalize inventory-evolution category links into base units (BDT or KL) keyed by source snapshot.
+function parseOverviewPlans(data,unit){
+  const scale=unit==='kl'?1/1000:1,bySource={};
+  for(const link of data?.links||[]){
+    if(!String(link.source||'').startsWith('category:'))continue;
+    const [,srcKey,cat]=link.source.split(':');
+    const slot=(bySource[srcKey] ||= {})[cat] ||= {resolved:0,carried:0};
+    slot[String(link.target||'').includes('resolved')?'resolved':'carried']+=(Number(link.value)||0)*scale;
+  }
+  return {months:data?.months||[],bySource};
+}
+function overviewPlanStats(parsed,m){
+  const ym=ovLabelYm(STATUS.labels[m]),months=parsed?.months||[];
+  const idx=ym?months.findIndex(mo=>String(mo.date||'').slice(0,7)===ym):-1;
+  const firstPlanIdx=months.findIndex(mo=>parsed.bySource[mo.key]&&Object.keys(parsed.bySource[mo.key]).length>0);
+  const firstOutcome=firstPlanIdx>=0&&firstPlanIdx+1<months.length?months[firstPlanIdx+1]:null;
+  if(idx<=0)return {prevSnap:null,curSnap:idx>=0?months[idx]:null,firstOutcome,cats:[]};
+  const prevSnap=months[idx-1],curSnap=months[idx],cur=parsed.bySource[prevSnap.key];
+  if(!cur)return {prevSnap,curSnap,firstOutcome,cats:[]};
+  const start=firstPlanIdx>=0?firstPlanIdx:0;
+  const cats=Object.keys(cur).map(k=>{
+    const x=cur[k],tot=x.resolved+x.carried,hist=[];let hr=0,ht=0;
+    for(let t=start;t<=idx-1;t++){
+      const y=parsed.bySource[months[t].key]?.[k];
+      if(!y)continue;
+      const yt=y.resolved+y.carried;
+      if(yt>0){hist.push({mon:ovIsoMon(months[t+1]?.date),r:y.resolved/yt});hr+=y.resolved;ht+=yt}
+    }
+    const [name,color]=OVERVIEW_PLAN_CATS[k]||[k,'#999'];
+    return {k,name,color,res:x.resolved,tot,rate:tot>0?x.resolved/tot:null,hist,avg:ht>0?hr/ht:null};
+  }).filter(c=>c.tot>1e-9).sort((a,b)=>b.tot-a.tot);
+  return {prevSnap,curSnap,firstOutcome,cats};
+}
+function overviewPlansHeadline(stats,lens){
+  const lm=ovIsoLong(stats.prevSnap.date),cm=ovIsoLong(stats.curSnap.date),meas=OVERVIEW_PLAN_MEAS[lens]||'Exposure';
+  const total=stats.cats.reduce((s,c)=>s+c.tot,0),res=stats.cats.reduce((s,c)=>s+c.res,0);
+  const act=stats.cats.filter(c=>['sales_push','rotation','strategic_misc'].includes(c.k)&&c.tot>=.1*total);
+  const big=act[0],slow=[...act].sort((a,b)=>(a.avg??1)-(b.avg??1))[0];
+  let t='<b>'+ovPlanPct(total>0?res/total:null)+'</b> of '+esc(lm)+'’s '+meas+' with a plan ('+ovNum(total)+') was resolved or reduced by '+esc(cm)+'.';
+  if(slow&&big&&slow!==big){
+    const since=stats.firstOutcome?ovIsoLong(stats.firstOutcome.date):cm;
+    t+=' <b>'+esc(slow.name)+'</b> clears slowest: '+ovPlanPct(slow.rate)+' this month and '+ovPlanPct(slow.avg)+' a month since '+esc(since)+', against '+ovPlanPct(big.avg)+' for '+esc(big.name)+'.';
+  }
+  return t;
+}
+function overviewPlansCard(entry,m,p,lens){
+  const meas=OVERVIEW_PLAN_MEAS[lens]||'Exposure';
+  const toggle='<div class="ov-pl-seg" role="group" aria-label="Plan clearance metric">'
+    +'<button type="button" data-overview-plan-lens="exposure" aria-pressed="'+(lens==='exposure')+'">Exposure</button>'
+    +'<button type="button" data-overview-plan-lens="lnd" aria-pressed="'+(lens==='lnd')+'">LND FC</button></div>';
+  const fallbackPrev=p!=null?ovMonthName(p):'last month';
+  if(!entry||entry.state==='loading'){
+    return '<section class="ov-card ov-pl-card"><div class="ov-card-h"><b>Did '+esc(fallbackPrev)+'’s plans clear it?</b>'+toggle+'</div>'
+      +'<div class="ov-pl-empty">Loading plan outcomes…</div></section>';
+  }
+  if(entry.state==='error'){
+    return '<section class="ov-card ov-pl-card"><div class="ov-card-h"><b>Did '+esc(fallbackPrev)+'’s plans clear it?</b>'+toggle+'</div>'
+      +'<div class="ov-pl-empty">Plan outcomes could not be loaded from inventory-evolution.</div></section>';
+  }
+  const stats=overviewPlanStats(entry.data,m);
+  const prevLong=stats.prevSnap?ovIsoLong(stats.prevSnap.date):fallbackPrev;
+  const head='<div class="ov-card-h"><b>Did '+esc(prevLong)+'’s plans clear it?</b>'+toggle+'</div>';
+  if(!stats.cats.length){
+    const firstLong=stats.firstOutcome?ovIsoLong(stats.firstOutcome.date):'the next month';
+    const msg=stats.prevSnap
+      ?esc(prevLong)+'’s saved report has no action plans, so plan outcomes start in '+esc(firstLong)+'.'
+      :'No prior snapshot to measure plan outcomes.';
+    return '<section class="ov-card ov-pl-card">'+head+'<div class="ov-pl-empty">'+msg+'</div></section>';
+  }
+  const lm=ovIsoMon(stats.prevSnap.date),cm=ovIsoMon(stats.curSnap.date),max=Math.max(...stats.cats.map(c=>c.tot))||1;
+  const sinceShort=stats.firstOutcome?ovIsoMon(stats.firstOutcome.date):cm;
+  const rows=stats.cats.map(c=>{
+    const tip=c.name+' · '+lm+' '+meas+' '+ovNum(c.tot)+' · resolved/reduced by '+cm+' '+ovNum(c.res)+' ('+ovPlanPct(c.rate)+')'
+      +'\nEach month since '+sinceShort+': '+c.hist.map(x=>x.mon+' '+ovPlanPct(x.r)).join(', ')
+      +'\nAverage '+ovPlanPct(c.avg);
+    return '<div class="ov-pl" title="'+esc(tip)+'"><span class="ov-pl-nm"><i style="background:'+c.color+'"></i>'+esc(c.name)+'</span><b>'+ovNum(c.tot)+'</b>'
+      +'<span class="ov-pl-bar"><u style="width:'+(100*c.tot/max).toFixed(1)+'%"><s style="width:'+(100*(c.rate||0)).toFixed(1)+'%"></s></u></span>'
+      +'<b class="rt">'+ovPlanPct(c.rate)+'</b><b class="av">'+ovPlanPct(c.avg)+'</b></div>';
   }).join('');
-  return '<section class="ov-card"><div class="ov-card-h"><b>Exposure by RSL</b><span class="ov-meta">'+unitLabel()+'</span></div>'
-    +'<div class="ov-bar-key"><span>Bars: % of group Stock</span><span class="ov-lg"><span><i class="exp"></i>Exposure</span><span><i class="lnd"></i>LND FC</span></span></div>'+rows+'</section>';
-}
-function overviewMoveText(facts,m,p){
-  const t=facts[m],P=facts[p],diff=g=>t.b[g].lnd-P.b[g].lnd,total=t.lnd-P.lnd;
-  const big=OVERVIEW_RSL.reduce((a,g)=>Math.abs(diff(g))>Math.abs(diff(a))?g:a);
-  const where='the largest move is in <b>'+esc(big)+'</b> RSL ('+ovSigned(diff(big))+').';
-  if(!P.lnd||Math.abs(total/P.lnd)<.005)return 'LND FC is level vs '+ovMon(p)+'; '+where;
-  return 'LND FC '+(total<0?'fell':'rose')+' <b>'+ovNum(Math.abs(total))+' '+unitLabel()+'</b> vs '+ovMon(p)+'; '+where;
-}
-function overviewMovesCard(facts,m,p,plot){
-  if(p==null)return '<section class="ov-card"><div class="ov-card-h"><b>LND ÷ Exp by RSL</b></div>'+plot('moves',overviewRateBars(facts[m]))+'</section>';
-  return '<section class="ov-card"><div class="ov-card-h"><b>LND FC vs '+ovMon(p)+', by RSL</b><span class="ov-meta">'+unitLabel()+'</span></div>'
-    +'<p class="ov-fd">'+overviewMoveText(facts,m,p)+'</p>'+plot('moves',overviewMoveBars(facts,m,p))+'</section>';
-}
-function overviewScorecard(facts,m,p){
-  const t=facts[m],P=p==null?null:facts[p],blank='<span></span>';
-  const row=(label,now,was,chip,num=ovNum)=>'<div class="ov-sc"><span>'+label+'</span><span class="was">'+(P?num(was):'')+'</span><span class="now">'+num(now)+'</span>'+(P&&chip||blank)+'</div>';
-  const ratioDiff=P&&ovRatio(t)!=null&&ovRatio(P)!=null?ovRatio(t)-ovRatio(P):null;
-  return '<section class="ov-card"><div class="ov-card-h"><b>'+(P?'Since '+ovMonthName(p):ovMonthName(m))+'</b><span class="ov-meta">'+unitLabel()+'</span></div>'
-    +'<div class="ov-sc h">'+blank+'<span>'+(P?ovMon(p):'')+'</span><span>'+ovMon(m)+'</span><span>'+(P?'Change':'')+'</span></div>'
-    +row('Stock',t.stock,P?.stock,P&&ovChip(ovChange(t.stock,P.stock),'',true))
-    +row('Shorter-RSL stock',ovShorter(t),P&&ovShorter(P),P&&ovChip(ovChange(ovShorter(t),ovShorter(P)),'',true))
-    +row('Exposure',t.exp,P?.exp,P&&ovChip(ovChange(t.exp,P.exp)))
-    +row('LND FC',t.lnd,P?.lnd,P&&ovChip(ovChange(t.lnd,P.lnd)))
-    +row('LND ÷ Stock',ovRatio(t),P&&ovRatio(P),ovChipPP(ratioDiff),ovShare)
-    +'</section>';
+  return '<section class="ov-card ov-pl-card">'+head
+    +'<p class="ov-pl-fd">'+overviewPlansHeadline(stats,lens)+'</p>'
+    +'<div class="ov-pls"><div class="ov-pl h"><span>'+esc(lm)+' plan</span><b>'+esc(lm)+'</b>'
+    +'<span class="ov-pl-lg"><i style="background:'+OVERVIEW_PLAN_RES+'"></i>resolved by '+esc(cm)+'</span>'
+    +'<b class="rt">'+esc(cm)+'</b><b class="av">Avg</b></div>'+rows+'</div>'
+    +'<p class="ov-pl-foot">The Resolved/Reduced flows of <button type="button" class="ov-pl-link" data-overview-go="evolution">inventory-evolution ›</button>, summed per category ('+unitLabel()+'). Resolved = gone from the batch’s '+meas+' by the next snapshot, not proven sales.</p></section>';
 }
 // Exposure (national, with the part that comes from >10M stock) and LND FC by month.
 function overviewTrends(facts,m,plot){
@@ -2967,13 +3100,14 @@ function overviewTrends(facts,m,plot){
   return '<div class="ov-trends">'+overviewTrendCard('Exposure trend',exposure,'trendExp',m,plot)
     +overviewTrendCard('LND FC trend',[{name:'LND FC',color:'var(--bad)',vals:at(x=>x.lnd)}],'trendLnd',m,plot)+'</div>';
 }
-function overviewMarkup(facts,m,plots){
+function overviewMarkup(tree,facts,m,plots,planEntry){
   const p=ovPrev(facts,m),first=facts.findIndex(Boolean);
   const plot=(key,draw)=>{plots[key]=draw;return '<div class="ov-plot" data-ov-plot="'+key+'"></div>'};
   return overviewHero(facts,m,p,first,plot)
     +'<div class="ov-rsl">'+OVERVIEW_RSL.map(g=>overviewRslCard(facts,m,p,g,plot)).join('')+'</div>'
-    +'<div class="ov-cards">'+overviewExposureCard(facts[m])+overviewMovesCard(facts,m,p,plot)
-    +'<div class="ov-sc-pair">'+overviewScorecard(facts,m,p)+overviewTrends(facts,m,plot)+'</div></div>';
+    +'<div class="ov-cards">'+overviewBrandDriversCard(tree,m,p,overviewBrandMode)
+    +overviewPlansCard(planEntry,m,p,overviewPlanLens)
+    +overviewTrends(facts,m,plot)+'</div>';
 }
 // Month buttons are rebuilt only when the saved months change, so keyboard focus survives redraws.
 function overviewMonthButtons(facts){
@@ -2982,20 +3116,64 @@ function overviewMonthButtons(facts){
   seg.dataset.key=key;
   seg.html=STATUS.labels.map((label,i)=>'<button type="button" data-overview-select="'+i+'" aria-label="'+esc(label)+'" aria-pressed="false"'+(facts[i]?'':' disabled')+'>'+esc(ovMon(i))+'</button>').join('');
 }
+function ensureOverviewPlans(lens,unit){
+  const key=lens+':'+unit,hit=overviewPlanCache.get(key);
+  if(hit)return hit;
+  const entry={state:'loading'};
+  overviewPlanCache.set(key,entry);
+  const url=rcApi((RUN_ID?'runs/'+RUN_ID+'/':'')+'evolution/'+lens+'?unit='+unit);
+  fetch(url).then(r=>{
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(json=>{
+    overviewPlanCache.set(key,{state:'ready',data:parseOverviewPlans(json,unit)});
+    if(curRep==='overview'&&!$('#r-overview').hidden)drawOverview();
+  }).catch(err=>{
+    overviewPlanCache.set(key,{state:'error',error:err?.message||'Unavailable'});
+    if(curRep==='overview'&&!$('#r-overview').hidden)drawOverview();
+  });
+  return entry;
+}
 function drawOverview(){
-  const root=$('#r-overview'),source=(reportUnit==='bdt'?STATUS.total:STATUS.total_kl)?.m||[];
+  const root=$('#r-overview'),tree=reportUnit==='bdt'?STATUS.total:STATUS.total_kl,source=tree?.m||[];
   const facts=overviewFacts(source,STATUS.groups||[]),saved=facts.map((x,i)=>x?i:null).filter(i=>i!=null);
   overviewMonthButtons(facts);
   if(!saved.length){root.html='<p class="ov-empty">No saved snapshot</p>';return}
   if(overviewMonth==null||!facts[overviewMonth])overviewMonth=saved.at(-1);
+  const planEntry=ensureOverviewPlans(overviewPlanLens,reportUnit);
   const plots={};
-  root.html=overviewMarkup(facts,overviewMonth,plots);
+  root.html=overviewMarkup(tree,facts,overviewMonth,plots,planEntry);
   // Charts are drawn after layout so every SVG knows its real size.
   $$('[data-ov-plot]',root).forEach(el=>{el.html=plots[el.dataset.ovPlot](el.clientWidth,el.clientHeight)});
   $$('#overviewMonths button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.overviewSelect===overviewMonth));
 }
 function selectOverviewMonth(i){if(i===overviewMonth)return;overviewMonth=i;drawOverview()}
 document.addEventListener('click',e=>{
+  const modeBtn=e.target.closest?.('#r-overview [data-overview-brand-mode]');
+  if(modeBtn&&!modeBtn.disabled){
+    const next=modeBtn.dataset.overviewBrandMode;
+    if(next!==overviewBrandMode){
+      overviewBrandMode=next;
+      drawOverview();
+      $('#r-overview [data-overview-brand-mode="'+next+'"]')?.focus();
+    }
+    return;
+  }
+  const lensBtn=e.target.closest?.('#r-overview [data-overview-plan-lens]');
+  if(lensBtn&&!lensBtn.disabled){
+    const next=lensBtn.dataset.overviewPlanLens;
+    if(next!==overviewPlanLens){
+      overviewPlanLens=next;
+      drawOverview();
+      $('#r-overview [data-overview-plan-lens="'+next+'"]')?.focus();
+    }
+    return;
+  }
+  const goBtn=e.target.closest?.('#r-overview [data-overview-go]');
+  if(goBtn){
+    $('.item[data-r="'+goBtn.dataset.overviewGo+'"]')?.click();
+    return;
+  }
   const el=e.target.closest?.('#overviewMonths [data-overview-select],#r-overview [data-overview-select]');
   if(el&&!el.disabled)selectOverviewMonth(+el.dataset.overviewSelect);
 });
