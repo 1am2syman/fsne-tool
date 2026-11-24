@@ -96,6 +96,37 @@ def test_facets_reconcile_every_group_parent_and_unit(facts):
     assert null['m'][0][1]['n'] == 0.  # same all-null sum semantics as existing movement
 
 
+def test_mitigation_filter_keeps_batch_deltas_when_status_changes(facts):
+    _, _, payload = facts
+    lm = snapshot(date(2025, 12, 31), [
+        ('changed', 'North', 'P', 'P', 100., 10., '> 10M', 'Actionable', None),
+        ('gone', 'North', 'P', 'P', 30., 3., '> 10M', 'Incorrect Stock', None),
+        ('blank', 'North', 'P', 'P', 20., 2., '> 10M', None, None),
+    ])
+    cm = snapshot(date(2026, 1, 31), [
+        ('changed', 'North', 'P', 'P', 100., 10., '> 10M', ' Not actionable ', None),
+        ('blank', 'North', 'P', 'P', 10., 1., '> 10M', '', None),
+        ('new', 'North', 'P', 'P', 40., 4., '> 10M', 'Actionable', None),
+    ])
+    out = enrich_payload(payload, [lm, cm], cm)['SERIES']
+    cells = {f['mitigation']: f['m'][0][0] for f in out['facets']}
+    assert set(cells) == {'Not actionable', 'Incorrect Stock', '', 'Actionable'}
+    for unit, divisor in [('bdt', 1), ('kl', 10)]:
+        selected = {k: c if unit == 'bdt' else c['kl'] for k, c in cells.items()}
+        changed = selected['Not actionable']
+        assert changed['lm'] == changed['o'] == 100. / divisor
+        assert changed['r'] == 0.
+        assert changed['n'] is None
+        assert selected['Incorrect Stock']['lm'] == selected['Incorrect Stock']['r'] == 30. / divisor
+        assert selected['']['r'] == 10. / divisor
+        assert selected['Actionable']['lm'] is None
+        assert selected['Actionable']['n'] == 40. / divisor
+        for key in ['lm', 'o', 'n', 'r']:
+            total = out['total'][0][0]
+            assert sum(c[key] or 0 for c in selected.values()) == pytest.approx(
+                (total if unit == 'bdt' else total['kl'])[key] or 0)
+
+
 def test_fractional_values_reconcile_without_rounding_each_town(facts):
     raw, current, payload = facts
     raw = [f.with_columns((pl.col('total_closing_stock_bdt') + .004).alias('total_closing_stock_bdt'))
@@ -253,16 +284,21 @@ def running_server(store):
         worker.join()
 
 
-def test_completed_run_lazy_upgrade_only_writes_payload(tmp_path, facts):
+@pytest.mark.parametrize('missing', ['action_plan_filters', 'mitigation'])
+def test_completed_run_lazy_upgrade_only_writes_payload(tmp_path, facts, missing):
     raw, current, payload = facts
     raw = [f.with_columns(pl.col('total_closing_stock_kl').alias('lnd_fc_kl'),
                           pl.col('total_closing_stock_bdt').alias('lnd_fc_bdt')) for f in raw]
     payload['ACTIONPLANS'] = {'rescue': {'trend': ['saved trend'], 'outcomes': {'window': ['Jan']},
                                        'cols': CURRENT_COLS, 'rows': []}}
-    # This run already has movement filters but predates action-plan filters.
+    # Upgrade either older action-plan filters or movement without mitigation categories.
     older = enrich_payload(payload, raw, current)
-    older['ACTIONPLANS']['rescue'].pop('filter_trend')
-    older['ACTIONPLANS']['rescue'].pop('filter_outcomes')
+    if missing == 'action_plan_filters':
+        older['ACTIONPLANS']['rescue'].pop('filter_trend')
+        older['ACTIONPLANS']['rescue'].pop('filter_outcomes')
+    else:
+        for facet in older['SERIES']['facets']:
+            facet.pop('mitigation')
     store = Store(tmp_path / 'runs', tmp_path / 'history', start_worker=False)
     run = store.create('Frozen')
     store.update(run['id'], status='ok')

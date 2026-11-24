@@ -352,6 +352,7 @@ def make_server(store: Store, host: str = "127.0.0.1", port: int = 8770) -> Thre
                     data['SERIES'].get('scope') != MOVEMENT_SCOPE
                     or data['SERIES'].get('method') != MOVEMENT_METHOD
                     or not {'facets', 'materials', 'regions'} <= data['SERIES'].keys()
+                    or any('mitigation' not in row for row in data['SERIES'].get('facets', []))
                     or any(not {'filter_trend', 'filter_outcomes'} <= page.keys()
                            for page in data.get('ACTIONPLANS', {}).values())
                 ):

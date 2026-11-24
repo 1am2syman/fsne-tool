@@ -4,7 +4,7 @@ Sidebar: **Action plans → rescue · 3M–6M**, **rebalance · 6M–10M**, **lo
 
 ## What it shows
 
-Only established report measures; nothing is re-forecast. Every page has one summary stat, **LND entering the next band in 30 days**, the spreadsheet-style sheet (drill-down hierarchies, connected Brand/Parent SKU/Town dropdowns, Expand all, BDT/KL switch, Export CSV), Coverage, current-month then last-month Action plans, and draft planning. Exposure, LND FC and cases remain in the sheet; the other summary stats and Exposure split bar are omitted.
+Only established report measures; nothing is re-forecast. Every page has one summary stat, **LND entering the next band in 30 days**, the spreadsheet-style sheet (drill-down hierarchies, connected Brand/Parent SKU/Town dropdowns, BDT/KL switch, Export CSV), Coverage, current-month then last-month Action plans, and draft planning. Exposure, LND FC and cases remain in the sheet; the other summary stats and Exposure split bar are omitted.
 
 | Element | Definition |
 | --- | --- |
