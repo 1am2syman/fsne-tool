@@ -747,7 +747,9 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 .value-filter-footer{display:flex;justify-content:flex-end;gap:8px;padding:9px 2px 1px;border-top:1px solid var(--line)}
 .value-filter-footer .btn{height:29px;min-width:65px;padding:0 12px;font-size:12px}
 #r-plan .tools>.meta,#r-status .tools>.meta,#r-not-actionables .tools>.meta,.tools>.movement-notes{display:none}
-#mTools .value-filters{min-width:297px;max-width:540px}
+#mTools .value-filters{min-width:420px;max-width:650px}
+#mTools .value-filter[aria-label^="Mitigation category:"]{min-width:126px}
+#mTools{flex-wrap:wrap}
 #mTools .value-filter{min-width:85px;padding:0 7px}
 #mTools .value-filter-name{font-size:10px}
 #mTools .scale{display:none}
@@ -1851,7 +1853,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <select id="mSort" aria-label="Sort brands" class="btn">
         <option value="now:-1">Stock now · high to low</option><option value="avg:1">Avg reduction · low to high</option><option value="avg:-1">Avg reduction · high to low</option>
         <option value="grow:-1">Stock growth · most first</option><option value="brand:1">Brand A–Z</option></select>
-      <button class="btn" id="mExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta scale" id="mScale"></span>
       <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note" id="mNote"></div></details>
@@ -1869,7 +1870,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <i class="vr" aria-hidden="true"></i>
       <select id="rOrder" class="btn" aria-label="Drill-down order"><option value="bpt">Brand → Parent → Town</option><option value="btp">Brand → Town → Parent</option><option value="tbp">Town → Brand → Parent</option></select>
       <select id="rSort" class="btn" aria-label="Sort rows"><option value="lnd:-1">LND FC · high to low</option><option value="cov:1">Coverage · low to high</option><option value="tn:-1">Towns · most first</option><option value="share:-1">LND ÷ Exp · high to low</option><option value="name:1">A–Z</option></select>
-      <button class="btn" id="rExp" type="button">Expand all</button>
       <button class="btn primary" id="rNotesBtn" type="button" title="Note new action plans for batches without a last-month plan">New plans<b id="rNotesN"></b></button>
       <span class="sp"></span>
       <span class="meta" id="rCount"></span>
@@ -1887,7 +1887,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
         <select class="btn" id="naMonth" aria-label="Not-actionables month"></select>
         <select class="btn" id="naRsl" aria-label="Not-actionables RSL"></select>
         <select class="btn" id="naSort" aria-label="Sort not-actionables"><option value="stock:-1">Stock · high to low</option><option value="stock:1">Stock · low to high</option><option value="n:-1">Batches · most first</option><option value="name:1">A–Z</option></select>
-        <button class="btn" id="naExpand" type="button">Expand all</button>
         <span class="sp"></span><span class="meta" id="naCount" aria-live="polite"></span>
         <details class="movement-notes"><summary>Notes</summary><div class="note"><span>Only batches marked Not actionable in the selected month's snapshot, across every RSL band.</span><span>Pre-action plan view uses carried statuses. Accepted action plans replace them; Final view uses the settled snapshot.</span><span>Stock retains the saved month's quantities and prices. BDT amounts are in millions.</span><span>Brand → Parent SKU → Town → Batch. Batch rows show their actual SKU; select a cell to read its full text in the formula bar.</span><span>Table totals and CSV follow Brand, Parent SKU, Town and RSL filters.</span><span>CSV exports matching batches, stock in both units and their saved status and remarks.</span></div></details>
       </div>
@@ -1904,7 +1903,6 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
       <i class="vr" aria-hidden="true"></i>
       <select id="sOrder" class="btn" aria-label="Brand drill-down order" hidden><option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option></select>
       <select id="sSort" class="btn" aria-label="Sort towns"><option value="total:-1">Selected metric · high to low</option><option value="total:1">Selected metric · low to high</option><option value="name:1">Town A–Z</option></select>
-      <button class="btn" id="sExp" type="button">Expand all</button>
       <span class="sp"></span>
       <span class="meta" id="sCount"></span>
       <details class="movement-notes"><summary title="Notes · amounts in M BDT">Notes</summary><div class="note"><span id="sScopeNote" hidden></span><span id="sCategoryNote">All stock categories · latest saved snapshot each month</span><span id="sHierarchyNote">▸ Town → Brand → Parent</span><span>Exposure: each cell is 100% of its exposure, shown in light red; its red portion is LND ÷ that cell’s exposure. &lt;3M stays unshaded. LND mode shows plain values. Stock mode keeps its RSL colours.</span><span>RSL group filters hide deselected columns. Totals, percentages, trends, monthly charts and DOH use only selected RSL groups.</span><span>In Stock mode only, each &gt;10M bar represents 100% of its stock: light red tail = Exposure, dark red tip = LND, both divided by that cell’s stock. Hover for values and denominators.</span><span>Click a value or trend for monthly RSL history</span></div></details>
@@ -1929,7 +1927,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
   <div class="scrim" data-rcn-close></div>
   <section class="sheetm rcn-sheet" role="dialog" aria-modal="true" aria-labelledby="rcnTitle">
     <header><div><h2 id="rcnTitle">New action plans</h2><p class="lead" id="rcnSub"></p></div><button class="btn sm ghost" data-rcn-close aria-label="Close" id="rcnClose">✕</button></header>
-    <div class="rcn-bar"><p class="rcn-state" id="rcnState" role="status"></p><button class="btn sm" id="rcnExp" type="button">Expand all</button></div>
+    <div class="rcn-bar"><p class="rcn-state" id="rcnState" role="status"></p></div>
     <div class="rcn-wrap"><table class="rcn-t"><thead><tr><th>Brand / SKU / Town</th><th class="num">Batches</th><th class="num">Cases</th><th class="num" id="rcnExpH">Exposure</th><th class="num" id="rcnLndH">LND FC</th><th>Action plan</th><th>Remarks</th><th>Status</th><th>Saved</th></tr></thead><tbody id="rcnBody"></tbody></table></div>
   </section>
 </div>
@@ -2332,7 +2330,7 @@ drawTransfer();
 /* stock movement: brand x month heatmap, computed by src/movement.py (series) */
 const NM=SERIES.labels.length, num=v=>v==null?0:v, sum=a=>a.reduce((x,y)=>x+num(y),0);
 const GROUPS=SERIES.groups; let gsel=new Set(GROUPS.map((_,i)=>i));
-const moveFilters=new FSNEFilters.Group({container:$('#mFilters'),rows:()=>(SERIES.facets||[]).filter(r=>r.m.some(m=>m?.some((c,i)=>c&&gsel.has(i)))),onChange:()=>{buildData();drawM();$('#mv').hidden=true}});
+const moveFilters=new FSNEFilters.Group({container:$('#mFilters'),dimensions:[...FSNEFilters.dimensions,{key:'mitigation',label:'Mitigation category'}],rows:()=>(SERIES.facets||[]).filter(r=>r.m.some(m=>m?.some((c,i)=>c&&gsel.has(i)))),onChange:()=>{buildData();drawM();$('#mv').hidden=true}});
 /* Merge selected RSL groups in the selected source unit. */
 const agg=cs=>{
   const c=cs.filter((x,i)=>x&&gsel.has(i)).map(x=>reportUnit==='bdt'?x:{...x.kl,rem:x.rem});if(!c.length)return null;
@@ -2415,7 +2413,7 @@ const mcols=[
  {k:'avg',h:'Avg',num:1,r:r=>avgCell(r.avg)}];
 const full=i=>new Date(SERIES.dates[i]+'T00:00:00Z').toLocaleDateString('en-GB',{month:'short',year:'numeric',timeZone:'UTC'});
 function drawNote(){
-  $('#mNote').html=`<span>All saved stock, including every planning status · Breakdown amounts in ${unitLabel()}</span><span>Total stock shows closing amounts in ${unitLabel()} in the earlier-month columns. Reduction and Net change compare each month with the previous saved report.</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Status edits do not change movement.</span><span>CSV includes both units for each brand and parent, plus all-stock totals. Saved quantities and prices remain unchanged.</span>`;
+  $('#mNote').html=`<span>Saved stock matching Brand, Parent SKU, Town, Mitigation category and RSL filters · Breakdown amounts in ${unitLabel()}</span><span>Total stock shows closing amounts in ${unitLabel()} in the earlier-month columns. Reduction and Net change compare each month with the previous saved report.</span><span>▸ expands a brand into its parent materials; parents add up to the brand</span><span>Reduction on existing batches = opening stock cleared per physical batch key (never negative). This is not proven sales or disposal.</span><span>New inclusions = new batch keys plus any stock added to previously present keys. Mitigation category uses the later month’s saved status for surviving batches and the opening status for exited batches; (Blanks) includes unlabelled stock. Status changes alone do not count as reductions or new stock.</span><span>CSV includes both units for each brand and parent, plus totals for the selected filters. Saved quantities and prices remain unchanged.</span>`;
 }
 function drawScale(){
   if(metric==='stock'){$('#mScale').textContent='Earlier months · total stock in '+unitLabel();return}
@@ -2732,8 +2730,6 @@ function drawM(){
   rows.forEach(r=>{flat.push(r);if(r.isOpen){const ks=r.kids.map(dec).sort(cmpK);ks.forEach((k,i)=>flat.push({...k,trc:'par'+(i===0?' par-first':'')+(i===ks.length-1?' par-last':'')}))}});
   flat.forEach((r,i)=>{if(i%2)r.trc=(r.trc?r.trc+' ':'')+'alt'});
   rows.length=0;rows.push(...flat);
-  const nb=B.filter(r=>r.now>=minStock&&r.kids.length),allOpen=nb.length>0&&nb.every(r=>open.has(r.brand));
-  $('#mExp').textContent=allOpen?'Collapse all':'Expand all';$('#mExp').dataset.all=allOpen?1:'';
   const foot=['All stock',...TOT.slice(0,-1).map(pastCell),...components.map(c=>componentCell(TOT[NM-1],c)),hm(cell(TOT[NM-1])),spark(TPTS),`${amount(TPTS[0],1)} → <b style="font-weight:600">${amount(TPTS.at(-1),1)}</b>`,avgCell(avgOf(TOT))];
   mcols[NM+5].h=metric==='red'?'Net reduction %':'Net change %';
   table({t:'#mT',cols:mcols,rows,groups:[{span:NM,label:'Earlier months'},{span:6,label:latestMonth+' breakdown · '+unitLabel()},{span:3,label:'Stock overview'}],sort:ms,onSort:k=>{if(k==='spark')return;ms=ms.k===k?{k,d:-ms.d}:{k,d:k==='brand'?1:-1};$('#mSort').value='';drawM()},foot,
@@ -2755,7 +2751,6 @@ $$('#mSize button').forEach(c=>c.onclick=()=>{minStock=+c.dataset.s;$$('#mSize b
 $('#mSort').onchange=e=>{const [k,d]=e.target.value.split(':');ms={k,d:+d};drawM()};
 const togBrand=b=>{open.has(b)?open.delete(b):open.add(b);drawM();const e=$(`#mT [data-tg="${CSS.escape(b)}"]`);e&&e.focus({preventScroll:true})};
 $('#mT').closest('.tw').addEventListener('click',e=>{const g=e.target.closest('.tg');if(!g)return;e.stopPropagation();togBrand(g.dataset.tg)},true);
-$('#mExp').onclick=e=>{const all=e.currentTarget.dataset.all;B.forEach(r=>{if(r.now>=minStock&&r.kids.length)all?open.delete(r.brand):open.add(r.brand)});drawM()};
 drawNote();drawScale();drawRsl();drawM();
 FSNEQuick.attach('#mT',{group:moveFilters,sheetState:()=>SHEETS['#mT'],path:r=>r.parent?[['brand',r.brand],['parent',r.code]]:[['brand',r.brand]],tree:true,noun:'town–parents'});
 
@@ -3382,8 +3377,6 @@ function drawStatus(){
   }
   $$('#sT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=selected.length+2;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===selected.length+2)tr.cells[i].classList.add('bk-r')}});
   const gh=$$('#sT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
-  const expandable=[...statusNodes.values()].filter(n=>n.id!=='total'&&n.kids.length),allOpen=expandable.every(n=>statusOpen.has(n.id));
-  $('#sExp').textContent=allOpen?'Collapse all':'Expand all';$('#sExp').dataset.all=allOpen?'1':'';
   $('#sCount').textContent=`${flat.filter(n=>!n.level).length} ${statusView==='town'?'towns':'brands'} · ${flat.length} rows`;
   $('#sHierarchyNote').textContent='▸ '+statusHierarchy();
   $('#sCategoryNote').textContent=statusCategoryLabel()+' · latest saved snapshot each month';
@@ -3392,7 +3385,6 @@ $('#sT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[
 $('#sMetric').onchange=e=>{statusMetric=+e.target.value;drawStatus()};
 $('#sOrder').onchange=()=>setStatusView('status');
 $('#sSort').onchange=e=>{const [k,d]=e.target.value.split(':');statusSort={k,d:+d};drawStatus()};
-$('#sExp').onclick=e=>{const all=!!e.currentTarget.dataset.all;statusNodes.forEach(n=>{if(n.id!=='total'&&n.kids.length)all?statusOpen.delete(n.id):statusOpen.add(n.id)});drawStatus()};
 const statusColors=['var(--bad)','var(--warn)','var(--ink3)','var(--accent)'];
 function openStatusChart(n){
   delete $('#mv').dataset.mode;
@@ -3687,7 +3679,7 @@ let RESCUE={},RCR=[],RC_CATS=[];
 const rcRows=d=>(d.rows||[]).map(a=>Object.fromEntries(d.cols.map((c,j)=>[c,a[j]])));
 const RC_ORDER={bpt:['brand','parent','town'],btp:['brand','town','parent'],tbp:['town','brand','parent']};
 const RC_LEVEL={brand:'Brand',parent:'Parent',town:'Town'};
-let rcOrder='bpt',rcSort={k:'lnd',d:-1},rcOpen=new Set(),rcExpandable=[],rcNodes=new Map();
+let rcOrder='bpt',rcSort={k:'lnd',d:-1},rcOpen=new Set(),rcNodes=new Map();
 const planFilters=new FSNEFilters.Group({container:$('#rFilters'),rows:()=>RCR,onChange:()=>drawRescue()});
 let rcPlans={},rcPlanIdx=new Map(),rcNotesState='idle',rcNotesError='',rcNotesEditable=false;
 const RC_SCOPE={brand:'Brand',sku:'SKU',town:'Town'};
@@ -3787,9 +3779,6 @@ function drawRescueTable(){
   bindEvolutionCells('#rT',flat,[{column:1,lens:'exposure',scope},{column:2,lens:'lnd',scope}],root);
   $$('#rT tr').forEach(tr=>{if(tr.cells.length!==cols.length+1)return;for(let i=2;i<=4+rot;i++){tr.cells[i].classList.add('bk');if(i===2)tr.cells[i].classList.add('bk-l');if(i===4+rot)tr.cells[i].classList.add('bk-r')}});
   const gh=$$('#rT th.group-h')[2];if(gh)gh.classList.add('bk','bk-l','bk-r');
-  rcExpandable=[];(function walk(ns){ns.forEach(n=>{if(n.kids.length){rcExpandable.push(n.id);walk(n.kids)}})})(root.kids);
-  const allOpen=rcExpandable.length&&rcExpandable.every(id=>rcOpen.has(id));
-  $('#rExp').textContent=allOpen?'Collapse all':'Expand all';$('#rExp').dataset.all=allOpen?'1':'';
   const tops=flat.filter(n=>!n.level).length;
   $('#rCount').textContent=`${tops} ${RC_LEVEL[lv[0]].toLowerCase()}${tops===1?'':'s'} · ${flat.length} row${flat.length===1?'':'s'}`;
   rcCount();
@@ -3889,11 +3878,9 @@ function rcnStateText(){
 function drawRescueNotes(){
   const [cls,text]=rcnStateText();$('#rcnState').className='rcn-state '+cls;$('#rcnState').textContent=text;
   $('#rcnExpH').textContent='Exposure ('+unitLabel()+')';$('#rcnLndH').textContent='LND FC ('+unitLabel()+')';
-  rcnNodes=new Map();const out=[],all=[];
-  (function walk(ns){ns.forEach(n=>{if(n.kids.length)all.push(n.id);walk(n.kids)})})(rcnTree.kids);
+  rcnNodes=new Map();const out=[];
   (function visit(ns){ns.forEach(n=>{rcnNodes.set(n.id,n);out.push(rcnRow(n));if(rcnOpen.has(n.id))visit(n.kids)})})(rcnTree.kids);
   $('#rcnBody').html=out.join('')||'<tr><td colspan="9" class="empty">Every batch in this selection had a last-month action plan.</td></tr>';
-  const allOpen=all.length&&all.every(id=>rcnOpen.has(id));$('#rcnExp').textContent=allOpen?'Collapse all':'Expand all';$('#rcnExp').dataset.all=allOpen?'1':'';
 }
 /* After a save only the plan-dependent parts of visible rows change; inputs stay, so focus and typing survive. */
 function rcnPaint(saved){
@@ -3939,7 +3926,6 @@ $('#rcnBody').addEventListener('toggle',e=>{const d=e.target;if(!d.matches?.('.r
   $$('#rcnBody details[open]').forEach(x=>{if(x!==d)x.open=false});
   const wrap=$('.rcn-wrap').getBoundingClientRect(),r=d.getBoundingClientRect();d.querySelector('.ms-pop').classList.toggle('up',wrap.bottom-r.bottom<360&&r.top-wrap.top>wrap.bottom-r.bottom)},true);
 document.addEventListener('click',e=>{if($('#rcNotes').hidden)return;$$('#rcnBody details[open]').forEach(d=>{if(!d.contains(e.target))d.open=false})});
-$('#rcnExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;(function walk(ns){ns.forEach(n=>{if(n.kids.length){close?rcnOpen.delete(n.id):rcnOpen.add(n.id);walk(n.kids)}})})(rcnTree.kids);drawRescueNotes()};
 function exportRescue(){
   if(!RCR.length){toast(`This run has no ${rcMeta().key} data`);return}
   const q=v=>v==null?'':/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
@@ -3961,11 +3947,10 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')$$('.movement-notes[
 addEventListener('resize',fitRescue);
 $('#rOrder').onchange=e=>{rcOrder=e.target.value;rcOpen=new Set();drawRescueTable()};
 $('#rSort').onchange=e=>{const [k,d]=e.target.value.split(':');rcSort={k:k==='cov'?'covShare':k,d:+d};drawRescueTable()};
-$('#rExp').onclick=e=>{const close=!!e.currentTarget.dataset.all;rcExpandable.forEach(id=>close?rcOpen.delete(id):rcOpen.add(id));drawRescueTable()};
 
 /* Not-actionables: full snapshot rows, summed through the same hierarchy in either unit. */
 const naMonths=NOTACTIONABLES.months||[];
-let naMonth=naMonths.length-1,naBand='',naSort={k:'stock',d:-1},naOpen=new Set(),naExpandable=[];
+let naMonth=naMonths.length-1,naBand='',naSort={k:'stock',d:-1},naOpen=new Set();
 const notActionableFilters=new FSNEFilters.Group({container:$('#naFilters'),rows:()=>naRows().filter(r=>!naBand||r.rsl===naBand),onChange:()=>{naResetSelection();drawNotActionables()}});
 const naValue=(r,k)=>r[k+'_'+reportUnit]||0;
 function naRows(){
@@ -4009,12 +3994,10 @@ function drawNotActionables(){
   }
   $('#naMonth').value=String(naMonth);$('#naRsl').value=naBand;
   const rows=naFiltered(),root=naTree(rows);
-  const flat=[];naExpandable=[];
+  const flat=[];
   (function visit(nodes){nodes.slice().sort(cmp(naSort.k,naSort.d)).forEach(n=>{
-    if(n.kids.length)naExpandable.push(n.id);
     n.isOpen=naOpen.has(n.id);n.trc=n.level?'par':'';flat.push(n);
     if(n.isOpen&&n.kids.length){const start=flat.length;visit(n.kids);flat[start].trc+=' par-first';flat.at(-1).trc+=' par-last'}
-    else if(n.kids.length)(function collect(kids){kids.forEach(c=>{if(c.kids.length){naExpandable.push(c.id);collect(c.kids)}})})(n.kids);
   })})(root.kids);
   flat.forEach((n,i)=>{if(i%2)n.trc+=' alt'});
   const rsl=n=>n.rsls.size===1?esc([...n.rsls][0].replaceAll(' ','')):`<span title="${esc([...n.rsls].join(', '))}">Mixed</span>`;
@@ -4028,9 +4011,6 @@ function drawNotActionables(){
     groups:[{span:1,label:'Not actionable'},{span:1,label:m.label+' · '+unitLabel()},{span:2,label:'Batches / RSL'},{span:1,label:'Saved plan'}],
     emptyMsg:naRows().length?'No batches match these filters. Clear a filter or choose All RSL.':'No batches are marked Not actionable in this month’s snapshot.',
     onSort:k=>{naSort=naSort.k===k?{k,d:-naSort.d}:{k,d:k==='name'?1:-1};$('#naSort').value='';drawNotActionables()}});
-  const allOpen=naExpandable.length>0&&naExpandable.every(id=>naOpen.has(id));
-  $('#naExpand').textContent=allOpen?'Collapse all':'Expand all';$('#naExpand').dataset.all=allOpen?'1':'';
-  $('#naExpand').disabled=!naExpandable.length;
   $('#naCount').textContent=`${f(root.n)} batches · ${f(root.kids.length)} brands`;
   requestAnimationFrame(fitNotActionables);
 }
@@ -4044,7 +4024,6 @@ function naResetSelection(){if(SHEETS['#naT'])SHEETS['#naT'].on=false}
 $('#naMonth').onchange=e=>{naMonth=+e.target.value;naOpen.clear();naResetSelection();drawNotActionables()};
 $('#naRsl').onchange=e=>{naBand=e.target.value;naResetSelection();drawNotActionables()};
 $('#naSort').onchange=e=>{const [k,d]=e.target.value.split(':');naSort={k,d:+d};drawNotActionables()};
-$('#naExpand').onclick=e=>{if(e.currentTarget.dataset.all)naOpen.clear();else naExpandable.forEach(id=>naOpen.add(id));drawNotActionables()};
 $('#naT').closest('.tw').addEventListener('click',e=>{const b=e.target.closest('[data-na-toggle]');if(!b)return;const id=b.dataset.naToggle;naOpen.has(id)?naOpen.delete(id):naOpen.add(id);drawNotActionables()},true);
 addEventListener('resize',fitNotActionables);
 function movementCsvRows(source,selected,dates,openingDate){

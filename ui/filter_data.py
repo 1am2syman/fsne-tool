@@ -122,7 +122,10 @@ def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: 
     descriptions = {r['parent_code']: r['parent_desc'] for r in
                     transform_parent_series(history).iter_rows(named=True)}
     descriptions.update({p['c']: p['d'] for b in series.get('brands', []) for p in b.get('p', [])})
-    keys = (BRAND, PARENT, 'town', RSL)
+    # Add category as a grouping dimension after physical batch matching. Surviving
+    # keys use CM status; exited keys retain LM status, just like RSL alignment.
+    history = history.with_columns(pl.col('status').fill_null('').alias('mitigation'))
+    keys = (BRAND, PARENT, 'town', 'mitigation', RSL)
     # Keep the saved calendar, including a year boundary and empty-cohort months.
     year = series['year']
     previous = 13
@@ -136,7 +139,7 @@ def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: 
     group_slots = {g: i for i, g in enumerate(series['groups'])}
     frames = [transform_series(history, months=len(series['labels']), keys=keys, stock_column=column)
               for column in ('total_closing_stock_bdt', 'total_closing_stock_kl')]
-    volume = {(r['brand'], r[PARENT], r['town'], r[RSL], r['month']): r
+    volume = {(r['brand'], r[PARENT], r['town'], r['mitigation'], r[RSL], r['month']): r
               for r in frames[1].iter_rows(named=True)}
     facets = {}
     for row in frames[0].iter_rows(named=True):
@@ -145,9 +148,9 @@ def enrich_payload(payload: dict, raw_history: Sequence[pl.DataFrame], current: 
         group = group_slots.get(row[RSL])
         if slot is None or group is None:
             continue
-        key = (row['brand'], row[PARENT], row['town'])
+        key = (row['brand'], row[PARENT], row['town'], row['mitigation'])
         facet = facets.setdefault(key, {
-            'brand': row['brand'], 'parent': row[PARENT],
+            'brand': row['brand'], 'parent': row[PARENT], 'mitigation': row['mitigation'],
             'pdesc': descriptions.get(row[PARENT], row[PARENT]), 'town': row['town'],
             'm': [None] * len(series['labels']),
         })
