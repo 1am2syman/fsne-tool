@@ -126,6 +126,11 @@ Keys act only while a report table (or, for `/`, `?` and undo, the report page) 
 - **Top Brand Risk Drivers** (bottom-left) summarizes LND concentration across the top 5 brands and top 5 towns and lists the top 6 brands with dual Exposure/LND bars, town counts (`LND > 0`), `Exp/Stk` risk pills, and signed `vs [prev]` LND deltas. Switch between **Largest** (ranked by LND FC) and **Movers** (ranked by `|Δ LND|` vs the prior saved month; disabled on the earliest saved month).
 - **Did [PrevMonth]’s plans clear it?** (bottom-middle) summarizes the `Resolved/Reduced` flows from `inventory-evolution` by mitigation category, comparing the selected month’s clearance rate against its historical average and linking directly to **inventory-evolution**. Switch between **Exposure** and **LND FC**; data loads lazily from `/api/evolution/{exposure|lnd}?unit={bdt|kl}` (or the active run’s evolution route).
 - Two small trend charts sit stacked on the bottom-right: **Exposure trend** (total Exposure, with the > 10M group’s Exposure as a second line on the same scale) and **LND FC trend**. Both mark the selected month and label the peak and trough.
+- Every visual drills down into a full-screen overlay without leaving Overview:
+  - Hero KPI/RSL cells (cell-level Stock, Exposure, or LND FC), RSL card headers, Top Brand Risk Drivers rows (auto-expanded one level in color-coded Exposure mode) and top-brand/top-town concentration pills, and Exposure/LND FC trend headers/legends open a scoped **brand-status** / **town-status** overlay (`Brand → Town → Parent` by default, `Town → Brand → Parent` for the top-towns pill, switchable inside the overlay; **All stock categories** by default so totals match Overview).
+  - Clicking any month slice on the four RSL trend charts, Exposure trend, or LND FC trend opens that clicked month’s snapshot directly.
+  - The status overlay includes a **BDT / KL** unit toggle that inherits from and stays synced with the page.
+  - Clicking any category row in **Did [PrevMonth]’s plans clear it?** opens the **inventory-evolution** Sankey overlay scoped to that plan category node (keeping the active lens and unit, with **← Back to categories** and **Back to overview**).
 - Stock changes are neutral. Falling Exposure/LND FC is green and rising is red.
 - The layout fits widescreen laptop viewports without scrolling in light mode.
 

@@ -132,3 +132,21 @@ test('Show data bounds categories and applies one traced scale per leaf across c
   assert.equal(pairs.length,1);
   assert.equal(pairs[0].stock['< 3M'],3);
 });
+
+test('Direct Overview snapshot scoping preserves all categories and faller brands absent in the selected month', () => {
+  context.STATUS.facets.push({town:'B',brand:'FALLER',parent:'30',pdesc:'Dropped SKU',category:'Actionable',m:[month(600),null],m_kl:[month(6),null]});
+  context.statusScope = null;
+  context.statusSnap = 0;
+  // Unfiltered categories match Overview totals (including Incorrect stock when present)
+  const tree0 = context.filteredStatusTree();
+  assert.equal(tree0.m[0][0][0], 1700);
+  // Filtering to FALLER at snapshot 1 still keeps the row visible so its prior drop shows in history
+  context.statusSnap = 1;
+  selections.brand = new Set(['FALLER']);
+  context.statusView = 'brand-town';
+  const fallerTree = context.filteredStatusTree();
+  assert.equal(fallerTree.kids.length, 1);
+  assert.equal(fallerTree.kids[0].name, 'FALLER');
+  assert.equal(fallerTree.kids[0].m[0][0][0], 600);
+  assert.equal(fallerTree.kids[0].m[1], null);
+});

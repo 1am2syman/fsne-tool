@@ -797,12 +797,12 @@ tbody td.hmc:hover .hm{filter:brightness(.95)}
 #unitTools{display:flex;align-items:center;gap:6px}
 #unitTools[hidden]{display:none}
 #unitTools>.l{font-size:12px;color:var(--ink3)}
-:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg){gap:2px;padding:2px;border:1px solid var(--seg-track-border);border-radius:8px;background:var(--seg-track);box-shadow:var(--seg-track-shadow)}
-:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button{min-width:0;height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
-:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:hover{background:none;color:var(--ink)}
-:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button[aria-pressed=true]{background:var(--seg-pill-bg);border-color:rgba(18,21,40,.1);color:var(--ink);font-weight:600;box-shadow:var(--seg-pill-shadow)}
-[data-theme=dark] :is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button[aria-pressed=true]{border-color:rgba(255,255,255,.08)}
-:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:focus-visible{outline:none;box-shadow:var(--ring)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit){gap:2px;padding:2px;border:1px solid var(--seg-track-border);border-radius:8px;background:var(--seg-track);box-shadow:var(--seg-track-shadow)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit) button{min-width:0;height:24px;padding:0 10px;border:1px solid transparent;border-radius:6px;color:var(--ink2);font-size:12px;font-weight:500}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit) button:hover{background:none;color:var(--ink)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit) button[aria-pressed=true]{background:var(--seg-pill-bg);border-color:rgba(18,21,40,.1);color:var(--ink);font-weight:600;box-shadow:var(--seg-pill-shadow)}
+[data-theme=dark] :is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit) button[aria-pressed=true]{border-color:rgba(255,255,255,.08)}
+:is(#reportUnit,#overviewMonths,.ov-bd-seg,.ov-pl-seg,#scopeDialogUnit) button:focus-visible{outline:none;box-shadow:var(--ring)}
 :is(#overviewMonths,.ov-bd-seg,.ov-pl-seg) button:disabled{opacity:.4;cursor:default}
 /* Notes: matching 30px sculpted toolbar button with popover. */
 .movement-notes{position:relative;flex:none}
@@ -963,7 +963,7 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-m.h b{font-weight:500;color:rgba(255,255,255,.72)}
 .ov-m.h em{font-size:10.5px;color:rgba(255,255,255,.45)}
 .ov-m.t{border-top-color:rgba(255,255,255,.3)}
-.ov-m.t span{color:#fff;font-weight:600}
+.ov-m.t>.ov-ml{color:#fff;font-weight:600}
 .ov-chip{display:inline-flex;align-items:center;gap:4px;height:21px;padding:0 8px;border-radius:999px;font:600 11.5px var(--font);white-space:nowrap}
 .ov-chip small{font-weight:500;opacity:.75;font-size:11px}
 .ov-chip.good{background:var(--ok-bg);color:var(--ok)}
@@ -1043,6 +1043,35 @@ main:has(#v-reports.on #r-overview:not([hidden])){min-width:0;overflow:hidden}
 .ov-pl-link{border:0;background:none;padding:0;color:var(--accent);font:600 inherit;cursor:pointer;white-space:nowrap}
 .ov-pl-link:hover{text-decoration:underline}
 .ov-pl-empty{flex:1;display:grid;place-items:center;text-align:center;color:var(--ink3);font-size:12.5px;line-height:1.5;padding:0 16px}
+/* Overview drilldown affordances: subtle hover & focus states without changing layout height. */
+.ov-v[data-overview-drill]{cursor:pointer;padding:2px 8px;margin:-2px -8px;border-radius:10px;transition:background .12s}
+.ov-v[data-overview-drill]:hover{background:rgba(255,255,255,.1)}
+.ov-m .ov-ml{padding:2px 5px;margin:-2px -5px;border-radius:5px;cursor:pointer;transition:background .12s}
+.ov-m .ov-ml:hover{background:rgba(255,255,255,.14);color:#fff}
+.ov-m .ov-mc{grid-column:span 2;display:grid;grid-template-columns:50px 54px;column-gap:6px;align-items:baseline;padding:2px 5px;margin:-2px -5px;border-radius:5px;cursor:pointer;transition:background .12s}
+.ov-m .ov-mc:hover{background:rgba(255,255,255,.16)}
+.ov-m .ov-mc:hover em{color:rgba(255,255,255,.85)}
+.ov-hero [data-overview-drill]:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.ov-rc-head{display:flex;flex-direction:column;width:calc(100% + 12px);border:0;background:none;padding:2px 6px;margin:-2px -6px;border-radius:8px;text-align:left;color:inherit;font:inherit;cursor:pointer;transition:background .12s}
+.ov-rc-head:hover{background:#f3f6fb}
+.ov-rc-head:hover .ov-rc-n{color:var(--accent)}
+.ov-trend-btn{border:0;background:none;padding:2px 6px;margin:-2px -6px;border-radius:6px;text-align:left;color:inherit;font:inherit;cursor:pointer;transition:background .12s,color .12s}
+.ov-trend-btn:hover{background:#f3f6fb;color:var(--accent)}
+.ov-lg-btn{display:inline-flex;align-items:center;border:0;background:none;padding:2px 6px;margin:-2px -6px;border-radius:5px;font:inherit;color:inherit;cursor:pointer;transition:background .12s,color .12s}
+.ov-lg-btn:hover{background:var(--accent-soft);color:var(--accent)}
+.ov-bd-sum-btn{border:0;background:none;padding:1px 5px;margin:-1px -5px;border-radius:5px;font:inherit;color:inherit;cursor:pointer;transition:background .12s,color .12s}
+.ov-bd-sum-btn:hover:not(:disabled){background:var(--accent-soft);color:var(--accent)}
+.ov-bd-sum-btn:hover:not(:disabled) b{color:var(--accent)}
+.ov-bd-sum-btn:disabled{cursor:default}
+.ov-bd-r[data-overview-drill],.ov-pl[data-overview-drill]{cursor:pointer;margin:0 -8px;padding:0 8px;border-radius:6px;transition:background .12s}
+.ov-bd-r[data-overview-drill]:hover,.ov-pl[data-overview-drill]:hover{background:#f3f6fb}
+.ov-bd-r[data-overview-drill]:hover .ov-bd-name,.ov-pl[data-overview-drill]:hover .ov-pl-nm{color:var(--accent)}
+.ov-pt{cursor:pointer}
+.ov-pt .ov-pt-guide{stroke:var(--accent);stroke-width:1.25;stroke-dasharray:2 2;opacity:0;transition:opacity .1s}
+.ov-pt .ov-pt-dot{fill:var(--accent);stroke:var(--surface);stroke-width:1.8;opacity:0;transition:opacity .1s}
+.ov-pt:is(:hover,:focus-visible) .ov-pt-guide,.ov-pt:is(:hover,:focus-visible) .ov-pt-dot{opacity:1}
+.ov-pt:focus-visible{outline:none}
+#r-overview .ov-card [data-overview-drill]:focus-visible{outline:none;box-shadow:var(--ring)}
 @media(max-height:800px){.ov-pl-fd{line-height:1.3}.ov-pl-foot{line-height:1.25}}
 @media(max-height:700px){:is(.ov-cards,.ov-rc) .ov-chip{height:18px}.ov-ch{flex-direction:row;align-items:center}}
 @media(max-height:640px){.ov-m{padding:2px 0}.ov-ms{padding-top:8px}.ov-card-h{margin-bottom:4px}.ov-cards .ov-chip{height:16px}.ov-bd-sum{padding:4px 10px;margin-bottom:4px}.ov-pl-fd{margin-bottom:4px}}
@@ -1291,6 +1320,9 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 #scopeDialog{inset:0;width:100vw;max-width:none;height:100dvh;max-height:none;margin:0;padding:0;border:0;border-radius:0;background:var(--canvas);color:var(--ink)}
 #scopeDialog[open]{display:flex;flex-direction:column}
 #scopeDialog::backdrop{background:var(--canvas)}
+.scope-dialog-actions{display:flex;align-items:center;gap:10px;flex:none}
+#scopeDialogUnit{display:inline-flex}
+#scopeDialogUnit[hidden]{display:none}
 #scopeDialogBody{flex:1;min-height:0;overflow:hidden;padding:20px 28px 22px}
 #scopeDialog #r-status:not([hidden]){height:100%;display:flex;flex-direction:column;min-height:0}
 #scopeDialog #sTools{flex:none}
@@ -1954,7 +1986,7 @@ button.doh-value:focus-visible{outline:2px solid var(--accent);outline-offset:3p
 </div>
 <div id="reportEvolutionMenu" role="menu" aria-label="Cell actions" hidden><button type="button" role="menuitem" id="showCellEvolution">Show evolution</button></div>
 <dialog id="scopeDialog" aria-labelledby="scopeDialogTitle" aria-describedby="scopeDialogScope">
-  <header class="evo-dialog-head"><div><h2 id="scopeDialogTitle">Show data</h2><p id="scopeDialogScope"></p></div><span class="sp"></span><button class="btn" id="scopeDialogClose" type="button" aria-label="Close data view">Back to chart</button></header>
+  <header class="evo-dialog-head"><div><h2 id="scopeDialogTitle">Show data</h2><p id="scopeDialogScope"></p></div><span class="sp"></span><div class="scope-dialog-actions"><div class="seg" id="scopeDialogUnit" role="group" aria-label="Report unit" hidden><button type="button" data-unit="bdt" aria-label="Value in million BDT" title="Value in million BDT" aria-pressed="true">BDT</button><button type="button" data-unit="kl" aria-label="Volume in KL" title="Volume in KL" aria-pressed="false">KL</button></div><button class="btn" id="scopeDialogClose" type="button" aria-label="Close data view">Back to chart</button></div></header>
   <div id="scopeDialogBody"></div>
 </dialog>
 <dialog id="evoDialog" aria-labelledby="evoDialogTitle" aria-describedby="evoDialogScope">
@@ -2025,7 +2057,7 @@ let curRep='batch',lastRep='batch';
 /* inventory-evolution: scripts and chart styles load on first visit */
 let evoLoad=null;
 function evoOpening(){const d=new Date(Date.parse('1 '+STATUS.labels.at(-1)+' UTC'));if(Number.isNaN(+d))return 'Next';const m=d.getUTCMonth()+1;return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m%12]+' '+(d.getUTCFullYear()+(m>11?1:0))}
-function openEvolution(scope){
+function openEvolution(scope,onDrillChange){
   const request=++evoRequest;
   if(!evoLoad){
     const evoBase=rcApi('').slice(0,-4)+'assets/evolution/';
@@ -2038,7 +2070,7 @@ function openEvolution(scope){
     if(request!==evoRequest||(scope&&!$('#evoDialog').open))return;
     const evolution=window.FSNE.evolution;
     if(scope)evoPrevious=evolution.captureScope();
-    return evolution.open({showData:showScopedData,root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
+    return evolution.open({showData:showScopedData,onDrillChange:onDrillChange||null,root:$('#evPanel'),unit:reportUnit,scope,parents:Object.fromEntries(SERIES.brands.flatMap(b=>(b.p||[]).map(p=>[String(p.c),p.d+' · '+p.c]))),api:path=>rcApi(RUN_ID?'runs/'+RUN_ID+'/'+path:path)});
   }).catch(e=>{if(scope)$('#evoDialogScope').textContent='Could not load evolution: '+e.message;else toast(e.message)});
 }
 const ACTION_PLANS=['rescue','rebalance','loading-watch'];
@@ -2126,26 +2158,48 @@ function showEvolutionMenu(td,x,y){
   menu.style.top=Math.max(8,Math.min(y,innerHeight-menu.offsetHeight-8))+'px';
   $('#showCellEvolution').focus({preventScroll:true});
 }
+function captureOverviewReturn(opener){
+  const key=opener?.getAttribute?.('data-overview-drill')||null;
+  const cls=opener?.classList?.[0]||null;
+  return {opener:opener||null,key,cls};
+}
+function focusOverviewReturn(saved){
+  if(!saved)return;
+  if(saved.opener?.isConnected){saved.opener.focus({preventScroll:true});return}
+  if(!saved.key)return;
+  const root=$('#r-overview'),attr='[data-overview-drill="'+CSS.escape(saved.key)+'"]';
+  const target=(saved.cls&&root?.querySelector('.'+CSS.escape(saved.cls)+attr))||root?.querySelector(attr);
+  target?.focus({preventScroll:true});
+}
+function openEvolutionDialog(scope,{title='Inventory evolution',subtitle='',closeLabel='Back to report',opener=null,onDrillChange=null}={}){
+  const dialog=$('#evoDialog');
+  if(evoHome)returnEvolutionToReport();
+  evoReturn=captureOverviewReturn(opener);
+  const chart=$('#r-evolution');
+  evoHome=document.createComment('evolution home');chart.before(evoHome);$('#evoDialogBody').append(chart);chart.hidden=false;
+  $('#evoDialogTitle').textContent=title;
+  $('#evoDialogScope').textContent=subtitle;
+  $('#evoDialogClose').textContent=closeLabel;
+  dialog.showModal();$('#evoDialogClose').focus({preventScroll:true});
+  openEvolution({...scope,reportUnits:true},onDrillChange);
+}
 function showCellEvolution(){
   const scope=evolutionCells.get(evoMenuCell);if(!scope)return;
-  if(evoHome)returnEvolutionToReport();
-  evoReturn=evoMenuCell.closest('.tw');closeEvolutionMenu();
-  const chart=$('#r-evolution'),dialog=$('#evoDialog');
-  evoHome=document.createComment('evolution home');chart.before(evoHome);$('#evoDialogBody').append(chart);chart.hidden=false;
+  const opener=evoMenuCell.closest('.tw');closeEvolutionMenu();
   const measure=scope.lens==='lnd'?'LND FC':'Exposure';
-  $('#evoDialogScope').textContent=[measure,scope.label,scope.filters?.category?.join(' + '),scope.asOf,unitLabel()].filter(Boolean).join(' · ');
-  dialog.showModal();$('#evoDialogClose').focus({preventScroll:true});
-  openEvolution({...scope,reportUnits:true});
+  const subtitle=[measure,scope.label,scope.filters?.category?.join(' + '),scope.asOf,unitLabel()].filter(Boolean).join(' · ');
+  openEvolutionDialog(scope,{title:'Inventory evolution',subtitle,closeLabel:'Back to report',opener});
 }
 $('#showCellEvolution').onclick=showCellEvolution;
-$('#evoDialogClose').onclick=()=>$('#evoDialog').close();
+$('#evoDialogClose').onclick=()=>{const d=$('#evoDialog');d.close();returnEvolutionToReport()};
 $('#evoDialogExport').onclick=()=>window.FSNE?.evolution?.exportCsv();
 function returnEvolutionToReport(){
   if(!evoHome)return;
   ++evoRequest;
   const chart=$('#r-evolution');chart.hidden=true;evoHome?.replaceWith(chart);evoHome=null;
   if(evoPrevious)window.FSNE.evolution.restoreScope(evoPrevious);evoPrevious=null;
-  evoReturn?.focus({preventScroll:true});evoReturn=null;
+  const saved=evoReturn;evoReturn=null;
+  focusOverviewReturn(saved);
 }
 $('#evoDialog').addEventListener('close',()=>{
   if(!$('#evoDialog').open)returnEvolutionToReport();
@@ -2821,8 +2875,10 @@ function ovChip(change,label='',neutral=false){
   const level=Math.abs(change)<.005,tone=level||neutral?'flat':change<0?'good':'bad';
   return '<span class="ov-chip '+tone+'">'+(level?'Level':(change<0?'▼ ':'▲ ')+ovPct(change))+(label?' <small>'+label+'</small>':'')+'</span>';
 }
-const ovSvg=(w,h,body,label)=>'<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"'+(label?' role="img" aria-label="'+esc(label)+'"':' aria-hidden="true"')+'>'+body+'</svg>';
+const ovSvg=(w,h,body,label,role='img')=>'<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"'+(label?' role="'+role+'" aria-label="'+esc(label)+'"':' aria-hidden="true"')+'>'+body+'</svg>';
 const ovText=(x,y,text,style,anchor='middle',dy=0)=>'<text x="'+x+'" y="'+y+'" dy="'+dy+'" text-anchor="'+anchor+'" style="'+style+'">'+text+'</text>';
+const ovDrillBtn=spec=>' data-overview-drill="'+esc(JSON.stringify(spec))+'"';
+const ovDrillAttr=spec=>ovDrillBtn(spec)+' tabindex="0" role="button"';
 let ovUid=0;
 
 // National stock by month on its own non-zero scale; every saved point selects its month.
@@ -2848,13 +2904,14 @@ function overviewStockChart(facts,m){return(w,h)=>{
   return ovSvg(w,h,s,'National stock by month in '+unitLabel());
 }}
 // One RSL group's stock on its own scale: faint month ticks, peak labelled above, trough below.
-function overviewRslTrend(vals,m){return(w,h)=>{
+// Each saved month gets a clickable column hit-band that drills directly into that month's data.
+function overviewRslTrend(vals,m,g){return(w,h)=>{
   const N=vals.length,saved=vals.map((v,i)=>v==null?null:i).filter(i=>i!=null);
   if(saved.length<2||w<=0||h<=0)return '';
-  const L=18,R=18,T=15,B=16,gap=13,pw=w-L-R,base=h-B;
+  const L=18,R=18,T=15,B=16,gap=13,pw=w-L-R,base=h-B,step=pw/(N-1);
   let lo=Math.min(...saved.map(i=>vals[i])),hi=Math.max(...saved.map(i=>vals[i]));
   if(hi-lo<1e-9){hi+=1;lo-=1}
-  const X=i=>L+i*pw/(N-1),Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo)),P=saved.map(i=>[X(i),Y(vals[i])]),line=monotoneLine(P),id='ovr'+(++ovUid);
+  const X=i=>L+i*step,Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo)),P=saved.map(i=>[X(i),Y(vals[i])]),line=monotoneLine(P),id='ovr'+(++ovUid);
   const top=saved.reduce((a,i)=>vals[i]>vals[a]?i:a),low=saved.reduce((a,i)=>vals[i]<vals[a]?i:a);
   const anchor=i=>i===0?'start':i===N-1?'end':'middle',nx=i=>i===0?X(i)-4:i===N-1?X(i)+4:X(i),label='font:600 10.5px var(--font);fill:var(--ink2)';
   let s='<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--ov-line);stop-opacity:.14"/><stop offset="1" style="stop-color:var(--ov-line);stop-opacity:0"/></linearGradient></defs>';
@@ -2865,17 +2922,26 @@ function overviewRslTrend(vals,m){return(w,h)=>{
   [top,low].forEach(i=>{if(i!==m)s+='<circle cx="'+X(i)+'" cy="'+Y(vals[i])+'" r="2.6" style="fill:var(--surface);stroke:var(--ov-line);stroke-width:1.4"/>'});
   if(vals[m]!=null)s+='<circle cx="'+X(m)+'" cy="'+Y(vals[m])+'" r="3.6" style="fill:var(--ov-line);stroke:var(--surface);stroke-width:1.6"/>';
   STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
-  return ovSvg(w,h,s);
+  if(g){
+    saved.forEach(i=>{
+      const x=X(i),x0=Math.max(0,x-step/2),x1=Math.min(w,x+step/2),tip=STATUS.labels[i]+' · '+g+' stock '+ovNum(vals[i])+' '+unitLabel()+' · Click to view '+ovMon(i)+' details';
+      s+='<g class="ov-pt"'+ovDrillAttr({kind:'status',metric:0,rsl:[g],month:i,title:g+' · Stock'})+' aria-label="'+esc(tip)+'"><title>'+esc(tip)+'</title>'
+        +'<line class="ov-pt-guide" x1="'+x+'" x2="'+x+'" y1="'+T+'" y2="'+base+'"/>'
+        +'<circle class="ov-pt-dot" cx="'+x+'" cy="'+Y(vals[i])+'" r="4.2"/>'
+        +'<rect x="'+x0+'" y="0" width="'+(x1-x0)+'" height="'+h+'" fill="transparent"/></g>';
+    });
+  }
+  return ovSvg(w,h,s,g?g+' stock by month in '+unitLabel():'','group');
 }}
 // Small trend card: one or two series on a shared scale. The first series gets peak/trough labels,
 // the second only the selected month, so the labels stay apart on a card this size.
-function overviewTrendChart(series,m){return(w,h)=>{
+function overviewTrendChart(series,m,cardSpec){return(w,h)=>{
   const N=STATUS.labels.length,main=series[0].vals,saved=main.map((v,i)=>v==null?null:i).filter(i=>i!=null);
   if(saved.length<2||w<=0||h<=0)return '';
-  const L=18,R=18,T=14,B=16,gap=13,pw=w-L-R,base=h-B,all=series.flatMap(x=>saved.map(i=>x.vals[i]).filter(v=>v!=null));
+  const L=18,R=18,T=14,B=16,gap=13,pw=w-L-R,base=h-B,step=pw/(N-1),all=series.flatMap(x=>saved.map(i=>x.vals[i]).filter(v=>v!=null));
   let lo=Math.min(...all),hi=Math.max(...all);
   if(hi-lo<1e-9){hi+=1;lo-=1}
-  const X=i=>L+i*pw/(N-1),Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo));
+  const X=i=>L+i*step,Y=v=>T+(h-T-B-gap)*(1-(v-lo)/(hi-lo));
   const top=saved.reduce((a,i)=>main[i]>main[a]?i:a),low=saved.reduce((a,i)=>main[i]<main[a]?i:a);
   const anchor=i=>i===0?'start':i===N-1?'end':'middle',nx=i=>i===0?X(i)-4:i===N-1?X(i)+4:X(i),label='font:600 10.5px var(--font);fill:var(--ink2)';
   let s='<line x1="'+L+'" x2="'+(w-R)+'" y1="'+base+'" y2="'+base+'" style="stroke:var(--ov-grid)"/>';
@@ -2892,20 +2958,36 @@ function overviewTrendChart(series,m){return(w,h)=>{
     if(k&&m!==top&&m!==low)s+=ovText(nx(m),Y(x.vals[m])+14,ovNum(x.vals[m]),'font:600 10.5px var(--font);fill:'+x.color,anchor(m));
   });
   STATUS.labels.forEach((_,i)=>{s+=ovText(X(i),h-3,esc(ovMon(i)),'font:'+(i===m?600:450)+' 10px var(--font);fill:'+(i===m?'var(--ink2)':'var(--ov-tick)'))});
-  return ovSvg(w,h,s);
+  if(cardSpec){
+    saved.forEach(i=>{
+      const x=X(i),x0=Math.max(0,x-step/2),x1=Math.min(w,x+step/2);
+      const valsTxt=series.filter(sr=>sr.vals[i]!=null).map(sr=>sr.name+' '+ovNum(sr.vals[i])).join(' · ');
+      const tip=STATUS.labels[i]+' · '+valsTxt+' '+unitLabel()+' · Click to view '+ovMon(i)+' details';
+      s+='<g class="ov-pt"'+ovDrillAttr({...cardSpec,month:i})+' aria-label="'+esc(tip)+'"><title>'+esc(tip)+'</title>'
+        +'<line class="ov-pt-guide" x1="'+x+'" x2="'+x+'" y1="'+T+'" y2="'+base+'"/>'
+        +'<circle class="ov-pt-dot" cx="'+x+'" cy="'+Y(main[i])+'" r="4.2"/>'
+        +'<rect x="'+x0+'" y="0" width="'+(x1-x0)+'" height="'+h+'" fill="transparent"/></g>';
+    });
+  }
+  return ovSvg(w,h,s,cardSpec?cardSpec.title+' by month in '+unitLabel():'','group');
 }}
-function overviewTrendCard(title,series,key,m,plot){
-  const lg=series.length>1?'<span class="ov-lg">'+series.map(x=>'<span><i style="background:'+x.color+'"></i>'+esc(x.name)+'</span>').join('')+'</span>':'';
-  return '<section class="ov-card ov-trend"><div class="ov-card-h"><b>'+esc(title)+'</b>'+lg+'</div>'+plot(key,overviewTrendChart(series,m))+'</section>';
+function overviewTrendCard(title,series,key,m,plot,cardSpec){
+  const lg=series.length>1?'<span class="ov-lg">'+series.map(x=>x.drill
+    ?'<button type="button" class="ov-lg-btn"'+ovDrillBtn(x.drill)+' title="'+esc(x.drill.title+' · Click to view details')+'"><i style="background:'+x.color+'"></i>'+esc(x.name)+'</button>'
+    :'<span><i style="background:'+x.color+'"></i>'+esc(x.name)+'</span>').join('')+'</span>':'';
+  const heading=cardSpec
+    ?'<button type="button" class="ov-trend-btn"'+ovDrillBtn(cardSpec)+' title="'+esc(cardSpec.title+' · Click to view details')+'"><b>'+esc(title)+'</b></button>'
+    :'<b>'+esc(title)+'</b>';
+  return '<section class="ov-card ov-trend"><div class="ov-card-h">'+heading+lg+'</div>'+plot(key,overviewTrendChart(series,m,cardSpec))+'</section>';
 }
 const ovCellSum=cs=>{let stock=0,exp=0,lnd=0;if(cs)for(const [s,e,l] of cs){stock+=s;exp+=e;lnd+=l}return [stock,exp,lnd]};
 const ovConcPct=x=>x==null||!isFinite(x)?'–':(x*100).toFixed(1)+'%';
 // Aggregate brands and town LND concentration for month m (and previous saved month p) from the status tree.
 function overviewBrandDrivers(root,m,p,mode='largest'){
-  const brands=new Map(),townLnds=[];
+  const brands=new Map(),townRecs=[];
   let totalLnd=0;
   for(const town of root?.kids||[]){
-    if(town.m?.[m])townLnds.push(ovCellSum(town.m[m])[2]);
+    if(town.m?.[m]){const [,tExp,tLnd]=ovCellSum(town.m[m]);townRecs.push({town:town.name,exp:tExp,lnd:tLnd})}
     for(const b of town.kids||[]){
       const cur=b.m?.[m]?ovCellSum(b.m[m]):null;
       const prev=p!=null&&b.m?.[p]?ovCellSum(b.m[p]):null;
@@ -2929,10 +3011,12 @@ function overviewBrandDrivers(root,m,p,mode='largest'){
   const active=all.filter(r=>r.present);
   const byLnd=active.slice().sort((a,b)=>b.lnd-a.lnd||b.exp-a.exp||a.brand.localeCompare(b.brand));
   const topBrandN=Math.min(5,byLnd.length);
+  const topBrands=byLnd.slice(0,topBrandN).map(r=>r.brand);
   const topBrandShare=totalLnd>0?byLnd.slice(0,topBrandN).reduce((s,r)=>s+r.lnd,0)/totalLnd:null;
-  townLnds.sort((a,b)=>b-a);
-  const topTownN=Math.min(5,townLnds.length);
-  const topTownShare=totalLnd>0?townLnds.slice(0,topTownN).reduce((s,v)=>s+v,0)/totalLnd:null;
+  townRecs.sort((a,b)=>b.lnd-a.lnd||b.exp-a.exp||a.town.localeCompare(b.town));
+  const topTownN=Math.min(5,townRecs.length);
+  const topTowns=townRecs.slice(0,topTownN).map(r=>r.town);
+  const topTownShare=totalLnd>0?townRecs.slice(0,topTownN).reduce((s,r)=>s+r.lnd,0)/totalLnd:null;
   const effectiveMode=mode==='movers'&&p!=null?'movers':'largest';
   const rows=effectiveMode==='movers'
     ?all.slice().sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta)||b.lnd-a.lnd||a.brand.localeCompare(b.brand)).slice(0,6)
@@ -2940,8 +3024,8 @@ function overviewBrandDrivers(root,m,p,mode='largest'){
   const maxBar=rows.reduce((hi,r)=>Math.max(hi,r.exp,r.lnd),0);
   return {
     mode:effectiveMode,rows,maxBar,
-    brandCount:active.length,topBrandN,topBrandShare,
-    townCount:townLnds.length,topTownN,topTownShare,
+    brandCount:active.length,topBrandN,topBrands,topBrandShare,
+    townCount:townRecs.length,topTownN,topTowns,topTownShare,
   };
 }
 function overviewBrandDriversCard(root,m,p,mode='largest'){
@@ -2959,8 +3043,9 @@ function overviewBrandDriversCard(root,m,p,mode='largest'){
       deltaCell='<span class="ov-bd-delta '+tone+'">'+text+'</span>';
       deltaTitle=' · vs '+ovMon(p)+' '+text;
     }
-    const title=r.brand+' · LND FC '+ovNum(r.lnd)+' · Exposure '+ovNum(r.exp)+' ('+expPct+' of stock) · '+townLabel+deltaTitle+' '+unitLabel();
-    return '<div class="ov-bd-r" title="'+esc(title)+'">'
+    const title=r.brand+' · LND FC '+ovNum(r.lnd)+' · Exposure '+ovNum(r.exp)+' ('+expPct+' of stock) · '+townLabel+deltaTitle+' '+unitLabel()+' · Click to view details';
+    const drill=ovDrillAttr({kind:'status',metric:1,brands:[r.brand],expandFirst:true,title:r.brand});
+    return '<div class="ov-bd-r"'+drill+' title="'+esc(title)+'">'
       +'<span class="ov-bd-name">'+esc(r.brand)+'</span>'
       +'<div class="ov-bd-bar"><div class="ov-bd-track"><i class="exp" style="width:'+barW(r.exp)+'"></i><i class="lnd" style="width:'+barW(r.lnd)+'"></i></div>'
       +'<div class="ov-bd-sub"><span>Exp '+ovNum(r.exp)+'</span><span>'+townLabel+'</span></div></div>'
@@ -2968,9 +3053,9 @@ function overviewBrandDriversCard(root,m,p,mode='largest'){
       +'<span class="ov-bd-pill '+ratioTone(r.expRatio)+'">'+expPct+'</span>'
       +deltaCell+'</div>';
   }).join(''):'<p class="ov-bd-empty">No brand data for this month</p>';
-  const summary='<span>Top '+d.topBrandN+'/'+d.brandCount+' brands = <b>'+ovConcPct(d.topBrandShare)+'</b> of LND</span>'
-    +'<i class="ov-bd-sep" aria-hidden="true"></i>'
-    +'<span>Top '+d.topTownN+'/'+d.townCount+' towns = <b>'+ovConcPct(d.topTownShare)+'</b></span>';
+  const topBrandBtn='<button type="button" class="ov-bd-sum-btn"'+(d.topBrands.length?ovDrillBtn({kind:'status',metric:1,brands:d.topBrands,title:'Top '+d.topBrandN+' brands by LND FC'})+' title="Click to view these '+d.topBrandN+' brands"':' disabled')+'>Top '+d.topBrandN+'/'+d.brandCount+' brands = <b>'+ovConcPct(d.topBrandShare)+'</b> of LND</button>';
+  const topTownBtn='<button type="button" class="ov-bd-sum-btn"'+(d.topTowns.length?ovDrillBtn({kind:'status',metric:1,towns:d.topTowns,order:'town-first',title:'Top '+d.topTownN+' towns by LND FC'})+' title="Click to view these '+d.topTownN+' towns"':' disabled')+'>Top '+d.topTownN+'/'+d.townCount+' towns = <b>'+ovConcPct(d.topTownShare)+'</b></button>';
+  const summary=topBrandBtn+'<i class="ov-bd-sep" aria-hidden="true"></i>'+topTownBtn;
   const toggle='<div class="ov-bd-seg" role="group" aria-label="Sort brands">'
     +'<button type="button" data-overview-brand-mode="largest" aria-pressed="'+(d.mode==='largest')+'">Largest</button>'
     +'<button type="button" data-overview-brand-mode="movers" aria-pressed="'+(d.mode==='movers')+'"'+(p==null?' disabled title="Select a month with a prior snapshot to view movers"':'')+'>Movers</button></div>';
@@ -2985,21 +3070,28 @@ function overviewHero(facts,m,p,first,plot){
   const chips=(P?ovChip(ovChange(t.stock,P.stock),'vs '+ovMon(p),true):'')+(m!==first&&p!==first?ovChip(ovChange(t.stock,facts[first].stock),'since '+ovMon(first),true):'');
   // Stock is a share of the national total; Exposure and LND FC are shares of the row's own stock.
   const pct=(v,base)=>base?ovShare(v/base):'–';
-  const row=(label,x,cls='',stockPct=pct(x.stock,t.stock))=>'<div class="ov-m'+cls+'"><span>'+esc(label)+'</span><b>'+ovNum(x.stock)+'</b><em>'+stockPct+'</em>'
-    +'<b>'+ovNum(x.exp)+'</b><em>'+pct(x.exp,x.stock)+'</em><b>'+ovNum(x.lnd)+'</b><em>'+pct(x.lnd,x.stock)+'</em></div>';
+  const metricNames=['Stock','Exposure','LND FC'];
+  const row=(label,x,cls='',stockPct=pct(x.stock,t.stock),rsl=null)=>{
+    const scope=rsl||'National',rslField=rsl?{rsl:[rsl]}:{};
+    const cell=(j,val,sub)=>'<span class="ov-mc"'+ovDrillAttr({kind:'status',metric:j,...rslField,title:scope+' · '+metricNames[j]})
+      +' title="'+esc(scope+' · '+metricNames[j]+' · Click to view details')+'"><b>'+ovNum(val)+'</b><em>'+sub+'</em></span>';
+    return '<div class="ov-m'+cls+'"><span class="ov-ml"'+ovDrillAttr({kind:'status',metric:0,...rslField,title:scope+' · Stock'})
+      +' title="'+esc(scope+' · Stock · Click to view details')+'">'+esc(label)+'</span>'
+      +cell(0,x.stock,stockPct)+cell(1,x.exp,pct(x.exp,x.stock))+cell(2,x.lnd,pct(x.lnd,x.stock))+'</div>';
+  };
   const head='<div class="ov-m h"><span>RSL</span><b>Stock</b><em>% of total</em><b>Exposure</b><em>% of stock</em><b>LND FC</b><em>% of stock</em></div>';
   return '<section class="ov-hero"><div class="ov-hero-l"><span class="ov-k">National stock</span>'
-    +'<div class="ov-vr"><div class="ov-v">'+ovNum(t.stock)+'<span>'+unitLabel()+'</span></div><div class="ov-ch">'+chips+'</div></div>'
-    +'<div class="ov-ms">'+head+OVERVIEW_RSL.map(g=>row(g,t.b[g])).join('')+row('Total',t,' t','')+'</div></div>'
+    +'<div class="ov-vr"><div class="ov-v"'+ovDrillAttr({kind:'status',metric:0,title:'National stock'})+' title="National stock · Click to view details">'+ovNum(t.stock)+'<span>'+unitLabel()+'</span></div><div class="ov-ch">'+chips+'</div></div>'
+    +'<div class="ov-ms">'+head+OVERVIEW_RSL.map(g=>row(g,t.b[g],'',pct(t.b[g].stock,t.stock),g)).join('')+row('Total',t,' t','',null)+'</div></div>'
     +plot('stock',overviewStockChart(facts,m))+'</section>';
 }
 function overviewRslCard(facts,m,p,g,plot){
   const t=facts[m],b=t.b[g],vals=facts.map(x=>x?x.b[g].stock:null);
-  const title=g+' stock, '+unitLabel()+'\n'+vals.map((v,i)=>v==null?'':STATUS.labels[i]+'  '+ovNum(v)).filter(Boolean).join('\n');
-  return '<section class="ov-card ov-rc" title="'+esc(title)+'"><div class="ov-rc-h"><span class="ov-rc-n"><i style="background:'+OVERVIEW_SWATCH[g]+'"></i>'+esc(g)+'</span>'
-    +(p==null?'':ovChip(ovChange(b.stock,facts[p].b[g].stock),'vs '+ovMon(p),true))+'</div>'
-    +'<div class="ov-kv"><b>'+ovNum(b.stock)+'</b><span>'+ovShare(t.stock?b.stock/t.stock:null)+' of stock</span></div>'
-    +plot('rsl'+OVERVIEW_RSL.indexOf(g),overviewRslTrend(vals,m))+'</section>';
+  const title=g+' stock, '+unitLabel()+'\n'+vals.map((v,i)=>v==null?'':STATUS.labels[i]+'  '+ovNum(v)).filter(Boolean).join('\n')+'\nClick to view details';
+  return '<section class="ov-card ov-rc"><button type="button" class="ov-rc-head"'+ovDrillBtn({kind:'status',metric:0,rsl:[g],title:g+' · Stock'})+' title="'+esc(title)+'"><span class="ov-rc-h"><span class="ov-rc-n"><i style="background:'+OVERVIEW_SWATCH[g]+'"></i>'+esc(g)+'</span>'
+    +(p==null?'':ovChip(ovChange(b.stock,facts[p].b[g].stock),'vs '+ovMon(p),true))+'</span>'
+    +'<span class="ov-kv"><b>'+ovNum(b.stock)+'</b><span>'+ovShare(t.stock?b.stock/t.stock:null)+' of stock</span></span></button>'
+    +plot('rsl'+OVERVIEW_RSL.indexOf(g),overviewRslTrend(vals,m,g))+'</section>';
 }
 // Normalize inventory-evolution category links into base units (BDT or KL) keyed by source snapshot.
 function parseOverviewPlans(data,unit){
@@ -3075,8 +3167,9 @@ function overviewPlansCard(entry,m,p,lens){
   const rows=stats.cats.map(c=>{
     const tip=c.name+' · '+lm+' '+meas+' '+ovNum(c.tot)+' · resolved/reduced by '+cm+' '+ovNum(c.res)+' ('+ovPlanPct(c.rate)+')'
       +'\nEach month since '+sinceShort+': '+c.hist.map(x=>x.mon+' '+ovPlanPct(x.r)).join(', ')
-      +'\nAverage '+ovPlanPct(c.avg);
-    return '<div class="ov-pl" title="'+esc(tip)+'"><span class="ov-pl-nm"><i style="background:'+c.color+'"></i>'+esc(c.name)+'</span><b>'+ovNum(c.tot)+'</b>'
+      +'\nAverage '+ovPlanPct(c.avg)+'\nClick to open scoped inventory-evolution Sankey';
+    const drill=ovDrillAttr({kind:'plan',lens,cat:c.k,node:'category:'+stats.prevSnap.key+':'+c.k,name:c.name,prevLabel:stats.prevSnap.label||lm,prevLong});
+    return '<div class="ov-pl"'+drill+' title="'+esc(tip)+'"><span class="ov-pl-nm"><i style="background:'+c.color+'"></i>'+esc(c.name)+'</span><b>'+ovNum(c.tot)+'</b>'
       +'<span class="ov-pl-bar"><u style="width:'+(100*c.tot/max).toFixed(1)+'%"><s style="width:'+(100*(c.rate||0)).toFixed(1)+'%"></s></u></span>'
       +'<b class="rt">'+ovPlanPct(c.rate)+'</b><b class="av">'+ovPlanPct(c.avg)+'</b></div>';
   }).join('');
@@ -3090,10 +3183,10 @@ function overviewPlansCard(entry,m,p,lens){
 // Exposure (national, with the part that comes from >10M stock) and LND FC by month.
 function overviewTrends(facts,m,plot){
   const long=OVERVIEW_RSL.find(g=>g==='> 10M'),at=f=>facts.map(x=>x?f(x):null);
-  const exposure=[{name:'Total',color:'var(--ov-line)',vals:at(x=>x.exp)}];
-  if(long)exposure.push({name:'> 10M',color:'#d08a1e',vals:at(x=>x.b[long].exp)});
-  return '<div class="ov-trends">'+overviewTrendCard('Exposure trend',exposure,'trendExp',m,plot)
-    +overviewTrendCard('LND FC trend',[{name:'LND FC',color:'var(--bad)',vals:at(x=>x.lnd)}],'trendLnd',m,plot)+'</div>';
+  const exposure=[{name:'Total',color:'var(--ov-line)',vals:at(x=>x.exp),drill:{kind:'status',metric:1,title:'Exposure · all RSL'}}];
+  if(long)exposure.push({name:'> 10M',color:'#d08a1e',vals:at(x=>x.b[long].exp),drill:{kind:'status',metric:1,rsl:[long],title:'Exposure · '+long}});
+  return '<div class="ov-trends">'+overviewTrendCard('Exposure trend',exposure,'trendExp',m,plot,{kind:'status',metric:1,title:'Exposure · all RSL'})
+    +overviewTrendCard('LND FC trend',[{name:'LND FC',color:'var(--bad)',vals:at(x=>x.lnd)}],'trendLnd',m,plot,{kind:'status',metric:2,title:'LND FC · all RSL'})+'</div>';
 }
 function overviewMarkup(tree,facts,m,plots,planEntry){
   const p=ovPrev(facts,m),first=facts.findIndex(Boolean);
@@ -3143,6 +3236,68 @@ function drawOverview(){
   $$('#overviewMonths button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.overviewSelect===overviewMonth));
 }
 function selectOverviewMonth(i){if(i===overviewMonth)return;overviewMonth=i;drawOverview()}
+function buildOverviewPlanScope(spec,unit,gap){
+  const lens=spec.lens||overviewPlanLens;
+  const emptyFilters={town:[],parent:[],material:[],brand:[],rsl:[],category:[]};
+  const parentScope={lens,unit,hide10:false,gap,asOf:null,reportUnits:true,drill:null,bounds:{},filters:emptyFilters};
+  const drill={id:spec.node,label:spec.name,dimension:'rsl_group',path:[{node:spec.node}],trail:[spec.prevLabel+' '+spec.name],parent:{scope:parentScope,id:spec.node,x:0,y:0}};
+  return {lens,unit,asOf:null,filters:emptyFilters,drill};
+}
+function openOverviewPlanEvolution(spec,opener){
+  const lens=spec.lens||overviewPlanLens,meas=OVERVIEW_PLAN_MEAS[lens]||'Exposure';
+  const currentGap=+$('#evGap')?.value||240;
+  const scope=buildOverviewPlanScope(spec,reportUnit,currentGap);
+  const initialTitle=spec.name+' · Inventory evolution',initialSub=[meas,spec.prevLong+' plan',unitLabel()].filter(Boolean).join(' · ');
+  openEvolutionDialog(scope,{
+    title:initialTitle,subtitle:initialSub,closeLabel:'Back to overview',opener,
+    onDrillChange:(activeDrill,activeLensObj)=>{
+      const lensName=OVERVIEW_PLAN_MEAS[activeLensObj?.id]||activeLensObj?.short||meas;
+      if(!activeDrill){
+        $('#evoDialogTitle').textContent='Inventory evolution';
+        $('#evoDialogScope').textContent=[lensName,unitLabel()].filter(Boolean).join(' · ');
+      }else if(activeDrill.id===spec.node&&activeDrill.path.length===1){
+        $('#evoDialogTitle').textContent=initialTitle;
+        $('#evoDialogScope').textContent=initialSub;
+      }else{
+        $('#evoDialogTitle').textContent=activeDrill.label+' · Inventory evolution';
+        $('#evoDialogScope').textContent=[lensName,activeDrill.trail.join(' → '),unitLabel()].filter(Boolean).join(' · ');
+      }
+    },
+  });
+}
+function openOverviewDrill(spec,opener){
+  if(!spec)return;
+  if(spec.kind==='plan'){openOverviewPlanEvolution(spec,opener);return}
+  const snap=spec.month!=null?spec.month:overviewMonth;
+  const filters={};
+  if(spec.brands?.length)filters.brand=spec.brands;
+  if(spec.towns?.length)filters.town=spec.towns;
+  const rsl=spec.rsl?.length?spec.rsl:null;
+  const parts=['Overview',STATUS.labels[snap]+' snapshot'];
+  if(rsl)parts.push('RSL '+rsl.join(', '));
+  parts.push('All stock categories');
+  showScopedData({
+    title:spec.title||'Overview details',
+    plainTitle:true,
+    snapshotIndex:snap,
+    metric:spec.metric??0,
+    order:spec.order||'town',
+    filters:Object.keys(filters).length?filters:null,
+    rsl,
+    expandFirst:Boolean(spec.expandFirst),
+    note:parts.join(' · '),
+    closeLabel:'Back to overview',
+    showUnit:true,
+    opener,
+  });
+}
+function triggerOverviewDrill(drillEl){
+  const raw=drillEl?.getAttribute('data-overview-drill');
+  if(!raw)return;
+  let spec;
+  try{spec=JSON.parse(raw)}catch{return}
+  openOverviewDrill(spec,drillEl);
+}
 document.addEventListener('click',e=>{
   const modeBtn=e.target.closest?.('#r-overview [data-overview-brand-mode]');
   if(modeBtn&&!modeBtn.disabled){
@@ -3170,7 +3325,16 @@ document.addEventListener('click',e=>{
     return;
   }
   const el=e.target.closest?.('#overviewMonths [data-overview-select],#r-overview [data-overview-select]');
-  if(el&&!el.disabled)selectOverviewMonth(+el.dataset.overviewSelect);
+  if(el&&!el.disabled){selectOverviewMonth(+el.dataset.overviewSelect);return}
+  const drillEl=e.target.closest?.('#r-overview [data-overview-drill]');
+  if(drillEl&&!drillEl.disabled)triggerOverviewDrill(drillEl);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'&&e.key!==' ')return;
+  const drillEl=e.target.closest?.('#r-overview [data-overview-drill]');
+  if(!drillEl||drillEl.disabled||drillEl!==e.target||drillEl.tagName==='BUTTON')return;
+  e.preventDefault();
+  triggerOverviewDrill(drillEl);
 });
 $('#overviewMonths').addEventListener('keydown',e=>{
   const step={ArrowLeft:-1,ArrowRight:1}[e.key];if(!step)return;
@@ -3261,9 +3425,9 @@ function filteredStatusTree(){
 function setStatusView(view){
   statusStates.set(statusView,{metric:statusMetric,sort:statusSort,open:statusOpen});
   const order=$('#sOrder').value,key=view==='town'||order==='town-first'?'town':'brand-'+order;
-  const state=statusStates.get(key)||{metric:statusScope||key.startsWith('brand-')&&statusView.startsWith('brand-')?statusMetric:0,sort:{k:'total',d:-1},open:new Set()};
+  const state=statusStates.get(key)||{metric:statusSaved||key.startsWith('brand-')&&statusView.startsWith('brand-')?statusMetric:0,sort:{k:'total',d:-1},open:new Set()};
   statusView=key;statusMetric=state.metric;statusSort=state.sort;statusOpen=state.open;
-  statusFilters.use(statusScope?'scoped':key==='town'?'town':'brand');
+  statusFilters.use(statusSaved?'scoped':key==='town'?'town':'brand');
   statusRslFilter.refresh();
   $('#sOrder').hidden=view==='town';$('#sMetric').value=String(statusMetric);
   $('#sSort').value=statusSort.k+':'+statusSort.d;$('#sSort').setAttribute('aria-label',key==='town'?'Sort towns':'Sort brands');
@@ -3286,7 +3450,7 @@ function statusDohPairs(n,view,pairs){
   return pairs.filter(p=>statusFilters.matches({town:p.t,brand:p.b,parent:p.p},'category')&&(!filters.town||filters.town.includes(p.t))&&(!filters.brand||filters.brand.includes(p.b))&&(!filters.parent||filters.parent.includes(p.p)));
 }
 const statusHierarchy=()=>statusView==='town'?'Town → Brand → Parent':statusView==='brand-town'?'Brand → Town → Parent':'Brand → Parent → Town';
-const statusEnd=()=>statusScope?statusSnap:STATUS.labels.length-1;
+const statusEnd=()=>statusSnap!=null?statusSnap:STATUS.labels.length-1;
 const statusPts=n=>n.m.slice(0,statusEnd()+1).map(cs=>cs==null?null:sum(cs.map(c=>c[statusMetric])));
 const statusMetricLabel=()=>['Stock','Exposure','LND FC'][statusMetric];
 const statusLatest=n=>n.m[statusEnd()];
@@ -3368,7 +3532,7 @@ function drawStatus(){
   table({t:'#sT',cols,rows:flat,sort:statusSort,groups:[{span:1,label:statusHierarchy()}, {span:selected.length+1,label:STATUS.labels[statusEnd()]+' · '+statusMetricNames[statusMetric]+' · '+unitLabel()},{span:3,label:statusMetricLabel()+' overview'}],
     onSort:k=>{statusSort=statusSort.k===k?{k,d:-statusSort.d}:{k,d:k==='name'?1:-1};$('#sSort').value='';drawStatus()},foot,
     onSelect:(n,c)=>cols[c].k==='doh'?openStatusDoh(n,$('#sT').closest('.tw')):openStatusChart(n),emptyMsg:'No records match the selected filters. Clear a filter to see more records.'});
-  if(!statusScope&&(statusMetric===1||statusMetric===2)){
+  if(!statusScope&&statusSnap==null&&(statusMetric===1||statusMetric===2)){
     const date=new Date('1 '+STATUS.labels.at(-1)+' UTC');date.setUTCMonth(date.getUTCMonth()+1,0);
     const lens=statusMetric===1?'exposure':'lnd';
     const specs=[...selected.map((g,i)=>({column:i+1,lens,scope:n=>({filters:{...statusEvolutionFilters(n,statusView),rsl:[normalizeEvolutionRsl(g)]},asOf:date.toISOString().slice(0,10),label:n.name+' · '+g})})),
@@ -3389,8 +3553,8 @@ const statusColors=['var(--bad)','var(--warn)','var(--ink3)','var(--accent)'];
 function openStatusChart(n){
   delete $('#mv').dataset.mode;
   statusFocus=$('#sT').closest('.tw');
-  const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=STATUS.labels.length;
-  const cs=n.m,totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
+  const W=1100,H=470,L=74,R=24,T=30,B=52,ph=H-T-B,N=statusEnd()+1;
+  const cs=n.m.slice(0,N),totals=cs.map(c=>c==null?null:sum(c.map(v=>v[statusMetric]))),mx=Math.max(1,...totals.filter(v=>v!=null));
   const raw=mx/5,power=10**Math.floor(Math.log10(raw)),fraction=raw/power,step=(fraction<=1?1:fraction<=2?2:fraction<=5?5:10)*power,top=Math.ceil(mx/step)*step;
   const X=i=>N>1?L+i*(W-L-R)/(N-1):(L+W-R)/2,Y=v=>T+ph*(1-v/top);
   let g='';
@@ -3405,11 +3569,11 @@ function openStatusChart(n){
       run=[]};
     cs.forEach((c,i)=>{if(c==null)flush();else run.push(i)});flush();
   });
-  cs.forEach((c,i)=>{const x=X(i),title=c?`${STATUS.labels[i]} · Total ${amount(totals[i])} ${unitLabel()}\n`+groupIndices.map(j=>`${STATUS.groups[j]}: ${amount(c[j][statusMetric])} ${unitLabel()}`).join('\n'):`${STATUS.labels[i]} · No saved stock for this row`;
-    g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-(W-L-R)/(N-1)/2)}" y="${T}" width="${(W-L-R)/(N-1)/2+(i&&i<N-1?(W-L-R)/(N-1)/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
+  cs.forEach((c,i)=>{const x=X(i),step=N>1?(W-L-R)/(N-1):W-L-R,title=c?`${STATUS.labels[i]} · Total ${amount(totals[i])} ${unitLabel()}\n`+groupIndices.map(j=>`${STATUS.groups[j]}: ${amount(c[j][statusMetric])} ${unitLabel()}`).join('\n'):`${STATUS.labels[i]} · No saved stock for this row`;
+    g+=`<g data-status-month="${i}" tabindex="0" role="button" aria-label="${esc(title)}" style="cursor:pointer"><rect x="${Math.max(L,x-step/2)}" y="${T}" width="${step/2+(i&&i<N-1?step/2:N===1?step/2:0)}" height="${ph}" fill="transparent"><title>${esc(title)}</title></rect><text x="${x}" y="${H-20}" text-anchor="middle" style="fill:var(--ink2);font:500 12px var(--font)">${STATUS.labels[i].split(' ')[0]}</text></g>`;
   });
   $('#mvTitle').textContent=(n.path||[n.town,n.brand,n.name].filter(Boolean)).join(' · ');
-  $('#mvSub').textContent=`${STATUS.labels[0]}${N>1?' → '+STATUS.labels.at(-1):''} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
+  $('#mvSub').textContent=`${STATUS.labels[0]}${N>1?' → '+STATUS.labels[N-1]:''} · ${statusMetricNames[statusMetric]} stacked by RSL group${n.code?' · parent '+n.code:''}`;
   $('#mvBody').html=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:100%;stroke:none" role="img" aria-label="Monthly ${statusMetricNames[statusMetric]} stacked by RSL group">${g}</svg>`;
   function monthInfo(i){$('#mvFoot').html=`<div class="legend" style="flex-wrap:wrap">${groupIndices.map(j=>`<span><i style="background:${statusColors[j%statusColors.length]}"></i>${esc(STATUS.groups[j])}${cs[i]?' · '+amount(cs[i][j][statusMetric]):''}</span>`).join('')}</div><span class="mono">${STATUS.labels[i]} · ${totals[i]==null?'No saved stock':amount(totals[i])+' '+unitLabel()}</span>`}
   monthInfo(N-1);
@@ -3421,24 +3585,46 @@ const statusOrder=()=>statusView==='town'?['town','brand','parent']:statusView==
 FSNEQuick.attach('#sT',{group:statusFilters,sheetState:()=>SHEETS['#sT'],tree:true,noun:'town–parent rows',
   path:n=>n.id==='total'?[]:statusOrder().slice(0,n.level+1).map(d=>[d,d==='parent'?n.parentCode:n[d]])});
 
-/* Show data: the brand-status page itself, moved into a full-screen dialog and limited to the rows behind a Sankey node or band. */
+/* Show data: the brand-status / town-status page itself, moved into a full-screen dialog and scoped to a chart node, band, or Overview visual. */
 const SCOPE_MODALS=['#mv','#doh','#help'],SCOPE_METRIC={exposure:1,lnd:2,stock:0,rsl:0,cohort:1};
-const SCOPE_ORDERS='<option value="parent">Brand → Parent → Town</option><option value="town">Brand → Town → Parent</option><option value="town-first">Town → Brand → Parent</option>';
-let statusSaved=null,scopeHomes=[];
-function openStatusScope({leaves,lens,snapshot,group,note,categories}){
-  const order=$('#sOrder');
-  statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:order.value,orderHtml:order.innerHTML,orderHidden:order.hidden,hidden:$('#r-status').hidden};
-  statusSnap=snapshot;statusGroup=group;statusCategoryScope=categories?.length?categories:null;statusScope=new Map();
-  leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
-  statusFilters.states=new Map();statusStates.clear();statusRslSelections.delete('scoped');
-  statusMetric=SCOPE_METRIC[lens]??1;statusSort={k:'total',d:-1};statusOpen=new Set();
-  order.html=SCOPE_ORDERS;order.value='parent';
+const SCOPE_ORDERS='<option value="town">Brand → Town → Parent</option><option value="parent">Brand → Parent → Town</option><option value="town-first">Town → Brand → Parent</option>';
+let statusSaved=null,scopeHomes=[],scopeActive=null,scopeOpener=null;
+function openStatusScope({leaves=null,lens,metric,snapshot,group=null,note,categories=null,order='parent',filters=null,rsl=null,expandFirst=false}){
+  const orderEl=$('#sOrder');
+  if(!statusSaved){
+    statusSaved={view:statusView,metric:statusMetric,sort:statusSort,open:statusOpen,states:new Map(statusStates),filterStates:statusFilters.states,filterScope:statusFilters.scope,order:orderEl.value,orderHtml:orderEl.innerHTML,orderHidden:orderEl.hidden,hidden:$('#r-status').hidden};
+  }
+  statusSnap=snapshot;statusGroup=group;statusCategoryScope=categories?.length?categories:null;
+  if(leaves){
+    statusScope=new Map();
+    leaves.forEach(([town,brand,parent,amount])=>{const key=statusLeafKey(town,brand,parent);statusScope.set(key,(statusScope.get(key)||0)+amount)});
+  }else{
+    statusScope=null;
+  }
+  statusFilters.states=new Map();
+  statusFilters.histories.delete('scoped');
+  if(filters){
+    const scopedState={};
+    for(const [k,vals] of Object.entries(filters))if(vals?.length)scopedState[k]=new Set(vals);
+    statusFilters.states.set('scoped',scopedState);
+  }
+  statusStates.clear();
+  if(rsl?.length)statusRslSelections.set('scoped',new Set(rsl));
+  else statusRslSelections.delete('scoped');
+  statusMetric=metric!=null?metric:(SCOPE_METRIC[lens]??1);statusSort={k:'total',d:-1};statusOpen=new Set();
+  orderEl.html=SCOPE_ORDERS;orderEl.value=order;
   $('#sScopeNote').textContent=note;$('#sScopeNote').hidden=false;
   setStatusView('scope');
+  if(expandFirst&&statusRoot.kids.length===1){
+    statusOpen.add(statusRoot.kids[0].id);
+    drawStatus();
+  }
 }
 function closeStatusScope(){
   const saved=statusSaved;if(!saved)return;
   statusSaved=null;statusScope=null;statusSnap=null;statusGroup=null;statusCategoryScope=null;
+  statusRslSelections.delete('scoped');
+  statusFilters.histories.delete('scoped');
   statusStates.clear();saved.states.forEach((v,k)=>statusStates.set(k,v));
   statusFilters.states=saved.filterStates;
   const order=$('#sOrder');order.html=saved.orderHtml;order.value=saved.order;
@@ -3449,42 +3635,65 @@ function closeStatusScope(){
   setStatusView(saved.view==='town'?'town':'status');
   order.hidden=saved.orderHidden;
 }
-/* request: {lens,title,scope,snapshot:'YYYY-MM-DD',group:RSL name|null,leaves:[[town,brand,parent,amount]]} */
+function syncScopeDialogControls(request){
+  const unitSeg=$('#scopeDialogUnit');
+  unitSeg.hidden=!request.showUnit;
+  $$('button',unitSeg).forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.unit===reportUnit)));
+  $('#scopeDialogClose').textContent=request.closeLabel||'Back to chart';
+}
+/* request: traced ({lens,title,scope,snapshot:'YYYY-MM-DD',group,leaves}) or direct ({title,plainTitle,snapshotIndex,metric,order,filters,rsl,note}). */
 function showScopedData(request){
   const dialog=$('#scopeDialog'),page=$('#r-status');
+  if(!dialog.open&&(statusSaved||scopeHomes.length))closeScopedData();
   if(dialog.open)return;
-  const when=new Date(request.snapshot+'T00:00:00Z'),snapshot=STATUS.labels.findIndex(l=>{const d=new Date('1 '+l+' UTC');return d.getUTCFullYear()===when.getUTCFullYear()&&d.getUTCMonth()===when.getUTCMonth()});
-  if(snapshot<0){toast('No saved stock snapshot for '+when.toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}));return}
+  let snapshot=request.snapshotIndex;
+  if(snapshot==null){
+    const when=new Date(request.snapshot+'T00:00:00Z');
+    snapshot=STATUS.labels.findIndex(l=>{const d=new Date('1 '+l+' UTC');return d.getUTCFullYear()===when.getUTCFullYear()&&d.getUTCMonth()===when.getUTCMonth()});
+    if(snapshot<0){toast('No saved stock snapshot for '+when.toLocaleString('en-US',{month:'long',year:'numeric',timeZone:'UTC'}));return}
+  }
   const groupIndex=request.group==null?-1:STATUS.groups.findIndex(g=>normalizeEvolutionRsl(g)===request.group);
-  request={...request,snapshot,group:groupIndex<0?null:groupIndex};
+  const resolved={...request,snapshot,group:groupIndex<0?null:groupIndex,order:request.order||(request.leaves?'parent':'town')};
+  scopeOpener=captureOverviewReturn(request.opener);
   const homeOf=el=>{const mark=document.createComment('scope home');el.before(mark);return {el,mark}};
   scopeHomes=[homeOf(page),...SCOPE_MODALS.map(id=>homeOf($(id)))];
   const pageWasHidden=page.hidden;scopeHomes[0].wasHidden=pageWasHidden;
   $('#scopeDialogBody').append(page);page.hidden=false;
   SCOPE_MODALS.forEach(id=>dialog.append($(id)));
-  $('#scopeDialogTitle').textContent='Show data · '+request.title;
-  const categoryNote=request.categories?.length?' · '+request.categories.join(' + '):'';
-  const note=`${request.scope}${categoryNote} · ${STATUS.labels[snapshot]} snapshot · ${request.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock the chart traced to this selection`;
+  scopeActive=resolved;
+  $('#scopeDialogTitle').textContent=(resolved.plainTitle?'':'Show data · ')+resolved.title;
+  let note=resolved.note;
+  if(!note){
+    const categoryNote=resolved.categories?.length?' · '+resolved.categories.join(' + '):'';
+    note=`${resolved.scope}${categoryNote} · ${STATUS.labels[snapshot]} snapshot · ${resolved.leaves.length.toLocaleString('en-US')} brand · parent · town rows · each row shows only the part of its stock traced to this selection`;
+  }
   $('#scopeDialogScope').textContent=note;
+  syncScopeDialogControls(resolved);
   dialog.showModal();
-  openStatusScope({...request,note});
+  openStatusScope({...resolved,note});
   $('#scopeDialogClose').focus({preventScroll:true});
 }
 function closeScopedData(){
+  if(!statusSaved&&!scopeHomes.length)return;
+  scopeActive=null;
+  $('#scopeDialogUnit').hidden=true;
   closeStatusScope();
   $('#mv').hidden=true;if(!$('#doh').hidden)closeDohExplanation();$('#help').hidden=true;
   scopeHomes.forEach(({el,mark,wasHidden})=>{mark.replaceWith(el);if(wasHidden!==undefined)el.hidden=wasHidden});
   scopeHomes=[];
+  const saved=scopeOpener;scopeOpener=null;
+  focusOverviewReturn(saved);
 }
-$('#scopeDialogClose').onclick=()=>$('#scopeDialog').close();
-$('#scopeDialog').addEventListener('close',closeScopedData);
+$('#scopeDialogClose').onclick=()=>{const d=$('#scopeDialog');d.close();closeScopedData()};
+$('#scopeDialog').addEventListener('close',()=>{if(!$('#scopeDialog').open)closeScopedData()});
 // Escape belongs to an open chart, DOH or help sheet first; only a bare overlay closes the dialog.
 $('#scopeDialog').addEventListener('keydown',e=>{if(e.key==='Escape'&&SCOPE_MODALS.some(id=>!$(id).hidden))e.preventDefault()},true);
+$$('#scopeDialogUnit button').forEach(button=>button.onclick=()=>{if(button.dataset.unit!==reportUnit)applyReportUnit(button.dataset.unit,false)});
 
 function applyReportUnit(unit,keepWaterfall){
   if(!$('#doh').hidden)closeDohExplanation();
   reportUnit=unit;
-  $$('#reportUnit button,#mvUnit button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.unit===unit));
+  $$('#reportUnit button,#mvUnit button,#scopeDialogUnit button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.unit===unit));
   if(!keepWaterfall){$('#mv').hidden=true;sel=null}
   $$('#r-move .movement-notes summary,#r-status .movement-notes summary,#r-plan .movement-notes summary').forEach(el=>el.title='Notes · amounts in '+unitLabel());
   statusMetricNames=['stock','exposure','lnd'].map(name=>name+'-'+reportUnit);
@@ -3492,7 +3701,8 @@ function applyReportUnit(unit,keepWaterfall){
   const size=$$('#mSize button')[1];size.dataset.s=reportUnit==='bdt'?'500000':'0.5';size.textContent='Stock ≥ '+(reportUnit==='bdt'?'0.5M BDT':'0.5 KL');
   if(minStock)minStock=+size.dataset.s;
   buildData();drawB();drawNote();drawScale();drawM();drawTransfer();drawRescue();
-  setStatusView(curRep==='status'?'status':'town');
+  if(statusSaved)drawStatus();
+  else setStatusView(curRep==='status'?'status':'town');
   if(curRep==='overview')drawOverview();
   if(curRep==='not-actionables')drawNotActionables();
   if(curRep==='evolution'&&window.FSNE&&window.FSNE.evolution)window.FSNE.evolution.setUnit(reportUnit);

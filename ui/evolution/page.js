@@ -223,6 +223,7 @@
     $('#evGap').value = state.gap;
     $('#evGapOut').textContent = state.gap;
     $('#evGapReset').disabled = state.gap === GAP.start;
+    if (env?.onDrillChange) env.onDrillChange(drill, activeLens());
   }
 
   async function draw() {
